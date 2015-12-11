@@ -7,7 +7,7 @@ namespace Altar.NET
 {
     public static class GMFile
     {
-        public unsafe static GMFileContent* GetFile(byte[] data)
+        public unsafe static GMFileContent GetFile(byte[] data)
         {
             var ret = new GMFileContent();
 
@@ -105,9 +105,23 @@ namespace Altar.NET
 
             ret.RawData = hdr_bp;
 
-            return &ret;
+            return ret;
         }
 
-        public static unsafe void* PtrFromOffset(ref GMFileContent file, int offset) => (void*)((IntPtr)file.RawData.VPtr + offset);
+      //public static unsafe void* PtrFromOffset(GMFileContent file,  int offset) => (void*)((byte*)file.RawData.VPtr + offset);
+        public static unsafe void* PtrFromOffset(GMFileContent file, uint offset) => (void*)((byte*)file.RawData.VPtr + offset);
+        public static unsafe SectionHeaders HeaderOf(GMFileContent file, uint offset)
+        {
+            var sorted = file.HeaderOffsets.OrderBy(i => i).ToArray();
+
+            if (sorted.Length == 1)
+                return *(SectionHeaders*)PtrFromOffset(file, sorted[0]);
+
+            for (int i = 0; i < sorted.Length - 1 && sorted[i + 1] != 0; i++)
+                if (offset == sorted[i] || offset > sorted[i] && (offset < sorted[i + 1] || sorted[i + 1] == 0))
+                    return *(SectionHeaders*)PtrFromOffset(file, sorted[i]);
+
+            return SectionHeaders.Form;
+        }
     }
 }
