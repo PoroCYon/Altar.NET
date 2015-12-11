@@ -63,7 +63,7 @@ namespace Altar.NET
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct GMFileContent : IDisposable
+    public unsafe class GMFileContent : IDisposable
     {
         public Pointer RawData;
 
@@ -94,11 +94,22 @@ namespace Altar.NET
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
 
-        internal fixed uint HeaderOffsets[(int)SectionHeaders.Count];
+        internal uint[] HeaderOffsets = new uint[(int)SectionHeaders.Count];
+
+        void Disposing()
+        {
+            RawData.Dispose();
+        }
 
         public void Dispose()
         {
-            RawData.Dispose();
+            Disposing();
+            HeaderOffsets = null;
+            GC.SuppressFinalize(this);
+        }
+        ~GMFileContent()
+        {
+            Disposing();
         }
     }
 

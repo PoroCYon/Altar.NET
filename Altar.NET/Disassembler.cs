@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -10,12 +11,12 @@ namespace Altar.NET
 
     public static class Disassembler
     {
-        public unsafe static Instruction*[] DisassembleCode(ref GMFileContent content, uint id)
+        public unsafe static Instruction*[] DisassembleCode(GMFileContent content, uint id)
         {
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var re = (CodeEntry*)GMFile.PtrFromOffset(ref content, (int)(&content.Code->Offset)[id]);
+            var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offset)[id]);
             var len = re->Length;
             var bc = (byte*)&re->Bytecode;
 
@@ -75,15 +76,59 @@ namespace Altar.NET
             return retarr;
         }
 
-        public unsafe static string DisplayInstructions(ref GMFileContent content, Instruction*[] instrs)
+        public unsafe static string DisplayInstructions(GMFileContent content, Instruction*[] instrs)
         {
-            var vars = SectionReader.GetRefDefs(ref content, content.Variables);
-            var fns  = SectionReader.GetRefDefs(ref content, content.Functions);
+            var vars = SectionReader.GetRefDefs(content, content.Variables);
+            var fns  = SectionReader.GetRefDefs(content, content.Functions);
 
-            var varAccessors = new Dictionary<ReferenceDef, IntPtr>();
-            var  fnAccessors = new Dictionary<ReferenceDef, IntPtr>();
+            var varAccs = new uint[vars.Length][];
+            var  fnAccs = new uint[fns .Length][];
 
+            for (int i = 0; i < vars.Length; i++)
+            {
+                var arr = new uint[vars[i].Occurrences];
+                int j = 0;
 
+                var p = (Instruction*)GMFile.PtrFromOffset(content, vars[i].FirstAddress);
+                var dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
+
+                while (dest != 0 && j < vars[i].Occurrences)
+                {
+                    arr[j++] = dest;
+
+                    p = (Instruction*)((byte*)p + dest * 4);
+
+                    if (j < vars[i].Occurrences - 1)
+                        dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
+                }
+
+                Debug.Assert(j == vars[i].Occurrences);
+
+                varAccs[i] = arr;
+            }
+
+            for (int i = 0; i < fns.Length; i++)
+            {
+                var arr = new uint[fns[i].Occurrences];
+                int j = 0;
+
+                var p = (Instruction*)GMFile.PtrFromOffset(content, fns[i].FirstAddress);
+                var dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
+
+                while (dest != 0 && j < fns[i].Occurrences)
+                {
+                    arr[j++] = dest;
+
+                    p = (Instruction*)((byte*)p + dest * 4);
+
+                    if (j < fns[i].Occurrences - 1)
+                        dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
+                }
+
+                Debug.Assert(j == fns[i].Occurrences);
+
+                fnAccs[i] = arr;
+            }
 
             var sb = new StringBuilder();
 
@@ -120,7 +165,7 @@ namespace Altar.NET
                             sb.Append(s.Instance.ToPrettyString());
                         else
                         {
-                            var o = SectionReader.GetObjectInfo(ref content, (uint)s.Instance);
+                            var o = SectionReader.GetObjectInfo(content, (uint)s.Instance);
 
                             sb.Append('[').Append(o.Name).Append(']');
                         }
@@ -147,7 +192,7 @@ namespace Altar.NET
                                 sb.Append(inst.ToPrettyString());
                             else
                             {
-                                var o = SectionReader.GetObjectInfo(ref content, (uint)inst);
+                                var o = SectionReader.GetObjectInfo(content, (uint)inst);
 
                                 sb.Append('[').Append(o.Name).Append(']');
                             }
@@ -177,7 +222,7 @@ namespace Altar.NET
                             sb.Append((long)p.ValueRest);
                         if (p.Type == DataType.String)
                             sb.Append("S:").Append(p.ValueRest).Append(' ')
-                                .Append('"').Append(SectionReader.GetStringInfo(ref content, p.ValueRest)).Append('"');
+                                .Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
                         break;
 
                     case InstructionKind.Call:

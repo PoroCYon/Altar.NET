@@ -58,26 +58,26 @@ namespace Altar.NET
             return -1;
         }
 
-        public static string GetStringFromOffset(ref GMFileContent content,  int offset)
+        public static string GetStringFromOffset(GMFileContent content, uint offset)
         {
-            var eptr = (byte*)GMFile.PtrFromOffset(ref content, offset);
+            var eptr = (byte*)GMFile.PtrFromOffset(content, offset);
             var stre = (StringEntry*)eptr;
 
             return unchecked(new string((sbyte*)&stre->Data, 0, (int)stre->Length, Encoding.ASCII));
         }
-        public static string GetStringInfo      (ref GMFileContent content, uint id    )
+        public static string GetStringInfo      (GMFileContent content, uint id    )
         {
             if (id >= content.Strings->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return GetStringFromOffset(ref content, (int)(&content.Strings->Offset)[id]);
+            return GetStringFromOffset(content, (&content.Strings->Offset)[id]);
         }
 
-        public static PngInfo GetPngFromOffset(ref GMFileContent content, uint offset)
+        public static PngInfo GetPngFromOffset(GMFileContent content, uint offset)
         {
             var ret = new PngInfo();
 
-            var png = (PngHeader*)GMFile.PtrFromOffset(ref content, (int)offset);
+            var png = (PngHeader*)GMFile.PtrFromOffset(content, offset);
 
             ret.Width  = Utils.SwapEnd32(png->IHDR.Width );
             ret.Height = Utils.SwapEnd32(png->IHDR.Height);
@@ -88,22 +88,22 @@ namespace Altar.NET
 
             return ret;
         }
-        public static PngInfo GetTextureInfo  (ref GMFileContent content, uint id    )
+        public static PngInfo GetTextureInfo  (GMFileContent content, uint id    )
         {
             if (id >= content.Textures->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var tex = (TextureEntry*)GMFile.PtrFromOffset(ref content, (int)(&content.Textures->Offset)[id]);
+            var tex = (TextureEntry*)GMFile.PtrFromOffset(content, (&content.Textures->Offset)[id]);
 
-            return GetPngFromOffset(ref content, tex->Offset);
+            return GetPngFromOffset(content, tex->Offset);
         }
 
-        public static AudioInfo GetAudioInfo(ref GMFileContent content, uint id)
+        public static AudioInfo GetAudioInfo(GMFileContent content, uint id)
         {
             if (id >= content.Audio->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var au = (AudioEntry*)GMFile.PtrFromOffset(ref content, (int)(&content.Audio->Offset)[id]);
+            var au = (AudioEntry*)GMFile.PtrFromOffset(content, (&content.Audio->Offset)[id]);
 
             var ret = new AudioInfo();
 
@@ -114,7 +114,7 @@ namespace Altar.NET
             return ret;
         }
 
-        public static ObjectInfo     GetObjectInfo(ref GMFileContent content, uint id)
+        public static ObjectInfo     GetObjectInfo(GMFileContent content, uint id)
         {
             if (id >= content.Objects->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -132,9 +132,9 @@ namespace Altar.NET
                     nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Base->Size /*! untested */ : (ho[i + 1] - 12);
                 }
 
-            var re = (ObjectEntry*)GMFile.PtrFromOffset(ref content, (int)reOff);
+            var re = (ObjectEntry*)GMFile.PtrFromOffset(content, reOff);
 
-            var name = (byte*)GMFile.PtrFromOffset(ref content, re->Name);
+            var name = (byte*)GMFile.PtrFromOffset(content, re->Name);
 
             var len = (int)(nextOff - reOff) - 8; // name, spriteInd
 
@@ -146,16 +146,16 @@ namespace Altar.NET
 
             return ret;
         }
-        public static NameDataPair   GetCodeInfo  (ref GMFileContent content, uint id)
+        public static NameDataPair   GetCodeInfo  (GMFileContent content, uint id)
         {
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
             var ret = new NameDataPair();
 
-            var re = (CodeEntry*)GMFile.PtrFromOffset(ref content, (int)(&content.Code->Offset)[id]);
+            var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offset)[id]);
 
-            var name = (byte*)GMFile.PtrFromOffset(ref content, re->Name);
+            var name = (byte*)GMFile.PtrFromOffset(content, re->Name);
 
             ret.Name = ReadString(name);
 
@@ -165,23 +165,23 @@ namespace Altar.NET
 
             return ret;
         }
-        public static BackgroundInfo GetBgInfo    (ref GMFileContent content, uint id)
+        public static BackgroundInfo GetBgInfo    (GMFileContent content, uint id)
         {
             if (id >= content.Backgrounds->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
             var ret = new BackgroundInfo();
 
-            var be = (BgEntry*)GMFile.PtrFromOffset(ref content, (int)(&content.Backgrounds->Offset)[id]);
+            var be = (BgEntry*)GMFile.PtrFromOffset(content, (&content.Backgrounds->Offset)[id]);
 
-            var name = (byte*)GMFile.PtrFromOffset(ref content, be->Name);
+            var name = (byte*)GMFile.PtrFromOffset(content, be->Name);
 
             ret.Name           = ReadString(name);
             ret.TextureAddress = be->TextureAddress;
 
             return ret;
         }
-        public static RoomInfo       GetRoomInfo  (ref GMFileContent content, uint id)
+        public static RoomInfo       GetRoomInfo  (GMFileContent content, uint id)
         {
             if (id >= content.Rooms->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -199,10 +199,10 @@ namespace Altar.NET
                     nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Base->Size /*! untested */ : (ho[i + 1] - 12);
                 }
 
-            var re = (RoomEntry*)GMFile.PtrFromOffset(ref content, (int)reOff);
+            var re = (RoomEntry*)GMFile.PtrFromOffset(content, reOff);
 
-            var name  = (byte*)GMFile.PtrFromOffset(ref content, re->Name );
-            var name2 = (byte*)GMFile.PtrFromOffset(ref content, re->Name2);
+            var name  = (byte*)GMFile.PtrFromOffset(content, re->Name );
+            var name2 = (byte*)GMFile.PtrFromOffset(content, re->Name2);
 
             var sb = new StringBuilder();
 
@@ -242,7 +242,7 @@ namespace Altar.NET
             return ret;
         }
 
-        public static ReferenceDef[] GetRefDefs(ref GMFileContent content, SectionRefDefs* section)
+        public static ReferenceDef[] GetRefDefs(GMFileContent content, SectionRefDefs* section)
         {
             var r = new ReferenceDef[section->Header.Size / 12];
 
@@ -251,7 +251,7 @@ namespace Altar.NET
             {
                 var ret = new ReferenceDef();
 
-                var name = (byte*)GMFile.PtrFromOffset(ref content, rde->Name);
+                var name = (byte*)GMFile.PtrFromOffset(content, rde->Name);
 
                 ret.Name = ReadString(name);
                 ret.Occurrences  = rde->Occurrences ;

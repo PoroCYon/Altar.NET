@@ -32,16 +32,16 @@ namespace Altar.NET
                 if (!Directory.Exists(s))
                     Directory.CreateDirectory(s);
 
-            var f = *GMFile.GetFile(File.ReadAllBytes(file));
+            var f = GMFile.GetFile(File.ReadAllBytes(file));
             try
             {
                 var sep = Environment.NewLine + new string('-', 80) + Environment.NewLine;
 
+                var r = Disassembler.DisplayInstructions(f, Disassembler.DisassembleCode(f, 1));
+                File.WriteAllText(SectionReader.GetCodeInfo(f, 1).Name + ".gml.asm", r);
+
                 if (f.Audio->Count == 0 || f.Audio->Count > 0)
                     return;
-
-                var r = Disassembler.DisplayInstructions(ref f, Disassembler.DisassembleCode(ref f, 1));
-                File.WriteAllText("code-1-" + SectionReader.GetCodeInfo(ref f, 1).Name + ".gml.asm", r);
 
                 if (f.Strings->Count > 0)
                 {
@@ -50,7 +50,7 @@ namespace Altar.NET
                     var strings = new string[(int)f.Strings->Count];
 
                     for (uint i = 0; i < f.Strings->Count; i++)
-                        strings[i] = SectionReader.GetStringInfo(ref f, i);
+                        strings[i] = SectionReader.GetStringInfo(f, i);
 
                     File.WriteAllText("strings.txt", String.Join(sep, strings));
 
@@ -63,7 +63,7 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Textures->Count; i++)
                     {
-                        var ti = SectionReader.GetTextureInfo(ref f, i);
+                        var ti = SectionReader.GetTextureInfo(f, i);
 
                         File.WriteAllBytes("texture/" + i + ".png", ti.DataInfo);
                     }
@@ -77,7 +77,7 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Audio->Count; i++)
                     {
-                        var ai = SectionReader.GetAudioInfo(ref f, i);
+                        var ai = SectionReader.GetAudioInfo(f, i);
 
                         File.WriteAllBytes("audio/" + i + ".wav", ai.RIFF);
                     }
@@ -91,7 +91,7 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Rooms->Count; i++)
                     {
-                        var ri = SectionReader.GetRoomInfo(ref f, i);
+                        var ri = SectionReader.GetRoomInfo(f, i);
 
                         var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
 
@@ -107,7 +107,7 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Objects->Count; i++)
                     {
-                        var oi = SectionReader.GetObjectInfo(ref f, i);
+                        var oi = SectionReader.GetObjectInfo(f, i);
 
                         File.WriteAllBytes("object/" + oi.Name + ".bin", oi.Data);
                     }
@@ -121,7 +121,7 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Backgrounds->Count; i++)
                     {
-                        var bi = SectionReader.GetBgInfo(ref f, i);
+                        var bi = SectionReader.GetBgInfo(f, i);
 
                         File.WriteAllText("bg/" + bi.Name + ".txt", "TextureAddress=0x" + bi.TextureAddress.ToString("X8"));
                     }
@@ -130,7 +130,7 @@ namespace Altar.NET
                 }
 
                 {
-                    var vars = SectionReader.GetRefDefs(ref f, f.Variables);
+                    var vars = SectionReader.GetRefDefs(f, f.Variables);
 
                     if (vars.Length > 0)
                     {
@@ -153,7 +153,7 @@ namespace Altar.NET
                     }
                 }
                 {
-                    var fns = SectionReader.GetRefDefs(ref f, f.Functions);
+                    var fns = SectionReader.GetRefDefs(f, f.Functions);
 
                     if (fns.Length > 0)
                     {
@@ -182,8 +182,8 @@ namespace Altar.NET
 
                     for (uint i = 0; i < f.Code->Count; i++)
                     {
-                        var ci = SectionReader.GetCodeInfo(ref f, i);
-                        var s = Disassembler.DisplayInstructions(ref f, Disassembler.DisassembleCode(ref f, i));
+                        var ci = SectionReader.GetCodeInfo(f, i);
+                        var s = Disassembler.DisplayInstructions(f, Disassembler.DisassembleCode(f, i));
 
                         File.WriteAllText("code/" + ci.Name + ".gml.asm", s);
                     }

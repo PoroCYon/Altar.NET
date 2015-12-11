@@ -142,14 +142,14 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ObjectEntry
     {
-        public int Name;
+        public uint Name;
         public uint SpriteIndex;
         public byte* Data;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct CodeEntry
     {
-        public int Name;
+        public uint Name;
         public int Length;
         public byte* Bytecode;
     }
@@ -174,14 +174,14 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RefDefEntry
     {
-        public int Name;
+        public uint Name;
         public uint Occurrences;
         public uint FirstAddress;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
     {
-        public int Name;
+        public uint Name;
         fixed uint _padding[3];
         public uint TextureAddress;
     }
@@ -228,7 +228,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
     {
-        public int Name, Name2;
+        public uint Name, Name2;
         public Point Size;
         fixed uint _pad0[2];
         public Colour Colour;
