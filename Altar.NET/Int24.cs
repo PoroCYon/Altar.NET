@@ -7,11 +7,11 @@ using System.Runtime.InteropServices;
 
 namespace Altar.NET
 {
+    using static SR;
+
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 3), DebuggerDisplay("{DebugDisplay()}")]
     public struct Int24 : IEquatable<Int24>, IComparable<Int24>, IFormattable, IConvertible
     {
-        readonly static string HEXP = "0x", HEXF = "x6";
-
         ushort _word;
         byte   _byte;
 
@@ -115,7 +115,8 @@ namespace Altar.NET
         [DebuggerStepThrough]
         public string ToString(string format) => ToString(format, CultureInfo.CurrentCulture);
 
-        string DebugDisplay() => HEXP + UValue.ToString(HEXF);
+        [DebuggerStepThrough]
+        string DebugDisplay() => HEX_PRE + UValue.ToString(HEX_FM6);
 
         #region IConvertible
         [DebuggerStepThrough]
@@ -149,10 +150,7 @@ namespace Altar.NET
         public decimal ToDecimal(IFormatProvider _) => Value;
 
         [DebuggerStepThrough]
-        public DateTime ToDateTime(IFormatProvider _)
-        {
-            throw new InvalidCastException();
-        }
+        public DateTime ToDateTime(IFormatProvider _) => ((IConvertible)Value).ToDateTime(_);
 
         [DebuggerStepThrough]
         public string ToString(IFormatProvider provider) => Value.ToString(provider);

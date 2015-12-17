@@ -7,52 +7,54 @@ namespace Altar.NET
 {
     public enum SectionHeaders : uint
     {
-        Form        = 0x4D524F46,
-        General     = 0x384E4547,
-        Options     = 0x4E54504F,
-        Extensions  = 0x4E545845,
-        Sounds      = 0x444E4F53,
-        Sprites     = 0x54525053,
-        Backgrounds = 0x444E4742,
-        Paths       = 0x48544150,
-        Scripts     = 0x54504353,
-        Shaders     = 0x52444853,
-        Fonts       = 0x544E4F46,
-        Timelines   = 0x4E4C4D54,
-        Objects     = 0x544A424F,
-        Rooms       = 0x4D4F4F52,
-        DataFiles   = 0x4C464144,
-        TexInfo     = 0x47415054,
-        Code        = 0x45444F43,
-        Variables   = 0x49524156,
-        Functions   = 0x434E5546,
-        Strings     = 0x47525453,
-        Textures    = 0x52545854,
-        Audio       = 0x4F445541,
-        AudioGroup  = 0x50524741,
+        Form        = 0x4D524F46, // FORM
+        General     = 0x384E4547, // GEN8
+        Options     = 0x4E54504F, // OPTN
+        Extensions  = 0x4E545845, // EXTN
+        Sounds      = 0x444E4F53, // SOND
+        AudioGroup  = 0x50524741, // AGRP
+        Sprites     = 0x54525053, // SPRT
+        Backgrounds = 0x444E4742, // BGND
+        Paths       = 0x48544150, // PATH
+        Scripts     = 0x54504353, // SCPT
+        Shaders     = 0x52444853, // SHDR
+        Fonts       = 0x544E4F46, // FONT
+        Timelines   = 0x4E4C4D54, // TMLN
+        Objects     = 0x544A424F, // OBJT
+        Rooms       = 0x4D4F4F52, // ROOM
+        DataFiles   = 0x4C464144, // DAFL
+        TexturePage = 0x47415054, // TPAG
+        Code        = 0x45444F43, // CODE
+        Variables   = 0x49524156, // VARI
+        Functions   = 0x434E5546, // FUNC
+        Strings     = 0x47525453, // STRG
+        Textures    = 0x52545854, // TXTR
+        Audio       = 0x4F445541, // AUDO
 
         Count = 23
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct Pointer : IDisposable
+    public unsafe class UniquePtr : IDisposable
     {
         IntPtr stuff;
-        bool disposedValue;
 
         public IntPtr IPtr => stuff;
-        public void* VPtr => (void*)stuff;
-        public byte* BPtr => (byte*)stuff;
+        public void*  VPtr => (void*)stuff;
+        public byte*  BPtr => (byte*)stuff;
 
-        public Pointer(byte[] data)
+        public UniquePtr(byte[] data)
         {
-            disposedValue = false;
             stuff = Marshal.AllocHGlobal(data.Length);
 
             Marshal.Copy(data, 0, stuff, data.Length);
         }
+        ~UniquePtr()
+        {
+            Disposing();
+        }
 
-        public void Dispose()
+        void Disposing()
         {
             if (stuff != IntPtr.Zero)
             {
@@ -60,12 +62,18 @@ namespace Altar.NET
                 stuff = IntPtr.Zero;
             }
         }
+
+        public void Dispose()
+        {
+            Disposing();
+            GC.SuppressFinalize(this);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe class GMFileContent : IDisposable
     {
-        public Pointer RawData;
+        public UniquePtr RawData;
 
         public SectionHeader * Base   ;
         public SectionGeneral* Gen    ;
@@ -73,23 +81,23 @@ namespace Altar.NET
 
         public SectionUnknown* Extensions ;
         public SectionUnknown* Sounds     ;
-        public SectionUnknown* Sprites    ;
+        public SectionUnknown* AudioGroup ;
         public SectionUnknown* Paths      ;
-        public SectionUnknown* Scripts    ;
         public SectionUnknown* Shaders    ;
         public SectionUnknown* Fonts      ;
         public SectionUnknown* Timelines  ;
         public SectionUnknown* DataFiles  ;
-        public SectionUnknown* TexInfo    ;
-        public SectionUnknown* AudioGroup ;
 
-        public SectionCountOffset* Objects    ;
-        public SectionCountOffset* Rooms      ;
-        public SectionCountOffset* Code       ;
-        public SectionCountOffset* Strings    ;
-        public SectionCountOffset* Textures   ;
-        public SectionCountOffset* Audio      ;
-        public SectionCountOffset* Backgrounds;
+        public SectionCountOffset* Sprites     ;
+        public SectionCountOffset* Backgrounds ;
+        public SectionCountOffset* Scripts     ;
+        public SectionCountOffset* Objects     ;
+        public SectionCountOffset* Rooms       ;
+        public SectionCountOffset* TexturePages;
+        public SectionCountOffset* Code        ;
+        public SectionCountOffset* Strings     ;
+        public SectionCountOffset* Textures    ;
+        public SectionCountOffset* Audio       ;
 
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
@@ -114,25 +122,34 @@ namespace Altar.NET
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct PngInfo
-    {
-        public uint Width, Height;
-        public byte[] DataInfo;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct AudioInfo
-    {
-        public byte[] RIFF;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     public struct ReferenceDef
     {
         public string Name;
         public uint Occurrences;
-        public uint FirstAddress;
+        public uint FirstOffset;
     }
 
+    // ---
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpriteInfo
+    {
+        public string Name;
+        public Point Size;
+        public uint[] TextureIndices;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BackgroundInfo
+    {
+        public string Name;
+        public uint TexPageIndex;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ScriptInfo
+    {
+        public string Name;
+        public uint CodeId;
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct ObjectInfo
     {
@@ -140,19 +157,47 @@ namespace Altar.NET
         public uint SpriteIndex;
         public byte[] Data;
     }
-
     [StructLayout(LayoutKind.Sequential)]
-    public struct BackgroundInfo
+    public struct RoomInfo
     {
         public string Name;
-        public uint TextureAddress;
+        public Point Size;
+        public Colour Colour;
+
+        public RoomBackground[] Backgrounds;
+        public RoomView      [] Views      ;
+        public RoomObject    [] Objects    ;
+        public RoomTile      [] Tiles      ;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TexturePageInfo
+    {
+        public Point16 Position, Size, RenderOffset;
+        public uint SpritesheetId;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct CodeInfo
+    {
+        public string Name;
+        public AnyInstruction*[] Instructions;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TextureInfo
+    {
+        public uint Width, Height;
+        public byte[] PngData;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AudioInfo
+    {
+        public byte[] Wave;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomBackground
     {
         public bool IsEnabled;
-        public uint DefIndex;
+        public uint BgIndex;
         public Point Position;
         public bool TileX, TileY;
         public byte[] Data;
@@ -179,29 +224,7 @@ namespace Altar.NET
         public uint DefIndex;
         public Point SourcePosition;
         public Point Size;
-        public PointF Scale;
+        public Point Scale;
         public float Tint;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RoomInfo
-    {
-        public string Name;
-        public Point Size;
-        public Colour Colour;
-
-        //public RoomBackground[] Backgrounds;
-        //public RoomView      [] Views      ;
-        //public RoomObject    [] Objects    ;
-        //public RoomTile      [] Tiles      ;
-
-        public byte[] Data;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct NameDataPair
-    {
-        public string Name;
-        public byte[] Data;
     }
 }

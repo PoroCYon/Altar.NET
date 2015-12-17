@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
 namespace Altar.NET
 {
+    using static SR;
+
     public static class GMFile
     {
         public unsafe static GMFileContent GetFile(byte[] data)
         {
             var ret = new GMFileContent();
 
-            var hdr_bp = new Pointer(data);
+            var hdr_bp = new UniquePtr(data);
             byte* hdr_b = hdr_bp.BPtr;
 
             var basePtr = (SectionHeader*)hdr_b;
@@ -19,7 +22,7 @@ namespace Altar.NET
             ret.Base = basePtr;
 
             if (ret.Base->Identity != SectionHeaders.Form)
-                throw new InvalidDataException("No 'FORM' header.");
+                throw new InvalidDataException(ERR_NO_FORM);
 
             SectionHeader*
                 hdr = basePtr + 1,
@@ -44,7 +47,7 @@ namespace Altar.NET
                         ret.Sounds = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Sprites:
-                        ret.Sprites = (SectionUnknown*)hdr;
+                        ret.Sprites = (SectionCountOffset*)hdr;
                         break;
                     case SectionHeaders.Backgrounds:
                         ret.Backgrounds = (SectionCountOffset*)hdr;
@@ -53,7 +56,7 @@ namespace Altar.NET
                         ret.Paths = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Scripts:
-                        ret.Scripts = (SectionUnknown*)hdr;
+                        ret.Scripts = (SectionCountOffset*)hdr;
                         break;
                     case SectionHeaders.Shaders:
                         ret.Shaders = (SectionUnknown*)hdr;
@@ -73,8 +76,8 @@ namespace Altar.NET
                     case SectionHeaders.DataFiles:
                         ret.DataFiles = (SectionUnknown*)hdr;
                         break;
-                    case SectionHeaders.TexInfo:
-                        ret.TexInfo = (SectionUnknown*)hdr;
+                    case SectionHeaders.TexturePage:
+                        ret.TexturePages = (SectionCountOffset*)hdr;
                         break;
                     case SectionHeaders.Code:
                         ret.Code = (SectionCountOffset*)hdr;
@@ -108,8 +111,11 @@ namespace Altar.NET
             return ret;
         }
 
-      //public static unsafe void* PtrFromOffset(GMFileContent file,  int offset) => (void*)((byte*)file.RawData.VPtr + offset);
-        public static unsafe void* PtrFromOffset(GMFileContent file, uint offset) => (void*)((byte*)file.RawData.VPtr + offset);
+        [DebuggerStepThrough]
+        public static unsafe void* PtrFromOffset(GMFileContent file,  int offset) => (void*)(file.RawData.BPtr + offset);
+        [DebuggerStepThrough]
+        public static unsafe void* PtrFromOffset(GMFileContent file, uint offset) => (void*)(file.RawData.BPtr + offset);
+        [DebuggerStepThrough]
         public static unsafe SectionHeaders HeaderOf(GMFileContent file, uint offset)
         {
             var sorted = file.HeaderOffsets.OrderBy(i => i).ToArray();

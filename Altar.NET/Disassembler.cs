@@ -7,11 +7,13 @@ using System.Text;
 
 namespace Altar.NET
 {
+    using static SR;
+
     // http://undertale.rawr.ws/decompilation
 
-    public static class Disassembler
+    public unsafe static class Disassembler
     {
-        public unsafe static Instruction*[] DisassembleCode(GMFileContent content, uint id)
+        public static CodeInfo DisassembleCode(GMFileContent content, uint id)
         {
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -25,11 +27,11 @@ namespace Altar.NET
             var bcb = (uint*)bc;
 
             var l = Utils.PadTo(len, 4);
-            Instruction* instr;
+            AnyInstruction* instr;
 
             for (uint i = 0; i * 4 < l; )
             {
-                instr = (Instruction*)(bcb + i);
+                instr = (AnyInstruction*)(bcb + i);
 
                 ret.Add((IntPtr)instr);
 
@@ -68,67 +70,48 @@ namespace Altar.NET
                 i += blocks;
             }
 
-            var retarr = new Instruction*[ret.Count];
+            var retarr = new AnyInstruction*[ret.Count];
 
             for (int i = 0; i < retarr.Length; i++)
-                retarr[i] = (Instruction*)ret[i];
+                retarr[i] = (AnyInstruction*)ret[i];
 
-            return retarr;
+            var retfinal = new CodeInfo();
+
+            retfinal.Name = SectionReader.ReadString((byte*)GMFile.PtrFromOffset(content, re->Name));
+            retfinal.Instructions = retarr;
+
+            return retfinal;
         }
 
-        public unsafe static string DisplayInstructions(GMFileContent content, Instruction*[] instrs)
+        public static Dictionary<IntPtr, int> GetReferenceTable(GMFileContent content, ReferenceDef[] defs)
+        {
+            var ret = new Dictionary<IntPtr, int>(defs.Length);
+
+            for (int i = 0; i < defs.Length; i++)
+            {
+                var offTotal = defs[i].FirstOffset;
+                var addr     = (Instruction*)GMFile.PtrFromOffset(content, offTotal);
+
+                for (int j = 0; j < defs[i].Occurrences /*&& curOffset != 0*/; j++)
+                {
+                    ret.Add((IntPtr)addr, i);
+
+                    if (j < defs[i].Occurrences - 1) // at least one more iteration afterwards
+                    {
+                        var off = ((uint*)addr)[1] & 0x00FFFFFF;
+
+                        addr = (Instruction*)GMFile.PtrFromOffset(content, offTotal += off); //! '+=', not '+'
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+        public static string DisplayInstructions(GMFileContent content, Dictionary<IntPtr, int> varAccs, Dictionary<IntPtr, int> fnAccs, AnyInstruction*[] instrs)
         {
             var vars = SectionReader.GetRefDefs(content, content.Variables);
             var fns  = SectionReader.GetRefDefs(content, content.Functions);
-
-            var varAccs = new uint[vars.Length][];
-            var  fnAccs = new uint[fns .Length][];
-
-            for (int i = 0; i < vars.Length; i++)
-            {
-                var arr = new uint[vars[i].Occurrences];
-                int j = 0;
-
-                var p = (Instruction*)GMFile.PtrFromOffset(content, vars[i].FirstAddress);
-                var dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
-
-                while (dest != 0 && j < vars[i].Occurrences)
-                {
-                    arr[j++] = dest;
-
-                    p = (Instruction*)((byte*)p + dest * 4);
-
-                    if (j < vars[i].Occurrences - 1)
-                        dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
-                }
-
-                Debug.Assert(j == vars[i].Occurrences);
-
-                varAccs[i] = arr;
-            }
-
-            for (int i = 0; i < fns.Length; i++)
-            {
-                var arr = new uint[fns[i].Occurrences];
-                int j = 0;
-
-                var p = (Instruction*)GMFile.PtrFromOffset(content, fns[i].FirstAddress);
-                var dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
-
-                while (dest != 0 && j < fns[i].Occurrences)
-                {
-                    arr[j++] = dest;
-
-                    p = (Instruction*)((byte*)p + dest * 4);
-
-                    if (j < fns[i].Occurrences - 1)
-                        dest = ((&p->InstrData)[1] & 0xFFFFFF00) >> 8;
-                }
-
-                Debug.Assert(j == fns[i].Occurrences);
-
-                fnAccs[i] = arr;
-            }
 
             var sb = new StringBuilder();
 
@@ -136,28 +119,29 @@ namespace Altar.NET
             {
                 var iptr = instrs[i];
 
-                sb.Append(iptr->OpCode.ToPrettyString()).Append(' ');
+                sb.Append(HEX_PRE).Append(((uint)iptr - (uint)content.RawData.BPtr).ToString(HEX_FM8)).Append(' ').Append(iptr->OpCode.ToPrettyString()).Append(' ');
 
                 switch (iptr->Kind)
                 {
                     case InstructionKind.SingleType:
-                        var st = *(SingleTypeInstruction*)iptr;
+                        var st = iptr->SingleType;
 
                         sb.Append(st.Type.ToPrettyString());
                         break;
                     case InstructionKind.DoubleType:
-                        var dt = *(DoubleTypeInstruction*)iptr;
+                        var dt = iptr->DoubleType;
 
                         sb.Append(dt.Types);
                         break;
                     case InstructionKind.Goto:
-                        var g = *(GotoInstruction*)iptr;
+                        var g = iptr->Goto;
 
-                        sb.Append("0x").Append(g.Offset.ToString("X6"));
+                        sb.Append(HEX_PRE).Append(g.Offset.ToString(HEX_FM6));
                         break;
 
+                    #region set
                     case InstructionKind.Set:
-                        var s = *(SetInstruction*)iptr;
+                        var s = iptr->Set;
 
                         sb.Append(s.Types).Append(' ');
 
@@ -170,70 +154,80 @@ namespace Altar.NET
                             sb.Append('[').Append(o.Name).Append(']');
                         }
 
-                        sb.Append(':').Append(s.DestVar);
+                        sb.Append(':');
+
+                        sb.Append(vars[varAccs[(IntPtr)iptr]].Name);
+                        sb.Append(s.DestVar.Type.ToPrettyString());
                         break;
+                    #endregion
+                    #region push
                     case InstructionKind.Push:
                         var pp = (PushInstruction*)iptr;
-                        var p = *pp;
+                        var p = iptr->Push;
 
                         sb.Append(p.Type.ToPrettyString()).Append(' ');
 
                         var r = p.ValueRest;
 
-                        if (p.Type == DataType.Int16)
-                            sb.Append(p.Value);
-                        if (p.Type == DataType.Variable)
+                        switch (p.Type)
                         {
-                            var rv = *(Reference*)&r;
+                            case DataType.Int16:
+                                sb.Append(p.Value.ToString(CultureInfo.InvariantCulture));
+                                break;
+                            case DataType.Variable:
+                                var rv = *(Reference*)&r;
 
-                            var inst = (InstanceType)p.Value;
+                                var inst = (InstanceType)p.Value;
 
-                            if (inst <= InstanceType.StackTopOrGlobal)
-                                sb.Append(inst.ToPrettyString());
-                            else
-                            {
-                                var o = SectionReader.GetObjectInfo(content, (uint)inst);
+                                if (inst <= InstanceType.StackTopOrGlobal)
+                                    sb.Append(inst.ToPrettyString());
+                                else
+                                {
+                                    var o = SectionReader.GetObjectInfo(content, (uint)inst);
 
-                                sb.Append('[').Append(o.Name).Append(']');
-                            }
-                            sb.Append(' ').Append(rv);
+                                    sb.Append('[').Append(o.Name).Append(']');
+                                }
+                                sb.Append(':');
+
+                                sb.Append(vars[varAccs[(IntPtr)iptr]].Name);
+                                sb.Append(rv.Type.ToPrettyString());
+                                break;
+                            case DataType.Boolean:
+                                sb.Append(((DwordBool*)&r)->ToPrettyString());
+                                break;
+                            case DataType.Double:
+                                sb.Append(((double*)&r)->ToString(CultureInfo.InvariantCulture));
+                                break;
+                            case DataType.Float:
+                                sb.Append(((float*)&r)->ToString(CultureInfo.InvariantCulture));
+                                break;
+                            case DataType.Int32:
+                                sb.Append(unchecked((int)r).ToString(CultureInfo.InvariantCulture));
+                                break;
+                            case DataType.Int64:
+                                sb.Append(((long*)&pp->ValueRest)->ToString(CultureInfo.InvariantCulture));
+                                break;
+                            case DataType.String:
+                                sb.Append("S:").Append(p.ValueRest).Append(' ')
+                                    .Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
+                                break;
                         }
-                        if (p.Type == DataType.Boolean)
-                        {
-                            var bv = *(DwordBool*)&r;
-
-                            sb.Append(bv.IsTrue() ? "true" : "false");
-                        }
-                        if (p.Type == DataType.Double)
-                        {
-                            var dv = *(double*)&r;
-
-                            sb.Append(dv.ToString(CultureInfo.InvariantCulture));
-                        }
-                        if (p.Type == DataType.Float)
-                        {
-                            var fv = *(float*)&r;
-
-                            sb.Append(fv.ToString(CultureInfo.InvariantCulture));
-                        }
-                        if (p.Type == DataType.Int32)
-                            sb.Append((int)p.ValueRest);
-                        if (p.Type == DataType.Int64)
-                            sb.Append((long)p.ValueRest);
-                        if (p.Type == DataType.String)
-                            sb.Append("S:").Append(p.ValueRest).Append(' ')
-                                .Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
                         break;
-
+                    #endregion
+                    #region call
                     case InstructionKind.Call:
-                        var c = *(CallInstruction*)iptr;
+                        var c = iptr->Call;
 
                         sb.Append(c.ReturnType.ToPrettyString()).Append(':')
-                            .Append(c.Arguments).Append(' ')
-                            .Append(c.Function);
+                            .Append(c.Arguments).Append(' ');
+
+                        sb.Append(fns[fnAccs[(IntPtr)iptr]].Name);
+                        sb.Append(c.Function.Type.ToPrettyString());
                         break;
+                    #endregion
+
                     case InstructionKind.Break:
-                        var b = *(BreakInstruction*)iptr;
+                        var b = iptr->Break;
 
                         sb.Append(b.Type.ToPrettyString()).Append(' ').Append(b.Signal);
                         break;
