@@ -47,16 +47,16 @@ namespace Altar.NET
                         ret.Sounds = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Sprites:
-                        ret.Sprites = (SectionCountOffset*)hdr;
+                        ret.Sprites = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Backgrounds:
-                        ret.Backgrounds = (SectionCountOffset*)hdr;
+                        ret.Backgrounds = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Paths:
                         ret.Paths = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Scripts:
-                        ret.Scripts = (SectionCountOffset*)hdr;
+                        ret.Scripts = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Shaders:
                         ret.Shaders = (SectionUnknown*)hdr;
@@ -68,19 +68,19 @@ namespace Altar.NET
                         ret.Timelines = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Objects:
-                        ret.Objects = (SectionCountOffset*)hdr;
+                        ret.Objects = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Rooms:
-                        ret.Rooms = (SectionCountOffset*)hdr;
+                        ret.Rooms = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.DataFiles:
                         ret.DataFiles = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.TexturePage:
-                        ret.TexturePages = (SectionCountOffset*)hdr;
+                        ret.TexturePages = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Code:
-                        ret.Code = (SectionCountOffset*)hdr;
+                        ret.Code = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Variables:
                         ret.Variables = (SectionRefDefs*)hdr;
@@ -89,13 +89,13 @@ namespace Altar.NET
                         ret.Functions = (SectionRefDefs*)hdr;
                         break;
                     case SectionHeaders.Strings:
-                        ret.Strings = (SectionCountOffset*)hdr;
+                        ret.Strings = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Textures:
-                        ret.Textures = (SectionCountOffset*)hdr;
+                        ret.Textures = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Audio:
-                        ret.Audio = (SectionCountOffset*)hdr;
+                        ret.Audio = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.AudioGroup:
                         ret.AudioGroup = (SectionUnknown*)hdr;
