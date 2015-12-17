@@ -133,18 +133,60 @@ namespace Altar.NET
 
     // ---
 
-    public unsafe struct FList
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct RefDefEntry
     {
-        //public uint Length;
-        public uint Offsets;
+        public uint Name;
+        public uint Occurrences;
+        public uint FirstAddress;
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct SpriteEntry
+    {
+        public uint Name;
+        public Point Size;
+        fixed byte _pad[44];
+        public uint TextureCount;
+        public uint TextureAddresses;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct BgEntry
+    {
+        public uint Name;
+        fixed uint _padding[3];
+        public uint TextureOffset;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ScriptEntry
+    {
+        public uint Name;
+        public uint CodeId;
+    }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ObjectEntry
     {
         public uint Name;
         public uint SpriteIndex;
         public byte* Data;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct RoomEntry
+    {
+        public uint Name, Name2;
+        public Point Size;
+        fixed uint _pad0[2];
+        public Colour Colour;
+        fixed byte _pad1[60];
+
+        public uint Data;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TexPageEntry
+    {
+        public Point16 Position, Size, RenderOffset;
+        fixed ushort _pad[4];
+        public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct CodeEntry
@@ -162,7 +204,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
     {
-        public uint Unknown;
+        uint _pad;
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -171,27 +213,13 @@ namespace Altar.NET
         public uint Length;
         public byte* Data;
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct RefDefEntry
-    {
-        public uint Name;
-        public uint Occurrences;
-        public uint FirstAddress;
-    }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct BgEntry
-    {
-        public uint Name;
-        fixed uint _padding[3];
-        public uint TextureAddress;
-    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomBgEntry
     {
         public DwordBool IsEnabled;
         uint _pad;
-        public uint DefIndex;
+        public uint BgIndex;
         public Point Position;
         public DwordBool TileX, TileY;
         public byte* Data;
@@ -225,17 +253,6 @@ namespace Altar.NET
         public float Tint;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct RoomEntry
-    {
-        public uint Name, Name2;
-        public Point Size;
-        fixed uint _pad0[2];
-        public Colour Colour;
-        fixed uint _pad1[60];
-
-        public byte* Data;
-    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PngChunck
@@ -253,7 +270,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PngHeader
     {
-        public ulong _Padding;
+        ulong _pad;
         public PngIhdr IHDR;
     }
 }

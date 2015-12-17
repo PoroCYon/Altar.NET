@@ -6,24 +6,29 @@ using System.Text;
 
 namespace Altar.NET
 {
+    using static SR;
+
     static class Program
     {
         readonly static string[] dirs =
         {
             "texture",
+            "texpage",
+            "sprite" ,
             "audio"  ,
             "room"   ,
             "object" ,
-            "code"   ,
-            "bg"
+            "bg"     ,
+            "script" ,
+            "code"
         };
 
         unsafe static void Main(string[] args)
         {
-            var file = Path.GetFullPath(args.Length == 0 ? "data.win" : args[0]);
+            var file = Path.GetFullPath(args.Length == 0 ? DATA_WIN : args[0]);
 
             if (!File.Exists(file))
-                Console.WriteLine("File \"" + file + "\" not found.");
+                Console.WriteLine(ERR_FILE_NF_1 + file + ERR_FILE_NF_2);
 
             var cd = Path.GetFullPath(Environment.CurrentDirectory);
             Environment.CurrentDirectory = Path.GetDirectoryName(file);
@@ -32,16 +37,34 @@ namespace Altar.NET
                 if (!Directory.Exists(s))
                     Directory.CreateDirectory(s);
 
-            var f = GMFile.GetFile(File.ReadAllBytes(file));
-            try
+            using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
-                var sep = Environment.NewLine + new string('-', 80) + Environment.NewLine;
+                var sb = new StringBuilder();
+                #region sprite
+                if (f.Sprites->Count > 0)
+                {
+                    Console.Write("Fetching sprites... ");
 
-                var r = Disassembler.DisplayInstructions(f, Disassembler.DisassembleCode(f, 1));
-                File.WriteAllText(SectionReader.GetCodeInfo(f, 1).Name + ".gml.asm", r);
+                    for (uint i = 0; i < f.Sprites->Count; i++)
+                    {
+                        var si = SectionReader.GetSpriteInfo(f, i);
 
-                if (f.Audio->Count == 0 || f.Audio->Count > 0)
+                        sb.Clear()
+                            .Append("Size=").Append(si.Size).AppendLine()
+                            .Append("TextureIndices=[").Append(String.Join(COMMA_S, si.TextureIndices)).Append(']').AppendLine();
+
+                        File.WriteAllText(DIR_SPR + si.Name + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
+                if (f.Audio->Count >= 0)
                     return;
+
+                #region strings
+                var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
 
                 if (f.Strings->Count > 0)
                 {
@@ -52,11 +75,13 @@ namespace Altar.NET
                     for (uint i = 0; i < f.Strings->Count; i++)
                         strings[i] = SectionReader.GetStringInfo(f, i);
 
-                    File.WriteAllText("strings.txt", String.Join(sep, strings));
+                    File.WriteAllText(FILE_STR, String.Join(sep, strings));
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
+                #endregion
 
+                #region textures
                 if (f.Textures->Count > 0)
                 {
                     Console.Write("Fetching textures... ");
@@ -65,12 +90,35 @@ namespace Altar.NET
                     {
                         var ti = SectionReader.GetTextureInfo(f, i);
 
-                        File.WriteAllBytes("texture/" + i + ".png", ti.DataInfo);
+                        File.WriteAllBytes(DIR_TEX + i + EXT_PNG, ti.PngData);
                     }
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
+                #endregion
+                #region texture pages
+                if (f.TexturePages->Count > 0)
+                {
+                    Console.Write("Fetching texture pages... ");
 
+                    for (uint i = 0; i < f.TexturePages->Count; i++)
+                    {
+                        var tpi = SectionReader.GetTexPageInfo(f, i);
+
+                        sb.Clear()
+                            .Append("Position=").Append(tpi.Position).AppendLine()
+                            .Append("Size=").Append(tpi.Size).AppendLine()
+                            .Append("RenderOffset=").Append(tpi.RenderOffset).AppendLine()
+                            .Append("SheetId=").Append(tpi.SpritesheetId).AppendLine();
+
+                        File.WriteAllText(DIR_TXP + i + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
+                #region audio
                 if (f.Audio->Count > 0)
                 {
                     Console.Write("Fetching audio... ");
@@ -79,28 +127,14 @@ namespace Altar.NET
                     {
                         var ai = SectionReader.GetAudioInfo(f, i);
 
-                        File.WriteAllBytes("audio/" + i + ".wav", ai.RIFF);
+                        File.WriteAllBytes(DIR_WAV + i + EXT_WAV, ai.Wave);
                     }
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
+                #endregion
 
-                if (f.Rooms->Count > 0)
-                {
-                    Console.Write("Fetching rooms... ");
-
-                    for (uint i = 0; i < f.Rooms->Count; i++)
-                    {
-                        var ri = SectionReader.GetRoomInfo(f, i);
-
-                        var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
-
-                        File.WriteAllBytes("room/" + ri.Name + ".bin", Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
-                    }
-
-                    Console.WriteLine("Done.");
-                }
-
+                #region objects
                 if (f.Objects->Count > 0)
                 {
                     Console.Write("Fetching objects... ");
@@ -109,12 +143,32 @@ namespace Altar.NET
                     {
                         var oi = SectionReader.GetObjectInfo(f, i);
 
-                        File.WriteAllBytes("object/" + oi.Name + ".bin", oi.Data);
+                        var text = sb.Clear().Append("SpriteIndex=").Append(oi.SpriteIndex).AppendLine().ToString();
+
+                        File.WriteAllBytes(DIR_OBJ + oi.Name + EXT_BIN, Encoding.ASCII.GetBytes(text).Concat(oi.Data).ToArray());
                     }
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
+                #endregion
+                #region rooms
+                //if (f.Rooms->Count > 0)
+                //{
+                //    Console.Write("Fetching rooms... ");
 
+                //    for (uint i = 0; i < f.Rooms->Count; i++)
+                //    {
+                //        var ri = SectionReader.GetRoomInfo(f, i);
+
+                //        var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
+
+                //        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
+                //    }
+
+                //    Console.WriteLine(DONE);
+                //}
+                #endregion
+                #region backgrounds
                 if (f.Backgrounds->Count > 0)
                 {
                     Console.Write("Fetching backgrounds... ");
@@ -123,77 +177,94 @@ namespace Altar.NET
                     {
                         var bi = SectionReader.GetBgInfo(f, i);
 
-                        File.WriteAllText("bg/" + bi.Name + ".txt", "TextureAddress=0x" + bi.TextureAddress.ToString("X8"));
+                        File.WriteAllText(DIR_BG + bi.Name + EXT_TXT, "TexPageIndex=" + bi.TexPageIndex);
                     }
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
+                #endregion
 
+                var vars = SectionReader.GetRefDefs(f, f.Variables);
+                var fns  = SectionReader.GetRefDefs(f, f.Functions);
+
+                #region variables
+                if (vars.Length > 0)
                 {
-                    var vars = SectionReader.GetRefDefs(f, f.Variables);
+                    Console.Write("Fetching variables... ");
 
-                    if (vars.Length > 0)
+                    sb.Clear();
+
+                    for (int i = 0; i < vars.Length; i++)
                     {
-                        Console.Write("Fetching variables... ");
+                        var v = vars[i];
 
-                        var sb = new StringBuilder();
-
-                        for (int i = 0; i < vars.Length; i++)
-                        {
-                            var v = vars[i];
-
-                            sb.Append('[').Append(v.Name).Append(']').AppendLine()
-                                .Append("Occurrences=").Append(v.Occurrences).AppendLine()
-                                .Append("FirstAddress=0x").Append(v.FirstAddress.ToString("X8")).AppendLine();
-                        }
-
-                        File.WriteAllText("vars.ini", sb.ToString());
-
-                        Console.WriteLine("Done.");
+                        sb.AppendLine(v.Name);
                     }
+
+                    File.WriteAllText(FILE_VAR, sb.ToString());
+
+                    Console.WriteLine(DONE);
                 }
+                #endregion
+                #region functions
+                if (fns.Length > 0)
                 {
-                    var fns = SectionReader.GetRefDefs(f, f.Functions);
+                    Console.Write("Fetching functions... ");
 
-                    if (fns.Length > 0)
+                    sb.Clear();
+
+                    for (int i = 0; i < fns.Length; i++)
                     {
-                        Console.Write("Fetching functions... ");
+                        var fn = fns[i];
 
-                        var sb = new StringBuilder();
-
-                        for (int i = 0; i < fns.Length; i++)
-                        {
-                            var fn = fns[i];
-
-                            sb.Append('[').Append(fn.Name).Append(']').AppendLine()
-                                .Append("Occurrences=").Append(fn.Occurrences).AppendLine()
-                                .Append("FirstAddress=0x").Append(fn.FirstAddress.ToString("X8")).AppendLine();
-                        }
-
-                        File.WriteAllText("funcs.ini", sb.ToString());
-
-                        Console.WriteLine("Done.");
+                        sb.AppendLine(fn.Name);
                     }
-                }
 
+                    File.WriteAllText(FILE_FNS, sb.ToString());
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
+                #region script
+                if (f.Scripts->Count > 0)
+                {
+                    Console.Write("Fetching scripts... ");
+
+                    for (uint i = 0; i < f.Scripts->Count; i++)
+                    {
+                        var si = SectionReader.GetScriptInfo(f, i);
+
+                        sb.Clear().Append("CodeId=").Append(si.CodeId).AppendLine();
+
+                        File.WriteAllText(DIR_SCR + si.Name + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region code
                 if (f.Code->Count > 0)
                 {
                     Console.Write("Fetching code... ");
 
+                    var varAccs = Disassembler.GetReferenceTable(f, vars);
+                    var  fnAccs = Disassembler.GetReferenceTable(f, fns );
+
+                    //File.WriteAllText("vars.txt", String.Join(Environment.NewLine, varAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" + vars[kvp.Value].Name)));
+                    //File.WriteAllText("funs.txt", String.Join(Environment.NewLine,  fnAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" +  fns[kvp.Value].Name)));
+
                     for (uint i = 0; i < f.Code->Count; i++)
                     {
-                        var ci = SectionReader.GetCodeInfo(f, i);
-                        var s = Disassembler.DisplayInstructions(f, Disassembler.DisassembleCode(f, i));
+                        var ci = Disassembler.DisassembleCode(f, i);
+                        var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci.Instructions);
 
-                        File.WriteAllText("code/" + ci.Name + ".gml.asm", s);
+                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }
 
-                    Console.WriteLine("Done.");
+                    Console.WriteLine(DONE);
                 }
-            }
-            finally
-            {
-                f.Dispose();
+                #endregion
             }
 
             Environment.CurrentDirectory = cd;

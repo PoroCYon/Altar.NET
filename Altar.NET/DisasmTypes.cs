@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 
 namespace Altar.NET
 {
+    using static SR;
+
     // http://undertale.rawr.ws/decompilation
 
     public enum DataType : byte
@@ -51,16 +53,13 @@ namespace Altar.NET
         Sub     = 0x09,
         And     = 0x0A,
         Or      = 0x0B,
-        /// <summary>
-        /// Hypothetical
-        /// </summary>
         Xor     = 0x0C,
         /// <summary>
-        /// One's complement, but not certain.
+        /// Unary negation or one's complement.
         /// </summary>
-        Inv     = 0x0D,
+        Neg     = 0x0D,
         /// <summary>
-        /// Boolean? Negation? One's complement?
+        /// Boolean or number negation, or one's complement.
         /// </summary>
         Not     = 0x0E,
         Clt     = 0x11,
@@ -104,16 +103,18 @@ namespace Altar.NET
         public DataType Type1 => unchecked((DataType)( val & 0x0F      ));
         public DataType Type2 => unchecked((DataType)((val & 0xF0) >> 4));
 
-        public override string ToString() => Type1.ToPrettyString() + ":" + Type2.ToPrettyString();
+        public override string ToString() => Type1.ToPrettyString() + COLON + Type2.ToPrettyString();
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Reference
     {
-        public VariableType Type;
-        public Int24 NextOccurrenceOffset;
+        uint val;
 
-        public override string ToString() => "[" + Type.ToString().ToLowerInvariant() + "]0x" + NextOccurrenceOffset.ToString("X6");
+        public VariableType Type                 => unchecked((VariableType)(val >>         24));
+        public uint         NextOccurrenceOffset => unchecked((uint        )(val &  0x00FFFFFF));
+
+        public override string ToString() => Type.ToPrettyString() + HEX_PRE + NextOccurrenceOffset.ToString(HEX_FM6);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -122,7 +123,7 @@ namespace Altar.NET
         public uint InstrData;
 
         public OpCode          OpCode => (OpCode)((InstrData & 0xFF000000) >> 24);
-        public Int24           Rest   => (Int24 )( InstrData & 0x00FFFFFF       );
+        public uint            Rest   => (uint  )( InstrData & 0x00FFFFFF       );
         public InstructionKind Kind   => OpCode.Kind();
     }
 
@@ -143,8 +144,12 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct GotoInstruction
     {
-        public Int24 Offset;
-        public OpCode OpCode;
+        uint val;
+
+        public OpCode OpCode => (OpCode)((val & 0xFF000000) >> 24);
+        public uint   Offset => (uint  )( val & 0x00FFFFFF       );
+        //public Int24 Offset;
+        //public OpCode OpCode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SetInstruction
@@ -158,7 +163,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PushInstruction
     {
-        public ushort Value;
+        public short Value;
         public DataType Type;
         public OpCode OpCode;
 
@@ -179,6 +184,34 @@ namespace Altar.NET
         public ushort Signal;
         public DataType Type;
         public OpCode OpCode;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Pack = 1)]
+    public struct AnyInstruction
+    {
+        [FieldOffset(0)]
+        public uint InstrData;
+        [FieldOffset(0)]
+        public Instruction Generic;
+
+        [FieldOffset(0)]
+        public SingleTypeInstruction SingleType;
+        [FieldOffset(0)]
+        public DoubleTypeInstruction DoubleType;
+        [FieldOffset(0)]
+        public GotoInstruction Goto;
+        [FieldOffset(0)]
+        public SetInstruction Set;
+        [FieldOffset(0)]
+        public PushInstruction Push;
+        [FieldOffset(0)]
+        public CallInstruction Call;
+        [FieldOffset(0)]
+        public BreakInstruction Break;
+
+        public OpCode          OpCode => (OpCode)((InstrData & 0xFF000000) >> 24);
+        public uint            Rest   => (uint  )( InstrData & 0x00FFFFFF       );
+        public InstructionKind Kind   => OpCode.Kind();
     }
 
     public static class DecompExt
@@ -216,7 +249,7 @@ namespace Altar.NET
                     return InstructionKind.DoubleType;
 
                 case OpCode.Dup:
-                case OpCode.Inv:
+                case OpCode.Neg:
                 case OpCode.Ret:
                 case OpCode.Exit:
                 case OpCode.Pop:
@@ -259,7 +292,20 @@ namespace Altar.NET
 
         public static string ToPrettyString(this DataType     type) => type.ToString().ToLowerInvariant();
         public static string ToPrettyString(this InstanceType type) => type.ToString().ToLowerInvariant();
-        public static string ToPrettyString(this VariableType type) => type.ToString().ToLowerInvariant();
+        public static string ToPrettyString(this VariableType type)
+        {
+            switch (type)
+            {
+                case VariableType.Array:
+                    return BRACKETS;
+                case VariableType.StackTop:
+                    return ASTERISK;
+                case VariableType.Normal:
+                    return String.Empty;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type));
+            }
+        }
         public static string ToPrettyString(this OpCode       type) => type.ToString().ToLowerInvariant();
     }
 }
