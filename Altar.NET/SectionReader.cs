@@ -64,7 +64,7 @@ namespace Altar.NET
             if (id >= content.Sprites->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, (&content.Sprites->Offset)[id]);
+            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, (&content.Sprites->Offsets)[id]);
 
             var ret = new SpriteInfo();
 
@@ -75,7 +75,7 @@ namespace Altar.NET
 
             for (uint i = 0; i < se->TextureCount; i++)
                 for (uint j = 0; j < content.TexturePages->Count; j++)
-                    if ((&se->TextureAddresses)[i] == (&content.TexturePages->Offset)[j])
+                    if ((&se->TextureAddresses)[i] == (&content.TexturePages->Offsets)[j])
                     {
                         ret.TextureIndices[i] = j;
                         break;
@@ -90,14 +90,14 @@ namespace Altar.NET
 
             var ret = new BackgroundInfo();
 
-            var be = (BgEntry*)GMFile.PtrFromOffset(content, (&content.Backgrounds->Offset)[id]);
+            var be = (BgEntry*)GMFile.PtrFromOffset(content, (&content.Backgrounds->Offsets)[id]);
 
             ret.Name          = ReadString((byte*)GMFile.PtrFromOffset(content, be->Name));
 
             ret.TexPageIndex = be->TextureOffset;
 
             for (uint i = 0; i < content.TexturePages->Count; i++)
-                if (be->TextureOffset == (&content.TexturePages->Offset)[i])
+                if (be->TextureOffset == (&content.TexturePages->Offsets)[i])
                 {
                     ret.TexPageIndex = i;
                     break;
@@ -110,7 +110,7 @@ namespace Altar.NET
             if (id >= content.Scripts->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var se = (ScriptEntry*)GMFile.PtrFromOffset(content, (&content.Scripts->Offset)[id]);
+            var se = (ScriptEntry*)GMFile.PtrFromOffset(content, (&content.Scripts->Offsets)[id]);
 
             var ret = new ScriptInfo();
 
@@ -126,8 +126,8 @@ namespace Altar.NET
 
             var ret = new ObjectInfo();
 
-            var reOff   = (&content.Objects->Offset)[id    ];
-            var nextOff = (&content.Objects->Offset)[id + 1];
+            var reOff   = (&content.Objects->Offsets)[id    ];
+            var nextOff = (&content.Objects->Offsets)[id + 1];
 
             if (id == content.Objects->Count - 1)
                 fixed (uint* ho = content.HeaderOffsets)
@@ -158,8 +158,8 @@ namespace Altar.NET
 
             var ret = new RoomInfo();
 
-            var reOff   = (&content.Rooms->Offset)[id    ];
-            var nextOff = (&content.Rooms->Offset)[id + 1];
+            var reOff   = (&content.Rooms->Offsets)[id    ];
+            var nextOff = (&content.Rooms->Offsets)[id + 1];
 
             if (id == content.Rooms->Count - 1)
                 fixed (uint* ho = content.HeaderOffsets)
@@ -189,17 +189,16 @@ namespace Altar.NET
             ret.Size   = re->Size;
             ret.Colour = re->Colour;
 
-            //TODO: finish
+            var stuff = &re->Backgrounds;
 
-            var subDataPos = &re->Data;
+            const int RoomElementPadding = 0x24;
 
             // backgrounds
             {
-                var len = *subDataPos;
+                var len = stuff->Count;
                 ret.Backgrounds = new RoomBackground[len];
 
-                var addresses = subDataPos + 1;
-                var data = addresses + len;
+                var addresses = &stuff->Offsets;
 
                 for (uint i = 0; i < len; i++)
                 {
@@ -208,38 +207,123 @@ namespace Altar.NET
                     var b = new RoomBackground();
 
                     b.IsEnabled = entry->IsEnabled.IsTrue();
-                    b.BgIndex   = entry->BgIndex;
+                    b.BgIndex   = entry->DefIndex;
                     b.Position  = entry->Position;
                     b.TileX     = entry->TileX.IsTrue();
                     b.TileY     = entry->TileY.IsTrue();
 
-                    uint nextStart;
-                    if (i == len - 1)
-                        nextStart = 0;
-                    else
-                        nextStart = addresses[i + 1];
+                    b.Data = new byte[RoomBgEntry.DataLength];
+
+                    Marshal.Copy((IntPtr)entry->Data, b.Data, 0, RoomBgEntry.DataLength);
 
                     ret.Backgrounds[i] = b;
                 }
+
+                stuff = (CountOffsetsPair*)((byte*)stuff + sizeof(RoomBgEntry) * len + RoomElementPadding);
             }
             // views
             {
+                var len = stuff->Count;
+                ret.Views = new RoomView[len];
 
+                var addresses = &stuff->Offsets;
+
+                for (uint i = 0; i < len; i++)
+                {
+                    var entry = (RoomViewEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+
+                    var v = new RoomView();
+
+                    v.IsEnabled = entry->IsEnabled.IsTrue();
+                    v.Port      = entry->Port;
+                    v.View      = entry->View;
+
+                    v.Data = new byte[RoomViewEntry.DataLength];
+
+                    Marshal.Copy((IntPtr)entry->Data, v.Data, 0, RoomViewEntry.DataLength);
+
+                    ret.Views[i] = v;
+                }
+
+                stuff = (CountOffsetsPair*)((byte*)stuff + sizeof(RoomViewEntry) * len + RoomElementPadding);
             }
             // objects
             {
+                var len = stuff->Count;
+                ret.Objects = new RoomObject[len];
 
+                var addresses = &stuff->Offsets;
+
+                for (uint i = 0; i < len; i++)
+                {
+                    var entry = (RoomObjEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+
+                    var o = new RoomObject();
+
+                    o.DefIndex = entry->DefIndex;
+                    o.Position = entry->Position;
+                    o.Scale    = entry->Scale;
+                    o.Tint     = entry->Tint;
+
+                    ret.Objects[i] = o;
+                }
+
+                //stuff = (CountOffsetsPair*)((byte*)stuff + sizeof(RoomObjEntry) * len + RoomElementPadding + 0x10);
             }
+
+            ret.Tiles = new RoomTile[0];
             // tiles
-            {
+            //TODO: still not working
+            //{
+            //    var len = stuff->Count;
 
-            }
+            //    ret.Tiles = new RoomTile[len];
 
-            //var len = (int)(nextOff - reOff) - 24; // name, name2, size, colour(, padding)
+            //    //var tiles = new List<RoomTile>();
 
-            //ret.Data = new byte[len];
+            //    var addresses = &stuff->Offsets;
 
-            //Marshal.Copy(new IntPtr(&re->Data), ret.Data, 0, len);
+            //    for (uint i = 0; i < len; i++)
+            //    {
+            //        //var morestuff = (CountOffsetsPair*)GMFile.PtrFromOffset(content, addresses[i]);
+
+            //        //var morelen = morestuff->Count;
+            //        //var moreaddresses = &morestuff->Offsets;
+
+            //        //for (uint j = 0; j < morelen; j++)
+            //        //{
+            //        //    var entry = (RoomTileEntry*)GMFile.PtrFromOffset(content, moreaddresses[j]);
+
+            //        //    var t = new RoomTile();
+
+            //        //    t.DefIndex       = entry->DefIndex;
+            //        //    t.Position       = entry->Position;
+            //        //    t.Scale          = entry->Scale;
+            //        //    t.Size           = entry->Size;
+            //        //    t.SourcePosition = entry->SourcePos;
+            //        //    t.Tint           = entry->Tint;
+
+            //        //    tiles.Add(t);
+            //        //}
+
+            //        var entry = (RoomTileEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+
+            //        var t = new RoomTile();
+
+            //        t.DefIndex       = entry->DefIndex;
+            //        t.Position       = entry->Position;
+            //        t.Scale          = entry->Scale;
+            //        t.Size           = entry->Size;
+            //        t.SourcePosition = entry->SourcePos;
+            //        t.Tint           = entry->Tint;
+
+            //        ret.Tiles[i] = t;
+            //    }
+
+            //    //ret.Tiles = tiles.ToArray();
+
+            //    // no need to increase 'stuff' here
+            //}
 
             return ret;
         }
@@ -248,7 +332,7 @@ namespace Altar.NET
             if (id >= content.TexturePages->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, (&content.TexturePages->Offset)[id]);
+            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, (&content.TexturePages->Offsets)[id]);
 
             var ret = new TexturePageInfo();
 
@@ -264,7 +348,7 @@ namespace Altar.NET
             if (id >= content.Textures->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var te = (TextureEntry*)GMFile.PtrFromOffset(content, (&content.Textures->Offset)[id]);
+            var te = (TextureEntry*)GMFile.PtrFromOffset(content, (&content.Textures->Offsets)[id]);
 
             var ret = new TextureInfo();
 
@@ -284,7 +368,7 @@ namespace Altar.NET
             if (id >= content.Audio->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var au = (AudioEntry*)GMFile.PtrFromOffset(content, (&content.Audio->Offset)[id]);
+            var au = (AudioEntry*)GMFile.PtrFromOffset(content, (&content.Audio->Offsets)[id]);
 
             var ret = new AudioInfo();
 
@@ -299,7 +383,7 @@ namespace Altar.NET
             if (id >= content.Strings->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var stre = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offset)[id]);
+            var stre = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offsets)[id]);
 
             return unchecked(new string((sbyte*)&stre->Data, 0, (int)stre->Length, Encoding.ASCII));
         }

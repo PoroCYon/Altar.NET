@@ -231,7 +231,7 @@ namespace Altar.NET
             return false;
         }
         public override int GetHashCode() => X.GetHashCode() ^ Y.GetHashCode() ^ Width.GetHashCode() ^ Height.GetHashCode();
-        public override string ToString() => Point.Xs + X + Point.Xs + Y + COMMA_S + Width + Xs + Height + C_BRACE;
+        public override string ToString() => Point.Xs + X + Point.Ys + Y + COMMA_S + Width + Xs + Height + C_BRACE;
 
         public bool Equals(Rectangle other) => X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
 

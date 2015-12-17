@@ -40,28 +40,6 @@ namespace Altar.NET
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
                 var sb = new StringBuilder();
-                #region sprite
-                if (f.Sprites->Count > 0)
-                {
-                    Console.Write("Fetching sprites... ");
-
-                    for (uint i = 0; i < f.Sprites->Count; i++)
-                    {
-                        var si = SectionReader.GetSpriteInfo(f, i);
-
-                        sb.Clear()
-                            .Append("Size=").Append(si.Size).AppendLine()
-                            .Append("TextureIndices=[").Append(String.Join(COMMA_S, si.TextureIndices)).Append(']').AppendLine();
-
-                        File.WriteAllText(DIR_SPR + si.Name + EXT_TXT, sb.ToString());
-                    }
-
-                    Console.WriteLine(DONE);
-                }
-                #endregion
-
-                if (f.Audio->Count >= 0)
-                    return;
 
                 #region strings
                 var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
@@ -117,6 +95,25 @@ namespace Altar.NET
                     Console.WriteLine(DONE);
                 }
                 #endregion
+                #region sprite
+                if (f.Sprites->Count > 0)
+                {
+                    Console.Write("Fetching sprites... ");
+
+                    for (uint i = 0; i < f.Sprites->Count; i++)
+                    {
+                        var si = SectionReader.GetSpriteInfo(f, i);
+
+                        sb.Clear()
+                            .Append("Size=").Append(si.Size).AppendLine()
+                            .Append("TextureIndices=[").Append(String.Join(COMMA_S, si.TextureIndices)).Append(']').AppendLine();
+
+                        File.WriteAllText(DIR_SPR + si.Name + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
 
                 #region audio
                 if (f.Audio->Count > 0)
@@ -151,23 +148,6 @@ namespace Altar.NET
                     Console.WriteLine(DONE);
                 }
                 #endregion
-                #region rooms
-                //if (f.Rooms->Count > 0)
-                //{
-                //    Console.Write("Fetching rooms... ");
-
-                //    for (uint i = 0; i < f.Rooms->Count; i++)
-                //    {
-                //        var ri = SectionReader.GetRoomInfo(f, i);
-
-                //        var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
-
-                //        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
-                //    }
-
-                //    Console.WriteLine(DONE);
-                //}
-                #endregion
                 #region backgrounds
                 if (f.Backgrounds->Count > 0)
                 {
@@ -178,6 +158,24 @@ namespace Altar.NET
                         var bi = SectionReader.GetBgInfo(f, i);
 
                         File.WriteAllText(DIR_BG + bi.Name + EXT_TXT, "TexPageIndex=" + bi.TexPageIndex);
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region rooms
+                if (f.Rooms->Count > 0)
+                {
+                    Console.Write("Fetching rooms... ");
+
+                    for (uint i = 0; i < f.Rooms->Count; i++)
+                    {
+                        var ri = SectionReader.GetRoomInfo(f, i);
+
+                        var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
+
+                        //TODO: serialize
+                        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
                     }
 
                     Console.WriteLine(DONE);

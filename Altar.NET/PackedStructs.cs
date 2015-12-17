@@ -113,12 +113,12 @@ namespace Altar.NET
         public uint Unknown;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct SectionCountOffset
+    public unsafe struct SectionCountOffsets
     {
         public SectionHeader Header;
 
         public uint Count;
-        public uint Offset;
+        public uint Offsets;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SectionRefDefs
@@ -139,6 +139,12 @@ namespace Altar.NET
         public uint Name;
         public uint Occurrences;
         public uint FirstAddress;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct CountOffsetsPair
+    {
+        public uint Count;
+        public uint Offsets;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -179,7 +185,7 @@ namespace Altar.NET
         public Colour Colour;
         fixed byte _pad1[60];
 
-        public uint Data;
+        public CountOffsetsPair Backgrounds;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry
@@ -217,19 +223,23 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomBgEntry
     {
+        public const int DataLength = 12;
+
         public DwordBool IsEnabled;
         uint _pad;
-        public uint BgIndex;
+        public uint DefIndex;
         public Point Position;
         public DwordBool TileX, TileY;
-        public byte* Data;
+        public fixed byte Data[DataLength];
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomViewEntry
     {
+        public const int DataLength = 20;
+
         public DwordBool IsEnabled;
         public Rectangle View, Port;
-        public byte* Data;
+        public fixed byte Data[DataLength];
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry

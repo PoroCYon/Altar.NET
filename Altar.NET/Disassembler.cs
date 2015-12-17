@@ -18,7 +18,7 @@ namespace Altar.NET
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offset)[id]);
+            var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
             var len = re->Length;
             var bc = (byte*)&re->Bytecode;
 

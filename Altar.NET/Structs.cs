@@ -88,16 +88,16 @@ namespace Altar.NET
         public SectionUnknown* Timelines  ;
         public SectionUnknown* DataFiles  ;
 
-        public SectionCountOffset* Sprites     ;
-        public SectionCountOffset* Backgrounds ;
-        public SectionCountOffset* Scripts     ;
-        public SectionCountOffset* Objects     ;
-        public SectionCountOffset* Rooms       ;
-        public SectionCountOffset* TexturePages;
-        public SectionCountOffset* Code        ;
-        public SectionCountOffset* Strings     ;
-        public SectionCountOffset* Textures    ;
-        public SectionCountOffset* Audio       ;
+        public SectionCountOffsets* Sprites     ;
+        public SectionCountOffsets* Backgrounds ;
+        public SectionCountOffsets* Scripts     ;
+        public SectionCountOffsets* Objects     ;
+        public SectionCountOffsets* Rooms       ;
+        public SectionCountOffsets* TexturePages;
+        public SectionCountOffsets* Code        ;
+        public SectionCountOffsets* Strings     ;
+        public SectionCountOffsets* Textures    ;
+        public SectionCountOffsets* Audio       ;
 
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
@@ -224,7 +224,7 @@ namespace Altar.NET
         public uint DefIndex;
         public Point SourcePosition;
         public Point Size;
-        public Point Scale;
+        public PointF Scale;
         public float Tint;
     }
 }
