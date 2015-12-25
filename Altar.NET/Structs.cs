@@ -80,7 +80,6 @@ namespace Altar.NET
         public SectionOptions* Options;
 
         public SectionUnknown* Extensions ;
-        public SectionUnknown* Sounds     ;
         public SectionUnknown* AudioGroup ;
         public SectionUnknown* Paths      ;
         public SectionUnknown* Shaders    ;
@@ -88,6 +87,7 @@ namespace Altar.NET
         public SectionUnknown* Timelines  ;
         public SectionUnknown* DataFiles  ;
 
+        public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
         public SectionCountOffsets* Backgrounds ;
         public SectionCountOffsets* Scripts     ;
@@ -131,6 +131,13 @@ namespace Altar.NET
 
     // ---
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SoundInfo
+    {
+        public string Name;
+        public string Type;
+        public string File;
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo
     {

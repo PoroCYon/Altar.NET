@@ -16,6 +16,7 @@ namespace Altar.NET
             "texpage",
             "sprite" ,
             "audio"  ,
+            "sound"  ,
             "room"   ,
             "object" ,
             "bg"     ,
@@ -115,6 +116,26 @@ namespace Altar.NET
                 }
                 #endregion
 
+                #region sound
+                if (f.Sounds->Count > 0)
+                {
+                    Console.Write("Fetching sounds... ");
+
+                    for (uint i = 0; i < f.Sounds->Count; i++)
+                    {
+                        var si = SectionReader.GetSoundInfo(f, i);
+
+                        sb.Clear()
+                            .Append("Name=").AppendLine(si.Name)
+                            .Append("Type=").AppendLine(si.Type)
+                            .Append("File=").AppendLine(si.File);
+
+                        File.WriteAllText(DIR_SND + i + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
                 #region audio
                 if (f.Audio->Count > 0)
                 {

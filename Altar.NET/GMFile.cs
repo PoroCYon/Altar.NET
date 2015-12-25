@@ -44,7 +44,7 @@ namespace Altar.NET
                         ret.Extensions = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Sounds:
-                        ret.Sounds = (SectionUnknown*)hdr;
+                        ret.Sounds = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Sprites:
                         ret.Sprites = (SectionCountOffsets*)hdr;
@@ -129,5 +129,8 @@ namespace Altar.NET
 
             return SectionHeaders.Form;
         }
+
+        [DebuggerStepThrough]
+        public static unsafe bool IsEmpty(SectionHeader* header) => header->Size <= 4;
     }
 }
