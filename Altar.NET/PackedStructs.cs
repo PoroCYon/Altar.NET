@@ -148,6 +148,15 @@ namespace Altar.NET
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct SoundEntry
+    {
+        public uint Name;
+        uint _pad0;
+        public uint Type;
+        public uint File;
+        fixed uint _pad1[5];
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SpriteEntry
     {
         public uint Name;

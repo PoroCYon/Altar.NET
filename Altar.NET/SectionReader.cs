@@ -59,6 +59,21 @@ namespace Altar.NET
             return -1;
         }
 
+        public static SoundInfo       GetSoundInfo  (GMFileContent content, uint id)
+        {
+            if (id >= content.Sounds->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var se = (SoundEntry*)GMFile.PtrFromOffset(content, (&content.Sounds->Offsets)[id]);
+
+            var ret = new SoundInfo();
+
+            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
+            ret.Type = ReadString((byte*)GMFile.PtrFromOffset(content, se->Type));
+            ret.File = ReadString((byte*)GMFile.PtrFromOffset(content, se->File));
+
+            return ret;
+        }
         public static SpriteInfo      GetSpriteInfo (GMFileContent content, uint id)
         {
             if (id >= content.Sprites->Count)
@@ -386,6 +401,15 @@ namespace Altar.NET
             var stre = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offsets)[id]);
 
             return unchecked(new string((sbyte*)&stre->Data, 0, (int)stre->Length, Encoding.ASCII));
+        }
+
+        public static byte[] ToByteArray(SectionHeader* section)
+        {
+            var ret = new byte[section->Size];
+
+            Marshal.Copy((IntPtr)(section + 1), ret, 0, ret.Length);
+
+            return ret;
         }
 
         public static ReferenceDef[] GetRefDefs(GMFileContent content, SectionRefDefs* section)

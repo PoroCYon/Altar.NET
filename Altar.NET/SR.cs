@@ -12,6 +12,7 @@ namespace Altar.NET
             HASH     = "#",
             C_BRACE  = "}",
             COMMA_S  = ", ",
+            UNDERSC  = "_",
 
             BRACKETS = "[]",
             HEX_PRE  = "0x",
@@ -39,6 +40,7 @@ namespace Altar.NET
             DIR_TEX  = "texture/",
             DIR_TXP  = "texpage/",
             DIR_WAV  = "audio/",
+            DIR_SND  = "sound/",
             DIR_ROOM = "room/",
             DIR_OBJ  = "object/",
             DIR_BG   = "bg/",
