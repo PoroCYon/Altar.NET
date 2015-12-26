@@ -42,6 +42,9 @@ namespace Altar.NET
             {
                 var sb = new StringBuilder();
 
+                //if (f.Audio->Count >= 0)
+                //    return;
+
                 #region strings
                 var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
 
@@ -128,7 +131,9 @@ namespace Altar.NET
                         sb.Clear()
                             .Append("Name=").AppendLine(si.Name)
                             .Append("Type=").AppendLine(si.Type)
-                            .Append("File=").AppendLine(si.File);
+                            .Append("File=").AppendLine(si.File)
+                            .Append("Embedded=").Append(si.IsEmbedded).AppendLine()
+                            .Append("AudioId=").Append(si.AudioId).AppendLine();
 
                         File.WriteAllText(DIR_SND + i + EXT_TXT, sb.ToString());
                     }
@@ -141,11 +146,18 @@ namespace Altar.NET
                 {
                     Console.Write("Fetching audio... ");
 
+                    var ii = 0;
+                    var sid =
+                        Enumerable.Range(0, (int)f.Sounds->Count)
+                            .Select(i => SectionReader.GetSoundInfo(f, (uint)i))
+                            .Where(si => si.IsEmbedded)
+                            .ToDictionary(_ => ii++, si => si);
+
                     for (uint i = 0; i < f.Audio->Count; i++)
                     {
                         var ai = SectionReader.GetAudioInfo(f, i);
 
-                        File.WriteAllBytes(DIR_WAV + i + EXT_WAV, ai.Wave);
+                        File.WriteAllBytes(DIR_WAV + i + UNDERSC + sid[(int)i].Name + EXT_WAV, ai.Wave);
                     }
 
                     Console.WriteLine(DONE);
@@ -256,7 +268,7 @@ namespace Altar.NET
 
                         sb.Clear().Append("CodeId=").Append(si.CodeId).AppendLine();
 
-                        File.WriteAllText(DIR_SCR + si.Name + EXT_TXT, sb.ToString());
+                        File.WriteAllText(DIR_SCR + i + UNDERSC + si.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);
@@ -278,8 +290,19 @@ namespace Altar.NET
                         var ci = Disassembler.DisassembleCode(f, i);
                         var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci.Instructions);
 
-                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
+                        File.WriteAllText(DIR_CODE + i + UNDERSC + ci.Name + EXT_GML_ASM, s);
                     }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
+                #region other
+                {
+                    Console.Write("Fetching other chunks...");
+
+                    File.WriteAllBytes("fonts.bin", SectionReader.ToByteArrayComplete(&f.Fonts->Header));
+                    File.WriteAllBytes("paths.bin", SectionReader.ToByteArrayComplete(&f.Paths->Header));
 
                     Console.WriteLine(DONE);
                 }

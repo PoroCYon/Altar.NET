@@ -19,14 +19,14 @@ namespace Altar.NET
 
             var basePtr = (SectionHeader*)hdr_b;
 
-            ret.Base = basePtr;
+            ret.Form = basePtr;
 
-            if (ret.Base->Identity != SectionHeaders.Form)
+            if (ret.Form->Identity != SectionHeaders.Form)
                 throw new InvalidDataException(ERR_NO_FORM);
 
             SectionHeader*
                 hdr = basePtr + 1,
-                hdrEnd = (SectionHeader*)((IntPtr)basePtr + (int)ret.Base->Size);
+                hdrEnd = (SectionHeader*)((IntPtr)basePtr + (int)ret.Form->Size);
 
             int headersMet = 0;
 
@@ -35,7 +35,7 @@ namespace Altar.NET
                 switch (hdr->Identity)
                 {
                     case SectionHeaders.General:
-                        ret.Gen = (SectionGeneral*)hdr;
+                        ret.General = (SectionGeneral*)hdr;
                         break;
                     case SectionHeaders.Options:
                         ret.Options = (SectionOptions*)hdr;

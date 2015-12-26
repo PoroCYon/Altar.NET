@@ -5,122 +5,6 @@ using System.Runtime.InteropServices;
 
 namespace Altar.NET
 {
-    public enum SectionHeaders : uint
-    {
-        Form        = 0x4D524F46, // FORM
-        General     = 0x384E4547, // GEN8
-        Options     = 0x4E54504F, // OPTN
-        Extensions  = 0x4E545845, // EXTN
-        Sounds      = 0x444E4F53, // SOND
-        AudioGroup  = 0x50524741, // AGRP
-        Sprites     = 0x54525053, // SPRT
-        Backgrounds = 0x444E4742, // BGND
-        Paths       = 0x48544150, // PATH
-        Scripts     = 0x54504353, // SCPT
-        Shaders     = 0x52444853, // SHDR
-        Fonts       = 0x544E4F46, // FONT
-        Timelines   = 0x4E4C4D54, // TMLN
-        Objects     = 0x544A424F, // OBJT
-        Rooms       = 0x4D4F4F52, // ROOM
-        DataFiles   = 0x4C464144, // DAFL
-        TexturePage = 0x47415054, // TPAG
-        Code        = 0x45444F43, // CODE
-        Variables   = 0x49524156, // VARI
-        Functions   = 0x434E5546, // FUNC
-        Strings     = 0x47525453, // STRG
-        Textures    = 0x52545854, // TXTR
-        Audio       = 0x4F445541, // AUDO
-
-        Count = 23
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe class UniquePtr : IDisposable
-    {
-        IntPtr stuff;
-
-        public IntPtr IPtr => stuff;
-        public void*  VPtr => (void*)stuff;
-        public byte*  BPtr => (byte*)stuff;
-
-        public UniquePtr(byte[] data)
-        {
-            stuff = Marshal.AllocHGlobal(data.Length);
-
-            Marshal.Copy(data, 0, stuff, data.Length);
-        }
-        ~UniquePtr()
-        {
-            Disposing();
-        }
-
-        void Disposing()
-        {
-            if (stuff != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(stuff);
-                stuff = IntPtr.Zero;
-            }
-        }
-
-        public void Dispose()
-        {
-            Disposing();
-            GC.SuppressFinalize(this);
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe class GMFileContent : IDisposable
-    {
-        public UniquePtr RawData;
-
-        public SectionHeader * Base   ;
-        public SectionGeneral* Gen    ;
-        public SectionOptions* Options;
-
-        public SectionUnknown* Extensions ;
-        public SectionUnknown* AudioGroup ;
-        public SectionUnknown* Paths      ;
-        public SectionUnknown* Shaders    ;
-        public SectionUnknown* Fonts      ;
-        public SectionUnknown* Timelines  ;
-        public SectionUnknown* DataFiles  ;
-
-        public SectionCountOffsets* Sounds      ;
-        public SectionCountOffsets* Sprites     ;
-        public SectionCountOffsets* Backgrounds ;
-        public SectionCountOffsets* Scripts     ;
-        public SectionCountOffsets* Objects     ;
-        public SectionCountOffsets* Rooms       ;
-        public SectionCountOffsets* TexturePages;
-        public SectionCountOffsets* Code        ;
-        public SectionCountOffsets* Strings     ;
-        public SectionCountOffsets* Textures    ;
-        public SectionCountOffsets* Audio       ;
-
-        public SectionRefDefs* Functions;
-        public SectionRefDefs* Variables;
-
-        internal uint[] HeaderOffsets = new uint[(int)SectionHeaders.Count];
-
-        void Disposing()
-        {
-            RawData.Dispose();
-        }
-
-        public void Dispose()
-        {
-            Disposing();
-            HeaderOffsets = null;
-            GC.SuppressFinalize(this);
-        }
-        ~GMFileContent()
-        {
-            Disposing();
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public struct ReferenceDef
     {
@@ -134,9 +18,14 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential)]
     public struct SoundInfo
     {
-        public string Name;
-        public string Type;
-        public string File;
+        public string Name      ;
+        public bool   IsEmbedded;
+        public string Type      ;
+        public string File      ;
+        /// <summary>
+        /// -1 if unused? Only makes sense when embedded?
+        /// </summary>
+        public int    AudioId   ;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo

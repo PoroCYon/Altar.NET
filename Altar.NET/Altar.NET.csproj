@@ -43,6 +43,7 @@
     <Compile Include="DisasmTypes.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="GMFile.cs" />
+    <Compile Include="GMFileContent.cs" />
     <Compile Include="Int24.cs" />
     <Compile Include="Primitives.cs" />
     <Compile Include="Program.cs" />
