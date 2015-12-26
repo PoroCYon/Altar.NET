@@ -16,37 +16,38 @@ namespace Altar.NET
     public unsafe struct SectionGeneral
     {
         [Flags]
-        public enum Flags0 : byte
+        public enum GraphicsFlags : byte
         {
-            Fullscreen = 0x1,
-            SyncVertex1 = 0x2,
-            SyncVertex2 = 0x4,
-            Interpolate = 0x8,
-            Unknown = 0x10,
-            ShowCursor = 0x20,
-            Sizeable = 0x40,
-            ScreenKey = 0x80
+            Fullscreen  = 0x01,
+            SyncVertex1 = 0x02,
+            SyncVertex2 = 0x04,
+            Interpolate = 0x08,
+            Unknown     = 0x10,
+            ShowCursor  = 0x20,
+            Sizeable    = 0x40,
+            ScreenKey   = 0x80
         }
         [Flags]
-        public enum Info : byte
+        public enum InfoFlags : byte
         {
-            SyncVertex3 = 0x1,
-            StudioVersionB1 = 0x2,
-            StudioVersionB2 = 0x4,
-            StudioVersionB3 = 0x8,
-            StudioVersionMask = 0x2 | 0x4 | 0x8,
-            SteamEnabled = 0x10,
-            LocalDataEnabled = 0x20
+            SyncVertex3       = 0x01,
+            StudioVersionB1   = 0x02,
+            StudioVersionB2   = 0x04,
+            StudioVersionB3   = 0x08,
+            StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
+            SteamEnabled      = 0x10,
+            LocalDataEnabled  = 0x20
         }
 
         public SectionHeader Header;
+
         public DwordBool Debug;
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
         public uint LastTile;
         public uint GameId;
-        fixed int _padding[4];
+        fixed uint _padding[4];
         public uint NameOffset;
         public uint Major;
         public uint Minor;
@@ -54,9 +55,9 @@ namespace Altar.NET
         public uint Build;
         public uint LargestVpw;
         public uint LargestVph;
-        public Flags0 flags0;
-        public Info info;
-        public ushort infoMaskPadding;
+        public GraphicsFlags Graphics;
+        public InfoFlags Info;
+        public ushort InfoMaskPadding;
         public uint LicenseKeyCrc32;
         public uint LicenseMD5Offset;
         public ulong Timestamp;
@@ -68,6 +69,7 @@ namespace Altar.NET
     public struct SectionOptions
     {
         public SectionHeader Header;
+
         public DwordBool Fullscreen;
         public uint Interpolate;
         public DwordBool UseNewAudio;
@@ -147,21 +149,53 @@ namespace Altar.NET
         public uint Offsets;
     }
 
+    [Flags]
+    public enum SoundEntryFlags : uint
+    {
+        Embedded = 0x01,
+        Normal   = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
+    }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SoundEntry
     {
-        public uint Name;
-        uint _pad0;
-        public uint Type;
-        public uint File;
-        fixed uint _pad1[5];
+        public uint NameOffset;
+        public SoundEntryFlags Flags;
+        public uint TypeOffset;
+        public uint FileOffset;
+
+        uint _pad0; // seems to be 0 all the time -> unimportant?
+
+        /// <summary>
+        /// TODO
+        /// <para>
+        /// not an offset, but I'm quite sure pad1 and 2 should be separated
+        /// </para>
+        /// </summary>
+        Int24 _pad1;
+
+        byte _pad2; // seems to be 3F all the time -> unimportant?
+
+        /// <summary>
+        /// TODO
+        /// <para>
+        /// usually 0, but sometimes something else, too
+        /// </para>
+        /// </summary>
+        uint _pad3;
+
+        uint _pad4; // seems to be 0 all the time -> unimportant?
+
+        /// <summary>
+        /// -1 if unused? Only makes sense when embedded?
+        /// </summary>
+        public int AudioId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SpriteEntry
     {
         public uint Name;
         public Point Size;
-        fixed byte _pad[44];
+        fixed byte _pad[44]; // mostly zeroes, but some other values, too...
         public uint TextureCount;
         public uint TextureAddresses;
     }
@@ -169,7 +203,7 @@ namespace Altar.NET
     public unsafe struct BgEntry
     {
         public uint Name;
-        fixed uint _padding[3];
+        fixed uint _pad[3]; // seems to be unimportant
         public uint TextureOffset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -200,7 +234,7 @@ namespace Altar.NET
     public unsafe struct TexPageEntry
     {
         public Point16 Position, Size, RenderOffset;
-        fixed ushort _pad[4];
+        fixed uint _pad[2]; // two uints that look like offsets pointing to somewhere in TXTR, but not sure what exactly
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -219,7 +253,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
     {
-        uint _pad;
+        uint _pad; // seems to be '1' all the time -> unimportant?
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -272,11 +306,10 @@ namespace Altar.NET
         public float Tint;
     }
 
-
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PngChunck
     {
-        public const uint ChunckEnd = 0x444E4549;
+        public const uint ChunckEnd = 0x444E4549; // IEND
 
         public uint Length, Type;
     }
@@ -289,7 +322,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PngHeader
     {
-        ulong _pad;
+        ulong _pad; // <0x89>PNG <uint length?>
         public PngIhdr IHDR;
     }
 }

@@ -68,9 +68,12 @@ namespace Altar.NET
 
             var ret = new SoundInfo();
 
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
-            ret.Type = ReadString((byte*)GMFile.PtrFromOffset(content, se->Type));
-            ret.File = ReadString((byte*)GMFile.PtrFromOffset(content, se->File));
+            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->NameOffset));
+            ret.Type = ReadString((byte*)GMFile.PtrFromOffset(content, se->TypeOffset));
+            ret.File = ReadString((byte*)GMFile.PtrFromOffset(content, se->FileOffset));
+
+            ret.AudioId = se->AudioId;
+            ret.IsEmbedded = (se->Flags & SoundEntryFlags.Embedded) != 0;
 
             return ret;
         }
@@ -149,7 +152,7 @@ namespace Altar.NET
                 {
                     var i = IndexOfUnsafe(ho, (uint)SectionHeaders.Count, (uint)((byte*)content.Objects - content.RawData.BPtr));
 
-                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Base->Size /*! untested */ : (ho[i + 1] - 12);
+                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Form->Size /*! untested */ : (ho[i + 1] - 12);
                 }
 
             var re = (ObjectEntry*)GMFile.PtrFromOffset(content, reOff);
@@ -181,7 +184,7 @@ namespace Altar.NET
                 {
                     var i = IndexOfUnsafe(ho, (uint)SectionHeaders.Count, (uint)((byte*)content.Rooms - content.RawData.BPtr));
 
-                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Base->Size /*! untested */ : (ho[i + 1] - 12);
+                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Form->Size /*! untested */ : (ho[i + 1] - 12);
                 }
 
             var re = (RoomEntry*)GMFile.PtrFromOffset(content, reOff);
@@ -389,7 +392,7 @@ namespace Altar.NET
 
             ret.Wave = new byte[au->Length + 4];
 
-            Marshal.Copy((IntPtr)au + 4, ret.Wave, 0, ret.Wave.Length);
+            Marshal.Copy((IntPtr)au->Data, ret.Wave, 0, ret.Wave.Length);
 
             return ret;
         }
@@ -403,11 +406,19 @@ namespace Altar.NET
             return unchecked(new string((sbyte*)&stre->Data, 0, (int)stre->Length, Encoding.ASCII));
         }
 
-        public static byte[] ToByteArray(SectionHeader* section)
+        public static byte[] ToByteArrayData    (SectionHeader* section)
         {
             var ret = new byte[section->Size];
 
-            Marshal.Copy((IntPtr)(section + 1), ret, 0, ret.Length);
+            Marshal.Copy((IntPtr)(section + 2), ret, 0, ret.Length);
+
+            return ret;
+        }
+        public static byte[] ToByteArrayComplete(SectionHeader* section)
+        {
+            var ret = new byte[section->Size];
+
+            Marshal.Copy((IntPtr)section, ret, 0, ret.Length);
 
             return ret;
         }
