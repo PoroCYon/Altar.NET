@@ -53,7 +53,7 @@ namespace Altar.NET
                         ret.Backgrounds = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Paths:
-                        ret.Paths = (SectionUnknown*)hdr;
+                        ret.Paths = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Scripts:
                         ret.Scripts = (SectionCountOffsets*)hdr;
@@ -62,7 +62,7 @@ namespace Altar.NET
                         ret.Shaders = (SectionUnknown*)hdr;
                         break;
                     case SectionHeaders.Fonts:
-                        ret.Fonts = (SectionUnknown*)hdr;
+                        ret.Fonts = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Timelines:
                         ret.Timelines = (SectionUnknown*)hdr;
