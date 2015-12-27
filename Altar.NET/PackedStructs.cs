@@ -263,6 +263,26 @@ namespace Altar.NET
         public uint Length;
         public byte* Data;
     }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct FontEntry
+    {
+        public uint Offset0, Offset1;
+        public uint SheetId;
+        public uint Unknown0, Unknown1;
+        public uint Offset2;
+        public uint Unknown2;
+
+        public PointF Scale; // ?
+
+        public CountOffsetsPair Chars;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct PathEntry
+    {
+        public uint Offset0;
+        public fixed uint Unknowns[4];
+        public ushort UnknownRest;
+    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomBgEntry
@@ -305,6 +325,14 @@ namespace Altar.NET
         public Point UnknownVec2;
         public PointF Scale;
         public float Tint;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct FontCharEntry
+    {
+        public char Character; // wchar_t
+        public fixed ushort UnkShorts[5];
+        public uint Unknown;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

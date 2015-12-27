@@ -90,6 +90,20 @@ namespace Altar.NET
     {
         public byte[] Wave;
     }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FontInfo
+    {
+        public uint SheetId;
+
+        public PointF Scale;
+
+        public FontCharacter[] Characters;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PathInfo
+    {
+        // ...
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomBackground
@@ -125,5 +139,11 @@ namespace Altar.NET
         public Point Size;
         public PointF Scale;
         public float Tint;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FontCharacter
+    {
+        public char Character;
     }
 }

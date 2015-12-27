@@ -59,125 +59,122 @@ namespace Altar.NET
             return -1L;
         }
 
+        static T[] ReadList<T>(GMFileContent content, CountOffsetsPair* list, Func<IntPtr, T> readThing)
+        {
+            if (readThing == null)
+                throw new ArgumentNullException(nameof(readThing));
+
+            var len = list->Count;
+            var ret = new T[len];
+
+            var addresses = &list->Offsets;
+
+            for (uint i = 0; i < len; i++)
+                ret[i] = readThing((IntPtr)GMFile.PtrFromOffset(content, addresses[i]));
+
+            return ret;
+        }
+
         static RoomTile[] ReadRoomTileList(GMFileContent content, CountOffsetsPair* list)
         {
             while (list->Count == 0xFFFFFFFF)
                 list = (CountOffsetsPair*)((byte*)list + sizeof(uint));
 
-            var len = list->Count;
-            var ret = new RoomTile[len];
-
-            var addresses = &list->Offsets;
-
-            for (uint i = 0; i < len; i++)
+            return ReadList(content, list, p =>
             {
-                var entry = (RoomTileEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+                var entry = (RoomTileEntry*)p;
 
-                var o = new RoomTile();
+                var t = new RoomTile();
 
-                o.DefIndex       = entry->DefIndex;
-                o.Position       = entry->Position;
-                o.SourcePosition = entry->SourcePos;
-                o.Size           = entry->Size;
-                o.Scale          = entry->Scale;
-                o.Tint           = entry->Tint;
+                t.DefIndex       = entry->DefIndex;
+                t.Position       = entry->Position;
+                t.SourcePosition = entry->SourcePos;
+                t.Size           = entry->Size;
+                t.Scale          = entry->Scale;
+                t.Tint           = entry->Tint;
 
-                ret[i] = o;
-            }
-
-            // no need for list increment
-
-            return ret;
+                return t;
+            });
         }
 
         static RoomBackground[] GetRoomBgs  (GMFileContent content, ref CountOffsetsPair* list)
         {
-            const int Padding = 0x24;
-
-            var len = list->Count;
-            var ret = new RoomBackground[len];
-
-            var addresses = &list->Offsets;
-
-            for (uint i = 0; i < len; i++)
+            try
             {
-                var entry = (RoomBgEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+                return ReadList(content, list, p =>
+                {
+                    var entry = (RoomBgEntry*)p;
 
-                var b = new RoomBackground();
+                    var b = new RoomBackground();
 
-                b.IsEnabled = entry->IsEnabled.IsTrue();
-                b.BgIndex   = entry->DefIndex;
-                b.Position  = entry->Position;
-                b.TileX     = entry->TileX.IsTrue();
-                b.TileY     = entry->TileY.IsTrue();
+                    b.IsEnabled = entry->IsEnabled.IsTrue();
+                    b.BgIndex   = entry->DefIndex;
+                    b.Position  = entry->Position;
+                    b.TileX     = entry->TileX.IsTrue();
+                    b.TileY     = entry->TileY.IsTrue();
 
-                //b.Data = new byte[RoomBgEntry.DataLength];
-
-                //Marshal.Copy((IntPtr)entry->Data, b.Data, 0, RoomBgEntry.DataLength);
-
-                ret[i] = b;
+                    return b;
+                });
             }
+            finally
+            {
+                const int Padding = 0x24;
 
-            list = (CountOffsetsPair*)((byte*)list + sizeof(RoomBgEntry) * len + Padding);
-
-            return ret;
+                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomBgEntry) * list->Count + Padding);
+            }
         }
         static RoomView      [] GetRoomViews(GMFileContent content, ref CountOffsetsPair* list)
         {
-            const int Padding = 0x24;
-
-            var len = list->Count;
-            var ret = new RoomView[len];
-
-            var addresses = &list->Offsets;
-
-            for (uint i = 0; i < len; i++)
+            try
             {
-                var entry = (RoomViewEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+                return ReadList(content, list, p =>
+                {
+                    var entry = (RoomViewEntry*)p;
 
-                var v = new RoomView();
+                    var v = new RoomView();
 
-                v.IsEnabled = entry->IsEnabled.IsTrue();
-                v.Port      = entry->Port;
-                v.View      = entry->View;
+                    v.IsEnabled = entry->IsEnabled.IsTrue();
+                    v.Port      = entry->Port;
+                    v.View      = entry->View;
 
-                //v.Data = new byte[RoomViewEntry.DataLength];
+                    //v.Data = new byte[RoomViewEntry.DataLength];
 
-                //Marshal.Copy((IntPtr)entry->Data, v.Data, 0, RoomViewEntry.DataLength);
+                    //Marshal.Copy((IntPtr)entry->Data, v.Data, 0, RoomViewEntry.DataLength);
 
-                ret[i] = v;
+                    return v;
+                });
             }
+            finally
+            {
+                const int Padding = 0x24;
 
-            list = (CountOffsetsPair*)((byte*)list + sizeof(RoomViewEntry) * len + Padding);
-
-            return ret;
+                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomViewEntry) * list->Count + Padding);
+            }
         }
         static RoomObject    [] GetRoomObjs (GMFileContent content, ref CountOffsetsPair* list)
         {
-            const int Padding = 0x24;
-
-            var len = list->Count;
-            var ret = new RoomObject[len];
-
-            var addresses = &list->Offsets;
-
-            for (uint i = 0; i < len; i++)
+            try
             {
-                var entry = (RoomObjEntry*)GMFile.PtrFromOffset(content, addresses[i]);
+                return ReadList(content, list, p =>
+                {
+                    var entry = (RoomObjEntry*)p;
 
-                var o = new RoomObject();
+                    var o = new RoomObject();
 
-                o.DefIndex = entry->DefIndex;
-                o.Position = entry->Position;
-                o.Scale    = entry->Scale;
-                o.Tint     = entry->Tint;
+                    o.DefIndex = entry->DefIndex;
+                    o.Position = entry->Position;
+                    o.Scale    = entry->Scale;
+                    o.Tint     = entry->Tint;
 
-                ret[i] = o;
+                    return o;
+                });
             }
+            finally
+            {
+                const int Padding = 0x24;
 
-            list = (CountOffsetsPair*)((byte*)list + sizeof(RoomObjEntry) * len + (Padding + 0x10));
-
-            return ret;
+                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomObjEntry) * list->Count + (Padding + 0x10));
+            }
         }
         //TODO: either data or description are drunk
         static RoomTile      [] GetRoomTiles(GMFileContent content, ref CountOffsetsPair* list)
@@ -408,6 +405,44 @@ namespace Altar.NET
             ret.Wave = new byte[au->Length + 4];
 
             Marshal.Copy((IntPtr)au->Data, ret.Wave, 0, ret.Wave.Length);
+
+            return ret;
+        }
+        public static FontInfo        GetFontInfo   (GMFileContent content, uint id)
+        {
+            if (id >= content.Fonts->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var fe = (FontEntry*)GMFile.PtrFromOffset(content, (&content.Fonts->Offsets)[id]);
+
+            var ret = new FontInfo();
+
+            ret.SheetId = fe->SheetId;
+            ret.Scale   = fe->Scale  ;
+
+            ret.Characters = ReadList(content, &fe->Chars, p =>
+            {
+                var entry = (FontCharEntry*)p;
+
+                var c = new FontCharacter();
+
+                c.Character = entry->Character;
+
+                return c;
+            });
+
+            return ret;
+        }
+        public static PathInfo        GetPathInfo   (GMFileContent content, uint id)
+        {
+            if (id >= content.Paths->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var pe = (PathEntry*)GMFile.PtrFromOffset(content, (&content.Paths->Offsets)[id]);
+
+            var ret = new PathInfo();
+
+            // ...
 
             return ret;
         }
