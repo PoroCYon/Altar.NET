@@ -81,18 +81,18 @@ namespace Altar.NET
         public SectionGeneral* General;
         public SectionOptions* Options;
 
-        public SectionUnknown* Extensions ; // empty
-        public SectionUnknown* AudioGroup ; // empty
-        public SectionUnknown* Paths      ;
-        public SectionUnknown* Shaders    ; // empty
-        public SectionUnknown* Fonts      ;
-        public SectionUnknown* Timelines  ; // empty
-        public SectionUnknown* DataFiles  ; // empty
+        public SectionUnknown* Extensions; // empty
+        public SectionUnknown* AudioGroup; // empty
+        public SectionUnknown* Shaders   ; // empty
+        public SectionUnknown* Timelines ; // empty
+        public SectionUnknown* DataFiles ; // empty
 
         public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
         public SectionCountOffsets* Backgrounds ;
+        public SectionCountOffsets* Paths       ;
         public SectionCountOffsets* Scripts     ;
+        public SectionCountOffsets* Fonts       ;
         public SectionCountOffsets* Objects     ;
         public SectionCountOffsets* Rooms       ;
         public SectionCountOffsets* TexturePages;
