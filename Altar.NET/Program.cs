@@ -21,7 +21,9 @@ namespace Altar.NET
             "object" ,
             "bg"     ,
             "script" ,
-            "code"
+            "code"   ,
+            "font"   ,
+            "path"
         };
 
         unsafe static void Main(string[] args)
@@ -41,6 +43,7 @@ namespace Altar.NET
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
                 var sb = new StringBuilder();
+
 
                 //if (f.Audio->Count >= 0)
                 //    return;
@@ -147,7 +150,7 @@ namespace Altar.NET
                     Console.Write("Fetching audio... ");
 
                     var ii = 0;
-                    var sid =
+                    var infoTable =
                         Enumerable.Range(0, (int)f.Sounds->Count)
                             .Select(i => SectionReader.GetSoundInfo(f, (uint)i))
                             .Where(si => si.IsEmbedded)
@@ -157,7 +160,7 @@ namespace Altar.NET
                     {
                         var ai = SectionReader.GetAudioInfo(f, i);
 
-                        File.WriteAllBytes(DIR_WAV + i + UNDERSC + sid[(int)i].Name + EXT_WAV, ai.Wave);
+                        File.WriteAllBytes(DIR_WAV + i + UNDERSC + infoTable[(int)i].Name + EXT_WAV, ai.Wave);
                     }
 
                     Console.WriteLine(DONE);
@@ -175,7 +178,7 @@ namespace Altar.NET
 
                         var text = sb.Clear().Append("SpriteIndex=").Append(oi.SpriteIndex).AppendLine().ToString();
 
-                        File.WriteAllBytes(DIR_OBJ + oi.Name + EXT_BIN, Encoding.ASCII.GetBytes(text).Concat(oi.Data).ToArray());
+                        File.WriteAllText(DIR_OBJ + oi.Name + EXT_BIN, text);
                     }
 
                     Console.WriteLine(DONE);
@@ -301,8 +304,13 @@ namespace Altar.NET
                 {
                     Console.Write("Fetching other chunks...");
 
-                    File.WriteAllBytes("fonts.bin", SectionReader.ToByteArrayComplete(&f.Fonts->Header));
-                    File.WriteAllBytes("paths.bin", SectionReader.ToByteArrayComplete(&f.Paths->Header));
+                    var fonts = SectionReader.ListToByteArrays(f, f.Fonts, 0x7AC);
+                    for (int i = 0; i < fonts.Length; i++)
+                        File.WriteAllBytes(DIR_FNT  + i + EXT_BIN, fonts[i]);
+
+                    var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
+                    for (int i = 0; i < paths.Length; i++)
+                        File.WriteAllBytes(DIR_PATH + i + EXT_BIN, paths[i]);
 
                     Console.WriteLine(DONE);
                 }

@@ -55,11 +55,11 @@ namespace Altar.NET
         Or      = 0x0B,
         Xor     = 0x0C,
         /// <summary>
-        /// Unary negation or one's complement.
+        /// Unary negation?
         /// </summary>
         Neg     = 0x0D,
         /// <summary>
-        /// Boolean or number negation, or one's complement.
+        /// One's complement, also used as boolean negation.
         /// </summary>
         Not     = 0x0E,
         Clt     = 0x11,

@@ -5,6 +5,37 @@ using System.Runtime.InteropServices;
 
 namespace Altar.NET
 {
+    /*TODO: Most important things atm:
+     *
+     * * RoomEntry.Tile reading
+     * * ObjectEntry unknowns (code?)
+     * * SpriteEntry unknowns
+     * * weird TPAG unknowns (offsets?)
+     * * BgEntry unknowns
+     * * RoomEntry unknowns
+     * * RoomBgEntry unknowns
+     * * RoomViewentry unknowns
+     * * RoomObjEntry unknowns
+     * * FONT and PATH elem parsing
+     *
+     */
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct CountOffsetsPair
+    {
+        public uint Count;
+        public uint Offsets;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct RefDefEntry
+    {
+        public uint Name;
+        public uint Occurrences;
+        public uint FirstAddress;
+    }
+
+    // ---
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SectionHeader
     {
@@ -114,13 +145,19 @@ namespace Altar.NET
 
         public uint Unknown;
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public unsafe struct SectionCountOffsets
     {
+        [FieldOffset(0)]
         public SectionHeader Header;
 
+        [FieldOffset(8)]
         public uint Count;
+        [FieldOffset(12)]
         public uint Offsets;
+
+        [FieldOffset(8)]
+        public CountOffsetsPair List;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SectionRefDefs
@@ -135,20 +172,6 @@ namespace Altar.NET
 
     // ---
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct RefDefEntry
-    {
-        public uint Name;
-        public uint Occurrences;
-        public uint FirstAddress;
-    }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct CountOffsetsPair
-    {
-        public uint Count;
-        public uint Offsets;
-    }
-
     [Flags]
     public enum SoundEntryFlags : uint
     {
@@ -162,32 +185,10 @@ namespace Altar.NET
         public SoundEntryFlags Flags;
         public uint TypeOffset;
         public uint FileOffset;
-
-        uint _pad0; // seems to be 0 all the time -> unimportant?
-
-        /// <summary>
-        /// TODO
-        /// <para>
-        /// not an offset, but I'm quite sure pad1 and 2 should be separated
-        /// </para>
-        /// </summary>
-        Int24 _pad1;
-
-        byte _pad2; // seems to be 3F all the time -> unimportant?
-
-        /// <summary>
-        /// TODO
-        /// <para>
-        /// usually 0, but sometimes something else, too
-        /// </para>
-        /// </summary>
-        uint _pad3;
-
-        uint _pad4; // seems to be 0 all the time -> unimportant?
-
-        /// <summary>
-        /// -1 if unused? Only makes sense when embedded?
-        /// </summary>
+        uint _pad0; // 0
+        public float Volume;
+        public float Pitch ;
+        uint _pad1; // 0
         public int AudioId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -217,7 +218,7 @@ namespace Altar.NET
     {
         public uint Name;
         public uint SpriteIndex;
-        public byte* Data;
+        //public byte* Data;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
@@ -253,7 +254,7 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
     {
-        uint _pad; // seems to be '1' all the time -> unimportant?
+        uint _pad; // 1
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -289,10 +290,10 @@ namespace Altar.NET
     {
         public Point Position;
         public uint DefIndex;
-        fixed uint _pad0[2];
+        fixed uint _pad0[2]; // some value (offset? to SOND??); 0xFFFFFFFF
         public PointF Scale;
+        uint _pad1; // 0xFFFFFFFF
         public float Tint;
-        uint _pad1;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomTileEntry
@@ -301,7 +302,7 @@ namespace Altar.NET
         public uint DefIndex;
         public Point SourcePos;
         public Point Size;
-        fixed uint _pad[2];
+        public Point UnknownVec2;
         public PointF Scale;
         public float Tint;
     }
