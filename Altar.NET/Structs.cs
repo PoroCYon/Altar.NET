@@ -22,6 +22,8 @@ namespace Altar.NET
         public bool   IsEmbedded;
         public string Type      ;
         public string File      ;
+        public float  VolumeMod ;
+        public float  PitchMod  ;
         /// <summary>
         /// -1 if unused? Only makes sense when embedded?
         /// </summary>
@@ -51,7 +53,7 @@ namespace Altar.NET
     {
         public string Name;
         public uint SpriteIndex;
-        public byte[] Data;
+        //public byte[] Data;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo
@@ -96,14 +98,14 @@ namespace Altar.NET
         public uint BgIndex;
         public Point Position;
         public bool TileX, TileY;
-        public byte[] Data;
+        //public byte[] Data;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomView
     {
         public bool IsEnabled;
         public Rectangle View, Port;
-        public byte[] Data;
+        //public byte[] Data;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomObject
@@ -112,6 +114,7 @@ namespace Altar.NET
         public uint DefIndex;
         public PointF Scale;
         public float Tint;
+        //public byte[] Data;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomTile
