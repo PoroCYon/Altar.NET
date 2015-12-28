@@ -52,10 +52,10 @@ namespace Altar.NET
                 //    return;
 
                 #region strings
-                var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
-
                 if (f.Strings->Count > 0)
                 {
+                    var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
+
                     Console.Write("Fetching strings... ");
 
                     var strings = new string[(int)f.Strings->Count];

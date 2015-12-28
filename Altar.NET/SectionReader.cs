@@ -484,7 +484,9 @@ namespace Altar.NET
             if (id >= content.Strings->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return StringFromOffset(content, (&content.Strings->Offsets)[id]);
+            var se = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offsets)[id]);
+
+            return ReadString(&se->Data);
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)
