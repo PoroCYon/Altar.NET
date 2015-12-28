@@ -94,9 +94,9 @@ namespace Altar.NET
                         var tpi = SectionReader.GetTexPageInfo(f, i);
 
                         sb.Clear()
-                            .Append("Position="    ).Append(tpi.Position).AppendLine()
-                            .Append("Size="        ).Append(tpi.Size).AppendLine()
-                            .Append("RenderOffset=").Append(tpi.RenderOffset).AppendLine()
+                            .Append("Position="    ).Append(tpi.Position     ).AppendLine()
+                            .Append("Size="        ).Append(tpi.Size         ).AppendLine()
+                            .Append("RenderOffset=").Append(tpi.RenderOffset ).AppendLine()
                             .Append("SheetId="     ).Append(tpi.SpritesheetId).AppendLine();
 
                         File.WriteAllText(DIR_TXP + i + EXT_TXT, sb.ToString());

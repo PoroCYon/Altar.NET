@@ -82,28 +82,6 @@ namespace Altar.NET
             return ret;
         }
 
-        static RoomTile[] ReadRoomTileList(GMFileContent content, CountOffsetsPair* list)
-        {
-            while (list->Count == 0xFFFFFFFF)
-                list = (CountOffsetsPair*)((byte*)list + sizeof(uint));
-
-            return ReadList(content, list, p =>
-            {
-                var entry = (RoomTileEntry*)p;
-
-                var t = new RoomTile();
-
-                t.DefIndex       = entry->DefIndex;
-                t.Position       = entry->Position;
-                t.SourcePosition = entry->SourcePos;
-                t.Size           = entry->Size;
-                t.Scale          = entry->Scale;
-                t.Tint           = entry->Tint;
-
-                return t;
-            });
-        }
-
         static SpriteInfo      SpriteFromOffset(GMFileContent content, uint off)
         {
             var se = (SpriteEntry*)GMFile.PtrFromOffset(content, off);
@@ -154,102 +132,103 @@ namespace Altar.NET
 
             return ret;
         }
-
-        static RoomBackground[] GetRoomBgs  (GMFileContent content, ref CountOffsetsPair* list)
+        static RoomInfo        RoomFromOffset  (GMFileContent content, uint off)
         {
-            try
+            var ret = new RoomInfo();
+
+            var re = (RoomEntry*)GMFile.PtrFromOffset(content, off);
+
+            var name  = (byte*)GMFile.PtrFromOffset(content, re->Name );
+            var name2 = (byte*)GMFile.PtrFromOffset(content, re->Name2);
+
+            var sb = new StringBuilder();
+
+            ReadString(name, sb);
+
+            if (*name2 != 0)
             {
-                return ReadList(content, list, p =>
-                {
-                    var entry = (RoomBgEntry*)p;
+                sb.Append('/');
 
-                    var b = new RoomBackground();
-
-                    b.IsEnabled = entry->IsEnabled.IsTrue();
-                    b.BgIndex   = entry->DefIndex;
-                    b.Position  = entry->Position;
-                    b.TileX     = entry->TileX.IsTrue();
-                    b.TileY     = entry->TileY.IsTrue();
-
-                    return b;
-                });
+                ReadString(name2, sb);
             }
-            finally
-            {
-                const int Padding = 0x24;
 
-                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomBgEntry) * list->Count + Padding);
-            }
+            ret.Name   = sb.ToString();
+            ret.Size   = re->Size;
+            ret.Colour = re->Colour;
+
+            ret.Backgrounds = GetRoomBgs  (content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->BgOffset  ));
+            ret.Views       = GetRoomViews(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ViewOffset));
+            ret.Objects     = GetRoomObjs (content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ObjOffset ));
+            ret.Tiles       = GetRoomTiles(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->TileOffset));
+
+            return ret;
         }
-        static RoomView      [] GetRoomViews(GMFileContent content, ref CountOffsetsPair* list)
+
+        static RoomBackground[] GetRoomBgs  (GMFileContent content, CountOffsetsPair* list)
         {
-            try
+            return ReadList(content, list, p =>
             {
-                return ReadList(content, list, p =>
-                {
-                    var entry = (RoomViewEntry*)p;
+                var entry = (RoomBgEntry*)p;
 
-                    var v = new RoomView();
+                var b = new RoomBackground();
 
-                    v.IsEnabled = entry->IsEnabled.IsTrue();
-                    v.Port      = entry->Port;
-                    v.View      = entry->View;
+                b.IsEnabled = entry->IsEnabled.IsTrue();
+                b.BgIndex   = entry->DefIndex;
+                b.Position  = entry->Position;
+                b.TileX     = entry->TileX.IsTrue();
+                b.TileY     = entry->TileY.IsTrue();
 
-                    //v.Data = new byte[RoomViewEntry.DataLength];
-
-                    //Marshal.Copy((IntPtr)entry->Data, v.Data, 0, RoomViewEntry.DataLength);
-
-                    return v;
-                });
-            }
-            finally
-            {
-                const int Padding = 0x24;
-
-                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomViewEntry) * list->Count + Padding);
-            }
+                return b;
+            });
         }
-        static RoomObject    [] GetRoomObjs (GMFileContent content, ref CountOffsetsPair* list)
+        static RoomView      [] GetRoomViews(GMFileContent content, CountOffsetsPair* list)
         {
-            try
+            return ReadList(content, list, p =>
             {
-                return ReadList(content, list, p =>
-                {
-                    var entry = (RoomObjEntry*)p;
+                var entry = (RoomViewEntry*)p;
 
-                    var o = new RoomObject();
+                var v = new RoomView();
 
-                    o.DefIndex = entry->DefIndex;
-                    o.Position = entry->Position;
-                    o.Scale    = entry->Scale;
-                    o.Tint     = entry->Tint;
+                v.IsEnabled = entry->IsEnabled.IsTrue();
+                v.Port      = entry->Port;
+                v.View      = entry->View;
 
-                    return o;
-                });
-            }
-            finally
-            {
-                const int Padding = 0x24;
-
-                list = (CountOffsetsPair*)((byte*)list + sizeof(RoomObjEntry) * list->Count + (Padding + 0x10));
-            }
+                return v;
+            });
         }
-        //TODO: either data or description are drunk
-        static RoomTile      [] GetRoomTiles(GMFileContent content, ref CountOffsetsPair* list)
+        static RoomObject    [] GetRoomObjs (GMFileContent content, CountOffsetsPair* list)
         {
-            //return ReadRoomTileList(content, list);
+            return ReadList(content, list, p =>
+            {
+                var entry = (RoomObjEntry*)p;
 
-//#pragma warning disable 162
-            var rtl = new List<RoomTile>();
-//#pragma warning restore 162
+                var o = new RoomObject();
 
-            var len = list->Count + 1 /* wtf? */;
-            var addresses = &list->Offsets;
+                o.DefIndex = entry->DefIndex;
+                o.Position = entry->Position;
+                o.Scale    = entry->Scale;
+                o.Tint     = entry->Tint;
 
-            for (uint i = 0; i < len; i++)
-                rtl.AddRange(ReadRoomTileList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, addresses[i])));
+                return o;
+            });
+        }
+        static RoomTile      [] GetRoomTiles(GMFileContent content, CountOffsetsPair* list)
+        {
+            return ReadList(content, list, p =>
+            {
+                var entry = (RoomTileEntry*)p;
 
-            return rtl.ToArray();
+                var t = new RoomTile();
+
+                t.DefIndex       = entry->DefIndex;
+                t.Position       = entry->Position;
+                t.SourcePosition = entry->SourcePos;
+                t.Size           = entry->Size;
+                t.Scale          = entry->Scale;
+                t.Tint           = entry->Tint;
+
+                return t;
+            });
         }
 
         public static SoundInfo       GetSoundInfo  (GMFileContent content, uint id)
@@ -327,49 +306,7 @@ namespace Altar.NET
             if (id >= content.Rooms->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var ret = new RoomInfo();
-
-            var reOff   = (&content.Rooms->Offsets)[id    ];
-            var nextOff = (&content.Rooms->Offsets)[id + 1];
-
-            if (id == content.Rooms->Count - 1)
-                fixed (uint* ho = content.HeaderOffsets)
-                {
-                    var i = IndexOfUnsafe(ho, (uint)SectionHeaders.Count, (uint)((byte*)content.Rooms - content.RawData.BPtr));
-
-                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Form->Size /*! untested */ : (ho[i + 1] - 12);
-                }
-
-            var re = (RoomEntry*)GMFile.PtrFromOffset(content, reOff);
-
-            var name  = (byte*)GMFile.PtrFromOffset(content, re->Name );
-            var name2 = (byte*)GMFile.PtrFromOffset(content, re->Name2);
-
-            var sb = new StringBuilder();
-
-            ReadString(name, sb);
-
-            if (*name2 != 0)
-            {
-                sb.Append('/');
-
-                ReadString(name2, sb);
-            }
-
-            ret.Name   = sb.ToString();
-            ret.Size   = re->Size;
-            ret.Colour = re->Colour;
-
-            var stuff = &re->Backgrounds;
-
-            ret.Backgrounds = GetRoomBgs  (content, ref stuff);
-            ret.Views       = GetRoomViews(content, ref stuff);
-            ret.Objects     = GetRoomObjs (content, ref stuff);
-          //ret.Tiles       = GetRoomTiles(content, ref stuff);
-
-            ret.Tiles = new RoomTile[0];
-
-            return ret;
+            return RoomFromOffset(content, (&content.Rooms->Offsets)[id]);
         }
         public static TexturePageInfo GetTexPageInfo(GMFileContent content, uint id)
         {
