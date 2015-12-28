@@ -12,8 +12,6 @@ namespace Altar.NET
      * * SpriteEntry unknowns
      * * weird TPAG unknowns (offsets?)
      * * RoomEntry unknowns
-     * * RoomBgEntry unknowns
-     * * RoomViewentry unknowns
      * * RoomObjEntry unknowns
      * * FontEntry/FontCharEntry unknowns
      * * PathEntry unknowns
@@ -170,10 +168,7 @@ namespace Altar.NET
     {
         public SectionHeader Header;
 
-        /// <summary>
-        /// Take address, cast back to RefDefEntry*, use as array.
-        /// </summary>
-        public RefDefEntry* Entries;
+        public RefDefEntry Entries;
     }
 
     // ---
@@ -214,10 +209,29 @@ namespace Altar.NET
         public uint TextureOffset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct PathEntry
+    {
+        public uint Name;
+        fixed uint _pad0[4]; // unknown
+        public float Data;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ScriptEntry
     {
         public uint Name;
         public uint CodeId;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct FontEntry
+    {
+        public uint CodeName, SystemName;
+        uint _pad0; // unknown
+        fixed uint _pad1[4]; // 0x00000000 0x00000000 0x00010020 0x0000007F
+        public uint TPagOffset;
+
+        public PointF Scale;
+
+        public CountOffsetsPair Chars;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ObjectEntry
@@ -283,55 +297,33 @@ namespace Altar.NET
         public uint Length;
         public byte* Data;
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct FontEntry
-    {
-        public uint CodeName, SystemName;
-        uint _pad0; // unknown
-        fixed uint _pad1[4]; // 0x00000000 0x00000000 0x00010020 0x0000007F
-        public uint TPagOffset;
-
-        public PointF Scale;
-
-        public CountOffsetsPair Chars;
-    }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct PathEntry
-    {
-        public uint Name;
-        fixed uint _pad0[4]; // unknown
-        public float Data;
-    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomBgEntry
     {
-        public const int DataLength = 12;
-
         public DwordBool IsEnabled;
-        uint _pad;
+        uint _pad0; // 0
         public uint DefIndex;
         public Point Position;
         public DwordBool TileX, TileY;
-        public fixed byte Data[DataLength];
+        fixed uint _pad1[3]; // 0, 0, 0
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomViewEntry
     {
-        public const int DataLength = 20;
-
         public DwordBool IsEnabled;
         public Rectangle View, Port;
-        public fixed byte Data[DataLength];
+        fixed uint _pad[5]; // 32, 32, -1, -1, -1
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry
     {
         public Point Position;
         public uint DefIndex;
-        fixed uint _pad0[2]; // some value (offset? to SOND??); -1
-        public PointF Scale;
+        uint _pad0; // a number increasing by one everytime (probably not an offset)
         uint _pad1; // -1
+        public PointF Scale;
+        uint _pad2; // -1
         public float Tint;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -341,7 +333,7 @@ namespace Altar.NET
         public uint DefIndex;
         public Point SourcePos;
         public Point Size;
-        Point _pad;
+        Point _pad; // a really high value, {X=1000000, Y=10000000}, Y keeps increasing by 1 per element
         public PointF Scale;
         public float Tint;
     }
