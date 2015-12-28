@@ -342,13 +342,11 @@ namespace Altar.NET
                 {
                     Console.Write("Fetching paths... ");
 
-                    var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
-
                     for (uint i = 0; i < f.Paths->Count; i++)
                     {
                         var pi = SectionReader.GetPathInfo(f, i);
 
-                        File.WriteAllBytes(DIR_PATH + pi.Name + EXT_BIN, paths[i]);
+                        File.WriteAllText(DIR_PATH + pi.Name + EXT_TXT, String.Join(COMMA_S, pi.Data.Select(v => v.ToString())));
                     }
 
                     Console.WriteLine(DONE);

@@ -106,6 +106,7 @@ namespace Altar.NET
     public struct PathInfo
     {
         public string Name;
+        public float[] Data;
     }
 
     [StructLayout(LayoutKind.Sequential)]

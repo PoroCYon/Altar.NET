@@ -281,7 +281,7 @@ namespace Altar.NET
     {
         public uint Name;
         fixed uint _pad0[4]; // unknown
-        ushort _pad1arr; // unknown
+        public float Data;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
