@@ -93,7 +93,10 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential)]
     public struct FontInfo
     {
-        public uint SheetId;
+        public string CodeName  ;
+        public string SystemName;
+
+        public uint TexPagId;
 
         public PointF Scale;
 
@@ -145,5 +148,6 @@ namespace Altar.NET
     public struct FontCharacter
     {
         public char Character;
+        public Point16 RelativePosition, Size;
     }
 }
