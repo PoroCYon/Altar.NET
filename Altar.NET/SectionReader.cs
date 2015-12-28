@@ -457,14 +457,29 @@ namespace Altar.NET
         }
         public static PathInfo        GetPathInfo   (GMFileContent content, uint id)
         {
-            if (id >= content.Paths->Count)
+            var l = content.Paths;
+            if (id >= l->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var pe = (PathEntry*)GMFile.PtrFromOffset(content, (&content.Paths->Offsets)[id]);
+            var curOff = (&l->Offsets)[id];
+            var pe = (PathEntry*)GMFile.PtrFromOffset(content, curOff);
 
             var ret = new PathInfo();
 
             ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, pe->Name));
+
+            var nextOff = id == l->Count - 1 ? l->Header.Size - 4 : (&l->Offsets)[id + 1];
+
+            var curPtr = (byte*)pe;
+            var len = ((byte*)GMFile.PtrFromOffset(content, nextOff) - curPtr);
+            if (len < 0L)
+                len = 0x38L;
+
+            len    -= sizeof(uint) * 5;
+            curPtr += sizeof(uint) * 5;
+
+            ret.Data = new float[len / sizeof(uint)];
+            Marshal.Copy((IntPtr)curPtr, ret.Data, 0, ret.Data.Length);
 
             return ret;
         }
