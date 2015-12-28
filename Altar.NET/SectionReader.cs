@@ -411,7 +411,7 @@ namespace Altar.NET
             len    -= sizeof(uint) * 5;
             curPtr += sizeof(uint) * 5;
 
-            ret.Data = new float[len / sizeof(uint)];
+            ret.Data = new float[len / sizeof(float)];
             Marshal.Copy((IntPtr)curPtr, ret.Data, 0, ret.Data.Length);
 
             return ret;

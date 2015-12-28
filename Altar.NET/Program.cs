@@ -47,27 +47,9 @@ namespace Altar.NET
                 var vars = SectionReader.GetRefDefs(f, f.Variables);
                 var fns  = SectionReader.GetRefDefs(f, f.Functions);
 
-                #region rooms
-                if (f.Rooms->Count > 0)
-                {
-                    Console.Write("Fetching rooms... ");
 
-                    for (uint i = 0; i < f.Rooms->Count; i++)
-                    {
-                        var ri = SectionReader.GetRoomInfo(f, i);
-
-                        var t = "Size=" + ri.Size + Environment.NewLine + "Colour=" + ri.Colour.ToHexString() + "\0";
-
-                        //TODO: serialize
-                        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
-                    }
-
-                    Console.WriteLine(DONE);
-                }
-                #endregion
-
-                if (f.Audio->Count >= 0)
-                    return;
+                //if (f.Audio->Count >= 0)
+                //    return;
 
                 #region strings
                 if (f.Strings->Count > 0)
@@ -217,6 +199,24 @@ namespace Altar.NET
                         var bi = SectionReader.GetBgInfo(f, i);
 
                         File.WriteAllText(DIR_BG + bi.Name + EXT_TXT, "TexPageIndex=" + bi.TexPageIndex);
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region rooms
+                if (f.Rooms->Count > 0)
+                {
+                    Console.Write("Fetching rooms... ");
+
+                    for (uint i = 0; i < f.Rooms->Count; i++)
+                    {
+                        var ri = SectionReader.GetRoomInfo(f, i);
+
+                        var t = "Size=" + ri.Size + Environment.NewLine + "Colour=" + ri.Colour.ToHexString() + "\0";
+
+                        //TODO: serialize
+                        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
                     }
 
                     Console.WriteLine(DONE);
