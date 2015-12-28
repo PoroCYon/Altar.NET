@@ -413,7 +413,7 @@ namespace Altar.NET
 
             ret.Wave = new byte[au->Length + 4];
 
-            Marshal.Copy((IntPtr)au->Data, ret.Wave, 0, ret.Wave.Length);
+            Marshal.Copy((IntPtr)(&au->Data), ret.Wave, 0, ret.Wave.Length);
 
             return ret;
         }

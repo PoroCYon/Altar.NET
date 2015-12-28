@@ -44,46 +44,9 @@ namespace Altar.NET
             {
                 var sb = new StringBuilder();
 
-                #region fonts
-                if (f.Fonts->Count > 0)
-                {
-                    Console.Write("Fetching fonts...");
 
-                    //var fonts = SectionReader.ListToByteArrays(f, f.Fonts, 0x7AC);
-                    //for (int i = 0; i < fonts.Length; i++)
-                    //    File.WriteAllBytes(DIR_FNT  + i + EXT_BIN, fonts[i]);
-
-                    for (uint i = 0; i < f.Fonts->Count; i++)
-                    {
-                        var fi = SectionReader.GetFontInfo(f, i);
-
-                        // ...
-                    }
-
-                    Console.WriteLine(DONE);
-                }
-                #endregion
-                #region paths
-                {
-                    Console.Write("Fetching paths...");
-
-                    //var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
-                    //for (int i = 0; i < paths.Length; i++)
-                    //    File.WriteAllBytes(DIR_PATH + i + EXT_BIN, paths[i]);
-
-                    for (uint i = 0; i < f.Paths->Count; i++)
-                    {
-                        var pi = SectionReader.GetPathInfo(f, i);
-
-                        // ...
-                    }
-
-                    Console.WriteLine(DONE);
-                }
-                #endregion
-
-                if (f.Audio->Count >= 0)
-                    return;
+                //if (f.Audio->Count >= 0)
+                //    return;
 
                 #region strings
                 var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
@@ -197,7 +160,7 @@ namespace Altar.NET
                     {
                         var ai = SectionReader.GetAudioInfo(f, i);
 
-                        File.WriteAllBytes(DIR_WAV + i + UNDERSC + infoTable[(int)i].Name + EXT_WAV, ai.Wave);
+                        File.WriteAllBytes(DIR_WAV + infoTable[(int)i].Name + EXT_WAV, ai.Wave);
                     }
 
                     Console.WriteLine(DONE);
@@ -337,6 +300,60 @@ namespace Altar.NET
                 }
                 #endregion
 
+                #region fonts
+                if (f.Fonts->Count > 0)
+                {
+                    Console.Write("Fetching fonts... ");
+
+                    for (uint i = 0; i < f.Fonts->Count; i++)
+                    {
+                        var fi = SectionReader.GetFontInfo(f, i);
+
+                        sb.Clear()
+                            .Append("SysName=").AppendLine(fi.SystemName)
+                            .Append("TexPage=").Append(fi.TexPagId).AppendLine()
+                            .Append("Scale=").Append(fi.Scale).AppendLine()
+                            .Append("Charset=").AppendLine(O_BRACKET);
+
+                        foreach (var c in fi.Characters)
+                        {
+                            sb.Append(SPACE_S).AppendLine(O_BRACE);
+
+                            sb.Append(SPACE_S).Append(SPACE_S).Append("Char='");
+                            if (c.Character == 0x7F) // faster than ?:
+                                sb.Append(DEL_CHAR);
+                            else
+                                sb.Append(c.Character);
+                            sb.Append('\'').AppendLine().Append(SPACE_S).Append(SPACE_S)
+                                .Append("RelPos=").Append(c.RelativePosition).AppendLine().Append(SPACE_S).Append(SPACE_S)
+                                .Append("Size=").Append(c.Size).AppendLine();
+
+                            sb.Append(SPACE_S).Append(C_BRACE).AppendLine(COMMA_S);
+                        }
+                        sb.AppendLine(C_BRACKET);
+
+                        File.WriteAllText(DIR_FNT + fi.CodeName + EXT_TXT, sb.ToString());
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region paths
+                {
+                    Console.Write("Fetching paths... ");
+
+                    var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
+
+                    for (uint i = 0; i < f.Paths->Count; i++)
+                    {
+                        var pi = SectionReader.GetPathInfo(f, i);
+
+                        File.WriteAllBytes(DIR_PATH + pi.Name + EXT_BIN, paths[i]);
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
             }
 
             Environment.CurrentDirectory = cd;
