@@ -124,9 +124,9 @@ namespace Altar.NET
 
             var ret = new TexturePageInfo();
 
-            ret.Position = tpe->Position;
-            ret.RenderOffset = tpe->RenderOffset;
-            ret.Size = tpe->Size;
+            ret.Position      = tpe->Position;
+            ret.RenderOffset  = tpe->RenderOffset;
+            ret.Size          = tpe->Size;
             ret.SpritesheetId = tpe->SpritesheetId;
 
             return ret;
@@ -464,7 +464,7 @@ namespace Altar.NET
 
             var ret = new PathInfo();
 
-            // ...
+            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, pe->Name));
 
             return ret;
         }

@@ -17,7 +17,7 @@ namespace Altar.NET
      * * RoomViewentry unknowns
      * * RoomObjEntry unknowns
      * * FontEntry/FontCharEntry unknowns
-     * * PATH elem parsing
+     * * PathEntry unknowns
      *
      */
 
@@ -279,9 +279,9 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct PathEntry
     {
-        public uint Offset0;
-        public fixed uint Unknowns[4];
-        public ushort UnknownRest;
+        public uint Name;
+        fixed uint _pad0[4]; // unknown
+        ushort _pad1arr; // unknown
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
