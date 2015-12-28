@@ -208,10 +208,6 @@ namespace Altar.NET
         public CallInstruction Call;
         [FieldOffset(0)]
         public BreakInstruction Break;
-
-        public OpCode          OpCode => (OpCode)((InstrData & 0xFF000000) >> 24);
-        public uint            Rest   => (uint  )( InstrData & 0x00FFFFFF       );
-        public InstructionKind Kind   => OpCode.Kind();
     }
 
     public static class DecompExt
@@ -289,6 +285,10 @@ namespace Altar.NET
 
             throw new ArgumentOutOfRangeException(nameof(type));
         }
+
+        public static OpCode          Code(this AnyInstruction instr) => (OpCode)((instr.InstrData & 0xFF000000) >> 24);
+        public static uint            Rest(this AnyInstruction instr) => (uint  )( instr.InstrData & 0x00FFFFFF       );
+        public static InstructionKind Kind(this AnyInstruction instr) => instr.Code().Kind();
 
         public static string ToPrettyString(this DataType     type) => type.ToString().ToLowerInvariant();
         public static string ToPrettyString(this InstanceType type) => type.ToString().ToLowerInvariant();

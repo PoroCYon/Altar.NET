@@ -37,7 +37,7 @@ namespace Altar.NET
 
                 uint blocks = 0;
 
-                switch (instr->Kind)
+                switch (instr->Kind())
                 {
                     case InstructionKind.SingleType:
                     case InstructionKind.DoubleType:
@@ -119,9 +119,9 @@ namespace Altar.NET
             {
                 var iptr = instrs[i];
 
-                sb.Append(HEX_PRE).Append(((uint)iptr - (uint)content.RawData.BPtr).ToString(HEX_FM8)).Append(' ').Append(iptr->OpCode.ToPrettyString()).Append(' ');
+                sb.Append(HEX_PRE).Append(((uint)iptr - (uint)content.RawData.BPtr).ToString(HEX_FM8)).Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
 
-                switch (iptr->Kind)
+                switch (iptr->Kind())
                 {
                     case InstructionKind.SingleType:
                         var st = iptr->SingleType;
