@@ -472,7 +472,7 @@ namespace Altar.NET
             var r = new ReferenceDef[section->Header.Size / 12];
 
             uint i = 0;
-            for (RefDefEntry* rde = (RefDefEntry*)&section->Entries; i < section->Header.Size / 12; rde++, i++)
+            for (RefDefEntry* rde = &section->Entries; i < section->Header.Size / 12; rde++, i++)
             {
                 var ret = new ReferenceDef();
 
