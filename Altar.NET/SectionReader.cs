@@ -97,6 +97,41 @@ namespace Altar.NET
             });
         }
 
+        static SpriteInfo      SpriteFromOffset(GMFileContent content, uint off)
+        {
+            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, off);
+
+            var ret = new SpriteInfo();
+
+            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
+            ret.Size = se->Size;
+
+            ret.TextureIndices = new uint[se->TextureCount];
+
+            for (uint i = 0; i < se->TextureCount; i++)
+                for (uint j = 0; j < content.TexturePages->Count; j++)
+                    if ((&se->TextureAddresses)[i] == (&content.TexturePages->Offsets)[j])
+                    {
+                        ret.TextureIndices[i] = j;
+                        break;
+                    }
+
+            return ret;
+        }
+        static TexturePageInfo TPagFromOffset  (GMFileContent content, uint off)
+        {
+            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, off);
+
+            var ret = new TexturePageInfo();
+
+            ret.Position = tpe->Position;
+            ret.RenderOffset = tpe->RenderOffset;
+            ret.Size = tpe->Size;
+            ret.SpritesheetId = tpe->SpritesheetId;
+
+            return ret;
+        }
+
         static RoomBackground[] GetRoomBgs  (GMFileContent content, ref CountOffsetsPair* list)
         {
             try
@@ -220,24 +255,7 @@ namespace Altar.NET
             if (id >= content.Sprites->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, (&content.Sprites->Offsets)[id]);
-
-            var ret = new SpriteInfo();
-
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
-            ret.Size = se->Size;
-
-            ret.TextureIndices = new uint[se->TextureCount];
-
-            for (uint i = 0; i < se->TextureCount; i++)
-                for (uint j = 0; j < content.TexturePages->Count; j++)
-                    if ((&se->TextureAddresses)[i] == (&content.TexturePages->Offsets)[j])
-                    {
-                        ret.TextureIndices[i] = j;
-                        break;
-                    }
-
-            return ret;
+            return SpriteFromOffset(content, (&content.Sprites->Offsets)[id]);
         }
         public static BackgroundInfo  GetBgInfo     (GMFileContent content, uint id)
         {
@@ -362,16 +380,7 @@ namespace Altar.NET
             if (id >= content.TexturePages->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, (&content.TexturePages->Offsets)[id]);
-
-            var ret = new TexturePageInfo();
-
-            ret.Position      = tpe->Position     ;
-            ret.RenderOffset  = tpe->RenderOffset ;
-            ret.Size          = tpe->Size         ;
-            ret.SpritesheetId = tpe->SpritesheetId;
-
-            return ret;
+            return TPagFromOffset(content, (&content.TexturePages->Offsets)[id]);
         }
         public static TextureInfo     GetTextureInfo(GMFileContent content, uint id)
         {
@@ -417,8 +426,19 @@ namespace Altar.NET
 
             var ret = new FontInfo();
 
-            ret.SheetId = fe->SheetId;
-            ret.Scale   = fe->Scale  ;
+            var tpag = TPagFromOffset(content, fe->TPagOffset);
+
+            ret.CodeName   = ReadString((byte*)GMFile.PtrFromOffset(content, fe->CodeName  ));
+            ret.SystemName = ReadString((byte*)GMFile.PtrFromOffset(content, fe->SystemName));
+
+            ret.Scale = fe->Scale;
+
+            for (uint i = 0; i < content.TexturePages->Count; i++)
+                if (fe->TPagOffset == (&content.TexturePages->Offsets)[i])
+                {
+                    ret.TexPagId = i;
+                    break;
+                }
 
             ret.Characters = ReadList(content, &fe->Chars, p =>
             {
@@ -426,7 +446,9 @@ namespace Altar.NET
 
                 var c = new FontCharacter();
 
-                c.Character = entry->Character;
+                c.Character        = entry->Character  ;
+                c.RelativePosition = entry->RelativePos;
+                c.Size             = entry->Size       ;
 
                 return c;
             });

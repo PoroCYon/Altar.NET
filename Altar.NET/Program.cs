@@ -44,9 +44,46 @@ namespace Altar.NET
             {
                 var sb = new StringBuilder();
 
+                #region fonts
+                if (f.Fonts->Count > 0)
+                {
+                    Console.Write("Fetching fonts...");
 
-                //if (f.Audio->Count >= 0)
-                //    return;
+                    //var fonts = SectionReader.ListToByteArrays(f, f.Fonts, 0x7AC);
+                    //for (int i = 0; i < fonts.Length; i++)
+                    //    File.WriteAllBytes(DIR_FNT  + i + EXT_BIN, fonts[i]);
+
+                    for (uint i = 0; i < f.Fonts->Count; i++)
+                    {
+                        var fi = SectionReader.GetFontInfo(f, i);
+
+                        // ...
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region paths
+                {
+                    Console.Write("Fetching paths...");
+
+                    //var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
+                    //for (int i = 0; i < paths.Length; i++)
+                    //    File.WriteAllBytes(DIR_PATH + i + EXT_BIN, paths[i]);
+
+                    for (uint i = 0; i < f.Paths->Count; i++)
+                    {
+                        var pi = SectionReader.GetPathInfo(f, i);
+
+                        // ...
+                    }
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
+                if (f.Audio->Count >= 0)
+                    return;
 
                 #region strings
                 var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
@@ -300,21 +337,6 @@ namespace Altar.NET
                 }
                 #endregion
 
-                #region other
-                {
-                    Console.Write("Fetching other chunks...");
-
-                    var fonts = SectionReader.ListToByteArrays(f, f.Fonts, 0x7AC);
-                    for (int i = 0; i < fonts.Length; i++)
-                        File.WriteAllBytes(DIR_FNT  + i + EXT_BIN, fonts[i]);
-
-                    var paths = SectionReader.ListToByteArrays(f, f.Paths, -0x38);
-                    for (int i = 0; i < paths.Length; i++)
-                        File.WriteAllBytes(DIR_PATH + i + EXT_BIN, paths[i]);
-
-                    Console.WriteLine(DONE);
-                }
-                #endregion
             }
 
             Environment.CurrentDirectory = cd;

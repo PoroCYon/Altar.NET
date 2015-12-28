@@ -116,7 +116,7 @@ namespace Altar.NET
         [DebuggerStepThrough]
         public static unsafe void* PtrFromOffset(GMFileContent file, uint offset) => (void*)(file.RawData.BPtr + offset);
         [DebuggerStepThrough]
-        public static unsafe SectionHeaders HeaderOf(GMFileContent file, uint offset)
+        public static unsafe SectionHeaders ChunkOf(GMFileContent file, uint offset)
         {
             var sorted = file.HeaderOffsets.OrderBy(i => i).ToArray();
 

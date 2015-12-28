@@ -16,7 +16,8 @@ namespace Altar.NET
      * * RoomBgEntry unknowns
      * * RoomViewentry unknowns
      * * RoomObjEntry unknowns
-     * * FONT and PATH elem parsing
+     * * FontEntry/FontCharEntry unknowns
+     * * PATH elem parsing
      *
      */
 
@@ -266,13 +267,12 @@ namespace Altar.NET
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct FontEntry
     {
-        public uint Offset0, Offset1;
-        public uint SheetId;
-        public uint Unknown0, Unknown1;
-        public uint Offset2;
-        public uint Unknown2;
+        public uint CodeName, SystemName;
+        uint _pad0; // unknown
+        fixed uint _pad1[4]; // 0x00000000 0x00000000 0x00010020 0x0000007F
+        public uint TPagOffset;
 
-        public PointF Scale; // ?
+        public PointF Scale;
 
         public CountOffsetsPair Chars;
     }
@@ -331,8 +331,10 @@ namespace Altar.NET
     public unsafe struct FontCharEntry
     {
         public char Character; // wchar_t
-        public fixed ushort UnkShorts[5];
-        public uint Unknown;
+        public Point16 RelativePos; // relative to TPAG
+        public Point16 Size;
+        ushort _pad0; // unknown
+        uint   _pad1; // unknown
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
