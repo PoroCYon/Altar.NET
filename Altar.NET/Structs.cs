@@ -53,7 +53,7 @@ namespace Altar.NET
     {
         public string Name;
         public uint SpriteIndex;
-        //public byte[] Data;
+        public uint[] Data;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo

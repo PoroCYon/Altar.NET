@@ -49,6 +49,13 @@ namespace Altar.NET
 
             return sb.ToString();
         }
+        internal static string StringFromOffset(GMFileContent content, uint off)
+        {
+            if (off == 0)
+                return String.Empty;
+
+            return ReadString((byte*)GMFile.PtrFromOffset(content, off));
+        }
 
         static long IndexOfUnsafe(uint* arr, uint arrlen, uint value)
         {
@@ -103,7 +110,7 @@ namespace Altar.NET
 
             var ret = new SpriteInfo();
 
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
+            ret.Name = StringFromOffset(content, se->Name);
             ret.Size = se->Size;
 
             ret.TextureIndices = new uint[se->TextureCount];
@@ -128,6 +135,22 @@ namespace Altar.NET
             ret.RenderOffset  = tpe->RenderOffset;
             ret.Size          = tpe->Size;
             ret.SpritesheetId = tpe->SpritesheetId;
+
+            return ret;
+        }
+        static ObjectInfo      ObjectFromOffset(GMFileContent content, uint off)
+        {
+            var ret = new ObjectInfo();
+
+            var re = (ObjectEntry*)GMFile.PtrFromOffset(content, off);
+
+            ret.Name        = StringFromOffset(content, re->Name);
+            ret.SpriteIndex = re->SpriteIndex;
+
+            ret.Data = new uint[re->AList.Count];
+
+            for (uint i = 0; i < re->AList.Count; i++)
+                ret.Data[i] = *(uint*)GMFile.PtrFromOffset(content, (&re->AList.Offsets)[i]);
 
             return ret;
         }
@@ -238,9 +261,9 @@ namespace Altar.NET
 
             var ret = new SoundInfo();
 
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->NameOffset));
-            ret.Type = ReadString((byte*)GMFile.PtrFromOffset(content, se->TypeOffset));
-            ret.File = ReadString((byte*)GMFile.PtrFromOffset(content, se->FileOffset));
+            ret.Name = StringFromOffset(content, se->NameOffset);
+            ret.Type = StringFromOffset(content, se->TypeOffset);
+            ret.File = StringFromOffset(content, se->FileOffset);
 
             ret.VolumeMod = se->Volume;
             ret.PitchMod  = se->Pitch ;
@@ -266,8 +289,7 @@ namespace Altar.NET
 
             var be = (BgEntry*)GMFile.PtrFromOffset(content, (&content.Backgrounds->Offsets)[id]);
 
-            ret.Name          = ReadString((byte*)GMFile.PtrFromOffset(content, be->Name));
-
+            ret.Name         = StringFromOffset(content, be->Name);
             ret.TexPageIndex = be->TextureOffset;
 
             for (uint i = 0; i < content.TexturePages->Count; i++)
@@ -288,7 +310,7 @@ namespace Altar.NET
 
             var ret = new ScriptInfo();
 
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, se->Name));
+            ret.Name   = StringFromOffset(content, se->Name);
             ret.CodeId = se->CodeId;
 
             return ret;
@@ -298,33 +320,7 @@ namespace Altar.NET
             if (id >= content.Objects->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var ret = new ObjectInfo();
-
-            var reOff   = (&content.Objects->Offsets)[id    ];
-            var nextOff = (&content.Objects->Offsets)[id + 1];
-
-            if (id == content.Objects->Count - 1)
-                fixed (uint* ho = content.HeaderOffsets)
-                {
-                    var i = IndexOfUnsafe(ho, (uint)SectionHeaders.Count, (uint)((byte*)content.Objects - content.RawData.BPtr));
-
-                    nextOff = i == (uint)SectionHeaders.Count - 1 ? content.Form->Size /*! untested */ : (ho[i + 1] - 12);
-                }
-
-            var re = (ObjectEntry*)GMFile.PtrFromOffset(content, reOff);
-
-            var name = (byte*)GMFile.PtrFromOffset(content, re->Name);
-
-            var len = (int)(nextOff - reOff) - 8; // name, spriteInd
-
-            ret.Name = ReadString(name);
-            ret.SpriteIndex = re->SpriteIndex;
-
-            //ret.Data = new byte[len];
-
-            //Marshal.Copy(new IntPtr(&re->Data), ret.Data, 0, len);
-
-            return ret;
+            return ObjectFromOffset(content, (&content.Objects->Offsets)[id]);
         }
         public static RoomInfo        GetRoomInfo   (GMFileContent content, uint id)
         {
@@ -428,8 +424,8 @@ namespace Altar.NET
 
             var tpag = TPagFromOffset(content, fe->TPagOffset);
 
-            ret.CodeName   = ReadString((byte*)GMFile.PtrFromOffset(content, fe->CodeName  ));
-            ret.SystemName = ReadString((byte*)GMFile.PtrFromOffset(content, fe->SystemName));
+            ret.CodeName   = StringFromOffset(content, fe->CodeName  );
+            ret.SystemName = StringFromOffset(content, fe->SystemName);
 
             ret.Scale = fe->Scale;
 
@@ -466,7 +462,7 @@ namespace Altar.NET
 
             var ret = new PathInfo();
 
-            ret.Name = ReadString((byte*)GMFile.PtrFromOffset(content, pe->Name));
+            ret.Name = StringFromOffset(content, pe->Name);
 
             var nextOff = id == l->Count - 1 ? l->Header.Size - 4 : (&l->Offsets)[id + 1];
 
@@ -488,9 +484,7 @@ namespace Altar.NET
             if (id >= content.Strings->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var stre = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offsets)[id]);
-
-            return unchecked(new string((sbyte*)&stre->Data, 0, (int)stre->Length, Encoding.ASCII));
+            return StringFromOffset(content, (&content.Strings->Offsets)[id]);
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)
@@ -545,9 +539,9 @@ namespace Altar.NET
 
                 var name = (byte*)GMFile.PtrFromOffset(content, rde->Name);
 
-                ret.Name = ReadString(name);
+                ret.Name         = ReadString(name) ;
                 ret.Occurrences  = rde->Occurrences ;
-                ret.FirstOffset = rde->FirstAddress;
+                ret.FirstOffset  = rde->FirstAddress;
 
                 r[i] = ret;
             }
