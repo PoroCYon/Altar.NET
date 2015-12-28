@@ -268,7 +268,7 @@ namespace Altar.NET
     public unsafe struct StringEntry
     {
         public uint Length;
-        public byte* Data;
+        public byte Data  ;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
