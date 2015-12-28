@@ -7,12 +7,17 @@ namespace Altar.NET
     static class SR
     {
         internal readonly static string
-            COLON    = ":" ,
-            ASTERISK = "*" ,
-            HASH     = "#" ,
-            C_BRACE  = "}" ,
-            COMMA_S  = ", ",
-            UNDERSC  = "_" ,
+            SPACE_S     = " " ,
+            COLON     = ":" ,
+            ASTERISK  = "*" ,
+            HASH      = "#" ,
+            C_BRACE   = "}" ,
+            O_BRACE   = "{" ,
+            COMMA_S   = ", ",
+            UNDERSC   = "_" ,
+            C_BRACKET = "]" ,
+            O_BRACKET = "[" ,
+            DEL_CHAR  = "^H",
 
             BRACKETS = "[]",
             HEX_PRE  = "0x",
