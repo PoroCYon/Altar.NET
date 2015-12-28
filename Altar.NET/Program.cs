@@ -44,6 +44,9 @@ namespace Altar.NET
             {
                 var sb = new StringBuilder();
 
+                var vars = SectionReader.GetRefDefs(f, f.Variables);
+                var fns  = SectionReader.GetRefDefs(f, f.Functions);
+
 
                 //if (f.Audio->Count >= 0)
                 //    return;
@@ -91,10 +94,10 @@ namespace Altar.NET
                         var tpi = SectionReader.GetTexPageInfo(f, i);
 
                         sb.Clear()
-                            .Append("Position=").Append(tpi.Position).AppendLine()
-                            .Append("Size=").Append(tpi.Size).AppendLine()
+                            .Append("Position="    ).Append(tpi.Position).AppendLine()
+                            .Append("Size="        ).Append(tpi.Size).AppendLine()
                             .Append("RenderOffset=").Append(tpi.RenderOffset).AppendLine()
-                            .Append("SheetId=").Append(tpi.SpritesheetId).AppendLine();
+                            .Append("SheetId="     ).Append(tpi.SpritesheetId).AppendLine();
 
                         File.WriteAllText(DIR_TXP + i + EXT_TXT, sb.ToString());
                     }
@@ -112,7 +115,7 @@ namespace Altar.NET
                         var si = SectionReader.GetSpriteInfo(f, i);
 
                         sb.Clear()
-                            .Append("Size=").Append(si.Size).AppendLine()
+                            .Append("Size="           ).Append(si.Size).AppendLine()
                             .Append("TextureIndices=[").Append(String.Join(COMMA_S, si.TextureIndices)).Append(']').AppendLine();
 
                         File.WriteAllText(DIR_SPR + si.Name + EXT_TXT, sb.ToString());
@@ -132,13 +135,15 @@ namespace Altar.NET
                         var si = SectionReader.GetSoundInfo(f, i);
 
                         sb.Clear()
-                            .Append("Name=").AppendLine(si.Name)
-                            .Append("Type=").AppendLine(si.Type)
-                            .Append("File=").AppendLine(si.File)
+                            .Append("Name="    ).AppendLine(si.Name)
+                            .Append("Type="    ).AppendLine(si.Type)
+                            .Append("File="    ).AppendLine(si.File)
                             .Append("Embedded=").Append(si.IsEmbedded).AppendLine()
-                            .Append("AudioId=").Append(si.AudioId).AppendLine();
+                            .Append("AudioId=" ).Append(si.AudioId   ).AppendLine()
+                            .Append("Volume="  ).Append(si.VolumeMod ).AppendLine()
+                            .Append("Pitch="   ).Append(si.PitchMod  ).AppendLine();
 
-                        File.WriteAllText(DIR_SND + i + EXT_TXT, sb.ToString());
+                        File.WriteAllText(DIR_SND + si.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);
@@ -178,7 +183,7 @@ namespace Altar.NET
 
                         var text = sb.Clear().Append("SpriteIndex=").Append(oi.SpriteIndex).AppendLine().ToString();
 
-                        File.WriteAllText(DIR_OBJ + oi.Name + EXT_BIN, text);
+                        File.WriteAllText(DIR_OBJ + oi.Name + EXT_TXT, text);
                     }
 
                     Console.WriteLine(DONE);
@@ -208,7 +213,7 @@ namespace Altar.NET
                     {
                         var ri = SectionReader.GetRoomInfo(f, i);
 
-                        var t = "Size=" + ri.Size + "\nColour=" + ri.Colour.ToHexString() + "\0";
+                        var t = "Size=" + ri.Size + Environment.NewLine + "Colour=" + ri.Colour.ToHexString() + "\0";
 
                         //TODO: serialize
                         //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
@@ -217,9 +222,6 @@ namespace Altar.NET
                     Console.WriteLine(DONE);
                 }
                 #endregion
-
-                var vars = SectionReader.GetRefDefs(f, f.Variables);
-                var fns  = SectionReader.GetRefDefs(f, f.Functions);
 
                 #region variables
                 if (vars.Length > 0)
@@ -271,7 +273,7 @@ namespace Altar.NET
 
                         sb.Clear().Append("CodeId=").Append(si.CodeId).AppendLine();
 
-                        File.WriteAllText(DIR_SCR + i + UNDERSC + si.Name + EXT_TXT, sb.ToString());
+                        File.WriteAllText(DIR_SCR + si.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);
@@ -293,7 +295,7 @@ namespace Altar.NET
                         var ci = Disassembler.DisassembleCode(f, i);
                         var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci.Instructions);
 
-                        File.WriteAllText(DIR_CODE + i + UNDERSC + ci.Name + EXT_GML_ASM, s);
+                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }
 
                     Console.WriteLine(DONE);
@@ -312,7 +314,7 @@ namespace Altar.NET
                         sb.Clear()
                             .Append("SysName=").AppendLine(fi.SystemName)
                             .Append("TexPage=").Append(fi.TexPagId).AppendLine()
-                            .Append("Scale=").Append(fi.Scale).AppendLine()
+                            .Append("Scale="  ).Append(fi.Scale).AppendLine()
                             .Append("Charset=").AppendLine(O_BRACKET);
 
                         foreach (var c in fi.Characters)
@@ -326,7 +328,7 @@ namespace Altar.NET
                                 sb.Append(c.Character);
                             sb.Append('\'').AppendLine().Append(SPACE_S).Append(SPACE_S)
                                 .Append("RelPos=").Append(c.RelativePosition).AppendLine().Append(SPACE_S).Append(SPACE_S)
-                                .Append("Size=").Append(c.Size).AppendLine();
+                                .Append("Size="  ).Append(c.Size).AppendLine();
 
                             sb.Append(SPACE_S).Append(C_BRACE).AppendLine(COMMA_S);
                         }

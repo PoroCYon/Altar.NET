@@ -7,8 +7,9 @@ namespace Altar.NET
     static class SR
     {
         internal readonly static string
-            SPACE_S     = " " ,
+            SPACE_S   = " " ,
             COLON     = ":" ,
+            COLON_S   = ": ",
             ASTERISK  = "*" ,
             HASH      = "#" ,
             C_BRACE   = "}" ,

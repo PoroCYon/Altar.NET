@@ -77,7 +77,7 @@ namespace Altar.NET
 
             var retfinal = new CodeInfo();
 
-            retfinal.Name = SectionReader.ReadString((byte*)GMFile.PtrFromOffset(content, re->Name));
+            retfinal.Name = SectionReader.StringFromOffset(content, re->Name);
             retfinal.Instructions = retarr;
 
             return retfinal;
