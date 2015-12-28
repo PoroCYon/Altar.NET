@@ -8,11 +8,9 @@ namespace Altar.NET
 {
     /*TODO: Most important things atm:
      *
-     * * RoomEntry.Tile reading
      * * ObjectEntry unknowns (code?)
      * * SpriteEntry unknowns
      * * weird TPAG unknowns (offsets?)
-     * * BgEntry unknowns
      * * RoomEntry unknowns
      * * RoomBgEntry unknowns
      * * RoomViewentry unknowns
@@ -212,7 +210,7 @@ namespace Altar.NET
     public unsafe struct BgEntry
     {
         public uint Name;
-        fixed uint _pad[3]; // seems to be unimportant
+        fixed uint _pad[3]; // 0 0 0
         public uint TextureOffset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -244,11 +242,14 @@ namespace Altar.NET
     {
         public uint Name, Name2;
         public Point Size;
-        fixed uint _pad0[2];
+        fixed uint _pad0[2]; // unknown
         public Colour Colour;
-        fixed byte _pad1[60];
-
-        public CountOffsetsPair Backgrounds;
+        fixed uint _pad1[3]; // unknown
+        public uint BgOffset, ViewOffset, ObjOffset, TileOffset;
+        fixed uint _pad2[3]; // unknown
+        Point _pad_size; // 1024 * 768
+        uint _pad3; // unknown
+        fixed float _pad_flt[2]; // 10, 0.1
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry
