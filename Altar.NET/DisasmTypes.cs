@@ -62,6 +62,8 @@ namespace Altar.NET
         /// One's complement, also used as boolean negation.
         /// </summary>
         Not     = 0x0E,
+        Sal     = 0x0F,
+        Sar     = 0x10,
         Clt     = 0x11,
         Cle     = 0x12,
         Ceq     = 0x13,
@@ -236,6 +238,8 @@ namespace Altar.NET
                 case OpCode.Or:
                 case OpCode.Xor:
                 case OpCode.Not:
+                case OpCode.Sal:
+                case OpCode.Sar:
                 case OpCode.Clt:
                 case OpCode.Cle:
                 case OpCode.Ceq:
