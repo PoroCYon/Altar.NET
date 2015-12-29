@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Altar.NET
 {
-    /*TODO: Most important things atm:
+    /*TODO:
      *
      * * ObjectEntry unknowns (code?)
      * * SpriteEntry unknowns
@@ -18,7 +18,7 @@ namespace Altar.NET
      *
      */
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
+    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("DebugDisplay()")]
     public unsafe struct CountOffsetsPair
     {
         public uint Count;
@@ -36,7 +36,7 @@ namespace Altar.NET
 
     // ---
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
+    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("DebugDisplay()")]
     public struct SectionHeader
     {
         public SectionHeaders Identity;
@@ -80,7 +80,7 @@ namespace Altar.NET
         public uint LastObj;
         public uint LastTile;
         public uint GameId;
-        fixed uint _padding[4];
+        fixed uint _pad[4]; // 0, 0, 0, 0
         public uint NameOffset;
         public uint Major;
         public uint Minor;
@@ -147,7 +147,7 @@ namespace Altar.NET
 
         public uint Unknown;
     }
-    [StructLayout(LayoutKind.Explicit  , Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
+    [StructLayout(LayoutKind.Explicit  , Pack = 1), DebuggerDisplay("DebugDisplay()")]
     public unsafe struct SectionCountOffsets
     {
         [FieldOffset(0)]
@@ -197,7 +197,9 @@ namespace Altar.NET
     {
         public uint Name;
         public Point Size;
-        fixed uint _pad[11]; // mostly zeroes, but some other values, too...
+        fixed uint _pad0[4]; // unknown
+        fixed uint _pad1[3]; // 0, 0, 0
+        fixed uint _pad2[4]; // unknown
         public uint TextureCount;
         public uint TextureAddresses;
     }
@@ -205,7 +207,7 @@ namespace Altar.NET
     public unsafe struct BgEntry
     {
         public uint Name;
-        fixed uint _pad[3]; // 0 0 0
+        fixed uint _pad[3]; // 0, 0, 0
         public uint TextureOffset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -245,9 +247,9 @@ namespace Altar.NET
             _pad3, // unknkown
             _pad4, // 0
             _pad5; // unknown
-        fixed uint  _pad6[4]; // -1 0 0 0
+        fixed uint  _pad6[4]; // -1, 0, 0, 0
         fixed float _pad7[7]; // unknown
-        fixed float _pad8[2]; // 1 0
+        fixed float _pad8[2]; // 1, 0
 
         public CountOffsetsPair AList;
     }
@@ -277,7 +279,7 @@ namespace Altar.NET
     {
         public uint Name;
         public int Length;
-        public byte* Bytecode;
+        public byte Bytecode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct StringEntry
@@ -295,7 +297,7 @@ namespace Altar.NET
     public unsafe struct AudioEntry
     {
         public uint Length;
-        public byte* Data;
+        public byte Data;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
