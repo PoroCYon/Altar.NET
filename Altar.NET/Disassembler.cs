@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace Altar.NET
+namespace Altar
 {
     using static SR;
 

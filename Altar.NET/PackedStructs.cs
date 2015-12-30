@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Altar.NET
+namespace Altar
 {
     /*TODO:
      *
+     * * SectionGeneral unknowns
+     * * SectionOption unknowns
      * * ObjectEntry unknowns (code?)
      * * SpriteEntry unknowns
      * * weird TPAG unknowns (offsets?)
@@ -18,7 +20,7 @@ namespace Altar.NET
      *
      */
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("DebugDisplay()")]
+    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
     public unsafe struct CountOffsetsPair
     {
         public uint Count;
@@ -36,7 +38,7 @@ namespace Altar.NET
 
     // ---
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("DebugDisplay()")]
+    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
     public struct SectionHeader
     {
         public SectionHeaders Identity;
@@ -49,95 +51,57 @@ namespace Altar.NET
     public unsafe struct SectionGeneral
     {
         [Flags]
-        public enum GraphicsFlags : byte
+        public enum InfoFlags : uint
         {
-            Fullscreen  = 0x01,
-            SyncVertex1 = 0x02,
-            SyncVertex2 = 0x04,
-            Interpolate = 0x08,
-            Unknown     = 0x10,
-            ShowCursor  = 0x20,
-            Sizeable    = 0x40,
-            ScreenKey   = 0x80
-        }
-        [Flags]
-        public enum InfoFlags : byte
-        {
-            SyncVertex3       = 0x01,
-            StudioVersionB1   = 0x02,
-            StudioVersionB2   = 0x04,
-            StudioVersionB3   = 0x08,
+            Fullscreen        = 0x001,
+            SyncVertex1       = 0x002,
+            SyncVertex2       = 0x004,
+            Interpolate       = 0x008,
+            Unknown           = 0x010, // debug?
+            ShowCursor        = 0x020,
+            Sizeable          = 0x040,
+            ScreenKey         = 0x080,
+            SyncVertex3       = 0x100,
+            StudioVersionB1   = 0x200,
+            StudioVersionB2   = 0x400,
+            StudioVersionB3   = 0x800,
             StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
-            SteamEnabled      = 0x10,
-            LocalDataEnabled  = 0x20
+            SteamEnabled      = 0x1000,
+            LocalDataEnabled  = 0x2000
         }
 
         public SectionHeader Header;
 
-        public DwordBool Debug;
+        public bool Debug;
+        Int24 _pad0; // unknown; info flags?
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
         public uint LastTile;
         public uint GameId;
-        fixed uint _pad[4]; // 0, 0, 0, 0
+        fixed uint _pad1[4]; // 0, 0, 0, 0
         public uint NameOffset;
-        public uint Major;
-        public uint Minor;
-        public uint Release;
-        public uint Build;
-        public uint LargestVpw;
-        public uint LargestVph;
-        public GraphicsFlags Graphics;
-        public InfoFlags Info;
-        public ushort InfoMaskPadding;
-        public uint LicenseKeyCrc32;
-        public uint LicenseMD5Offset;
-        public ulong Timestamp;
-        public uint DisplayOffset;
-        public ulong ActiveTargets;
+        public int Major;
+        public int Minor;
+        public int Release;
+        public int Build;
+        public Point WindowSize;
+        fixed uint _pad2[0xF]; // unknown, info flags?
+        public uint NumberCount;
+        public uint Numbers;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct SectionOptions
+    public unsafe struct SectionOptions
     {
         public SectionHeader Header;
 
-        public DwordBool Fullscreen;
-        public uint Interpolate;
-        public DwordBool UseNewAudio;
-        public DwordBool Borderless;
-        public DwordBool ShowCursor;
-        public uint Scale;
-        public DwordBool Sizeable;
-        public DwordBool StayOnTop;
-        public uint WindowColor;
-        public uint ChangeResolution;
-        public uint ColorDepth;
-        public uint Resolution;
-        public uint Frequency;
-        public DwordBool Buttonless;
-        public DwordBool SyncVertex;
-        public uint FullscreenKey;
-        public uint HelpKey;
-        public uint QuitKey;
-        public uint SaveKey;
-        public uint ScreenshotKey;
-        public uint SecondaryQuitKey;
-        public int ProcessPriority;
-        public uint FreezeLoseFoocus;
-        public uint ShadowLoadProgress;
-        public uint MBESplashBGOffset;
-        public uint MBESplashFGOffset;
-        public uint MBESplashLDOffset;
-        public DwordBool LoadTransparency;
-        public DwordBool LoadAlpha;
-        public DwordBool ScaleToProgress;
-        public DwordBool DisplayErrors;
-        public DwordBool WriteErrors;
-        public DwordBool AbortErrors;
-        public DwordBool TreatUninitZero;
-        public DwordBool CreationEventOrder;
+        fixed uint _pad0[2]; // both unknown
+        public uint SomeOffset; // TXTR??
+        fixed uint _pad1[0xB]; // 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0
+        uint _pad2; // unknown
+        public uint ConstCount;
+        public uint ConstOffsetMap;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -147,7 +111,7 @@ namespace Altar.NET
 
         public uint Unknown;
     }
-    [StructLayout(LayoutKind.Explicit  , Pack = 1), DebuggerDisplay("DebugDisplay()")]
+    [StructLayout(LayoutKind.Explicit  , Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
     public unsafe struct SectionCountOffsets
     {
         [FieldOffset(0)]

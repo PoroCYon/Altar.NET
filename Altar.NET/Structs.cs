@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Altar.NET
+namespace Altar
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ReferenceDef
@@ -14,6 +14,25 @@ namespace Altar.NET
     }
 
     // ---
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GeneralInfo
+    {
+        public bool IsDebug;
+        public string FileName;
+        public string Configuration;
+        public uint GameId;
+        public string Name;
+        public Version Version;
+        public Point WindowSize;
+
+        public uint[] WeirdNumbers;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct OptionInfo
+    {
+        public Dictionary<string, string> Constants;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct SoundInfo

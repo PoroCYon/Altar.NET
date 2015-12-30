@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Altar.NET
+namespace Altar
 {
     static class SR
     {

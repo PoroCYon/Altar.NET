@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Altar.NET
+namespace Altar
 {
     using static SR;
 
@@ -42,6 +42,10 @@ namespace Altar.NET
 
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
+                //TODO: serialize
+                var gen8 = SectionReader.GetGeneralInfo(f);
+                var optn = SectionReader.GetOptionInfo (f);
+
                 var sb = new StringBuilder();
 
                 var vars = SectionReader.GetRefDefs(f, f.Variables);
