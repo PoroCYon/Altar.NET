@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Altar.NET
+namespace Altar
 {
     using static SR;
 

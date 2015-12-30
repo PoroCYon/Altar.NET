@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Altar.NET
+namespace Altar
 {
     public unsafe static class SectionReader
     {
@@ -229,6 +229,40 @@ namespace Altar.NET
 
                 return t;
             });
+        }
+
+        public static GeneralInfo GetGeneralInfo(GMFileContent content)
+        {
+            var ret = new GeneralInfo();
+
+            var ge = content.General;
+
+            ret.IsDebug       = false;//ge->Debug;
+            ret.FileName      = StringFromOffset(content, ge->FilenameOffset);
+            ret.Configuration = StringFromOffset(content, ge->ConfigOffset);
+            ret.GameId        = ge->GameId;
+            ret.Name          = StringFromOffset(content, ge->NameOffset);
+            ret.Version       = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
+            ret.WindowSize    = ge->WindowSize;
+
+            ret.WeirdNumbers = new uint[ge->NumberCount];
+
+            for (uint i = 0; i < ge->NumberCount; i++)
+                ret.WeirdNumbers[i] = (&ge->Numbers)[i];
+
+            return ret;
+        }
+        public static OptionInfo  GetOptionInfo (GMFileContent content)
+        {
+            var ret = new OptionInfo();
+
+            var oe = content.Options;
+
+            ret.Constants = new Dictionary<string, string>((int)oe->ConstCount);
+            for (uint i = 0; i < oe->ConstCount; i++)
+                ret.Constants.Add(StringFromOffset(content, (&oe->ConstOffsetMap)[i * 2]), StringFromOffset(content, (&oe->ConstOffsetMap)[i * 2 + 1]));
+
+            return ret;
         }
 
         public static SoundInfo       GetSoundInfo  (GMFileContent content, uint id)

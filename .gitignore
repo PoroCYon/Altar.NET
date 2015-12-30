@@ -196,3 +196,4 @@ FakesAssemblies/
 *.opt
 
 /_nop
+/Altar.NET.VC.opendb
