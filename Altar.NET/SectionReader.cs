@@ -109,10 +109,12 @@ namespace Altar
 
             var ret = new TexturePageInfo();
 
-            ret.Position      = tpe->Position;
-            ret.RenderOffset  = tpe->RenderOffset;
-            ret.Size          = tpe->Size;
-            ret.SpritesheetId = tpe->SpritesheetId;
+            ret.Position       = tpe->Position;
+            ret.RenderOffset   = tpe->RenderOffset;
+            ret.Size           = tpe->Size;
+            ret.AnotherSize    = tpe->AnotherSize;
+            ret.YetAnotherSize = tpe->YetAnotherSize;
+            ret.SpritesheetId  = tpe->SpritesheetId;
 
             return ret;
         }
@@ -237,16 +239,22 @@ namespace Altar
 
             var ge = content.General;
 
-            ret.IsDebug       = false;//ge->Debug;
+            ret.IsDebug       = ge->Debug;
             ret.FileName      = StringFromOffset(content, ge->FilenameOffset);
             ret.Configuration = StringFromOffset(content, ge->ConfigOffset);
             ret.GameId        = ge->GameId;
             ret.Name          = StringFromOffset(content, ge->NameOffset);
             ret.Version       = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
             ret.WindowSize    = ge->WindowSize;
+            ret.DisplayName   = StringFromOffset(content, ge->DisplayNameOffset);
+
+            ret.LicenseMD5Hash = new byte[0x10];
+            Marshal.Copy((IntPtr)ge->MD5, ret.LicenseMD5Hash, 0, 0x10);
+            ret.LicenceCRC32 = ge->CRC32;
+
+            ret.Timestamp = new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(ge->Timestamp);
 
             ret.WeirdNumbers = new uint[ge->NumberCount];
-
             for (uint i = 0; i < ge->NumberCount; i++)
                 ret.WeirdNumbers[i] = (&ge->Numbers)[i];
 
@@ -258,9 +266,9 @@ namespace Altar
 
             var oe = content.Options;
 
-            ret.Constants = new Dictionary<string, string>((int)oe->ConstCount);
-            for (uint i = 0; i < oe->ConstCount; i++)
-                ret.Constants.Add(StringFromOffset(content, (&oe->ConstOffsetMap)[i * 2]), StringFromOffset(content, (&oe->ConstOffsetMap)[i * 2 + 1]));
+            ret.Constants = new Dictionary<string, string>((int)oe->ConstMap.Count);
+            for (uint i = 0; i < oe->ConstMap.Count; i++)
+                ret.Constants.Add(StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2]), StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2 + 1]));
 
             return ret;
         }

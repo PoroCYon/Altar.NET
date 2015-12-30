@@ -25,6 +25,10 @@ namespace Altar
         public string Name;
         public Version Version;
         public Point WindowSize;
+        public byte[] LicenseMD5Hash;
+        public uint LicenceCRC32;
+        public string DisplayName;
+        public DateTime Timestamp;
 
         public uint[] WeirdNumbers;
     }
@@ -90,6 +94,7 @@ namespace Altar
     public struct TexturePageInfo
     {
         public Point16 Position, Size, RenderOffset;
+        public Point16 AnotherSize, YetAnotherSize;
         public uint SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential)]
