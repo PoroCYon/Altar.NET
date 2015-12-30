@@ -42,14 +42,14 @@ namespace Altar
 
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
-                //TODO: serialize
-                var gen8 = SectionReader.GetGeneralInfo(f);
-                var optn = SectionReader.GetOptionInfo (f);
-
                 var sb = new StringBuilder();
 
                 var vars = SectionReader.GetRefDefs(f, f.Variables);
                 var fns  = SectionReader.GetRefDefs(f, f.Functions);
+
+                //TODO: serialize
+                var gen8 = SectionReader.GetGeneralInfo(f);
+                var optn = SectionReader.GetOptionInfo (f);
 
 
                 //if (f.Audio->Count >= 0)

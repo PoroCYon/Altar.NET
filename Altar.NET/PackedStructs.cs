@@ -72,8 +72,8 @@ namespace Altar
 
         public SectionHeader Header;
 
-        public bool Debug;
-        Int24 _pad0; // unknown; info flags?
+        public bool Debug; // ?
+        Int24 _pad0; // unknown (0x00000E)
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
@@ -86,22 +86,26 @@ namespace Altar
         public int Release;
         public int Build;
         public Point WindowSize;
-        fixed uint _pad2[0xF]; // unknown, info flags?
+        public InfoFlags Info;
+        public fixed byte MD5[0x10];
+        public uint CRC32;
+        public ulong Timestamp; // UNIX time (64-bit, luckily)
+        public uint DisplayNameOffset;
+        public uint ActiveTargets;
+        fixed uint _pad2[5]; // unknown (0, 0x00000016, 0, 0xFFFA068C 0x00001966)
         public uint NumberCount;
         public uint Numbers;
     }
-
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SectionOptions
     {
         public SectionHeader Header;
 
-        fixed uint _pad0[2]; // both unknown
-        public uint SomeOffset; // TXTR??
+        fixed uint _pad0[2]; // both unknown (0x80000000 (flags?), 2)
+        public uint SomeOffset; // TXTR?? (0x00CC7A14)
         fixed uint _pad1[0xB]; // 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0
-        uint _pad2; // unknown
-        public uint ConstCount;
-        public uint ConstOffsetMap;
+        uint _pad2; // unknown (0x000000FF)
+        public CountOffsetsPair ConstMap;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -235,7 +239,7 @@ namespace Altar
     public unsafe struct TexPageEntry
     {
         public Point16 Position, Size, RenderOffset;
-        fixed uint _pad[2]; // two uints that look like offsets pointing to somewhere in TXTR, but not sure what exactly
+        public Point16 AnotherSize, YetAnotherSize; // unknown function...
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
