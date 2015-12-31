@@ -12,7 +12,7 @@ namespace Altar
     public enum DataType : byte
     {
         Double  ,
-        Float   ,
+        Single  ,
         Int32   ,
         Int64   ,
         Boolean ,
@@ -25,7 +25,7 @@ namespace Altar
         Int16 = 0x0F
     }
     /// <summary>
-    /// If it's none of the given values, it represents a GameObjectIndex
+    /// If it's none of the given values, it represents an <see cref="ObjectInfo" /> index.
     /// </summary>
     public enum InstanceType : short
     {
@@ -62,8 +62,8 @@ namespace Altar
         /// One's complement, also used as boolean negation.
         /// </summary>
         Not     = 0x0E,
-        Sal     = 0x0F,
-        Sar     = 0x10,
+        Shl     = 0x0F,
+        Shr     = 0x10,
         Clt     = 0x11,
         Cle     = 0x12,
         Ceq     = 0x13,
@@ -149,7 +149,16 @@ namespace Altar
         uint val;
 
         public OpCode OpCode => (OpCode)((val & 0xFF000000) >> 24);
-        public uint   Offset => (uint  )( val & 0x00FFFFFF       );
+        public uint   Offset
+        {
+            get
+            {
+                var v = val & 0x00FFFFFF;
+
+                return ((v & 0x00800000) == 0 ? v : (v - 0x01000000)) * 4;
+            }
+        }
+
         //public Int24 Offset;
         //public OpCode OpCode;
     }
@@ -238,8 +247,8 @@ namespace Altar
                 case OpCode.Or:
                 case OpCode.Xor:
                 case OpCode.Not:
-                case OpCode.Sal:
-                case OpCode.Sar:
+                case OpCode.Shl:
+                case OpCode.Shr:
                 case OpCode.Clt:
                 case OpCode.Cle:
                 case OpCode.Ceq:
@@ -273,7 +282,7 @@ namespace Altar
                 case DataType.Double:
                 case DataType.Int64:
                     return 8;
-                case DataType.Float:
+                case DataType.Single:
                 case DataType.Int32:
                 case DataType.Boolean:
                     return 4;
@@ -291,11 +300,11 @@ namespace Altar
         }
 
         public static OpCode          Code(this AnyInstruction instr) => (OpCode)((instr.InstrData & 0xFF000000) >> 24);
-        public static uint            Rest(this AnyInstruction instr) => (uint  )( instr.InstrData & 0x00FFFFFF       );
+        public static uint            Rest(this AnyInstruction instr) => instr.InstrData & 0x00FFFFFF;
         public static InstructionKind Kind(this AnyInstruction instr) => instr.Code().Kind();
 
-        public static string ToPrettyString(this DataType     type) => type.ToString().ToLowerInvariant();
-        public static string ToPrettyString(this InstanceType type) => type.ToString().ToLowerInvariant();
+        public static string ToPrettyString(this DataType     type) => type == DataType.Variable ? VAR : type == DataType.Instance ? INST : type == DataType.Boolean ? BOOL : type.ToString().ToLowerInvariant();
+        public static string ToPrettyString(this InstanceType type) => type == InstanceType.StackTopOrGlobal ? STOG : type.ToString().ToLowerInvariant();
         public static string ToPrettyString(this VariableType type)
         {
             switch (type)

@@ -110,16 +110,23 @@ namespace Altar
 
         public static string DisplayInstructions(GMFileContent content, Dictionary<IntPtr, int> varAccs, Dictionary<IntPtr, int> fnAccs, AnyInstruction*[] instrs)
         {
+            if (instrs.Length == 0)
+                return String.Empty;
+
             var vars = SectionReader.GetRefDefs(content, content.Variables);
             var fns  = SectionReader.GetRefDefs(content, content.Functions);
 
             var sb = new StringBuilder();
 
+            var firstInstr = instrs[0];
+
             for (int i = 0; i < instrs.Length; i++)
             {
                 var iptr = instrs[i];
+                var relInstr = (long)iptr - (long)firstInstr;
 
-                sb.Append(HEX_PRE).Append(((uint)iptr - (uint)content.RawData.BPtr).ToString(HEX_FM8)).Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
+                sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM8))
+                    .Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
 
                 switch (iptr->Kind())
                 {
@@ -136,7 +143,7 @@ namespace Altar
                     case InstructionKind.Goto:
                         var g = iptr->Goto;
 
-                        sb.Append(HEX_PRE).Append(g.Offset.ToString(HEX_FM6));
+                        sb.Append(HEX_PRE).Append((relInstr + g.Offset).ToString(HEX_FM6));
                         break;
 
                     #region set
@@ -198,7 +205,7 @@ namespace Altar
                             case DataType.Double:
                                 sb.Append(((double*)&r)->ToString(CultureInfo.InvariantCulture));
                                 break;
-                            case DataType.Float:
+                            case DataType.Single:
                                 sb.Append(((float*)&r)->ToString(CultureInfo.InvariantCulture));
                                 break;
                             case DataType.Int32:
@@ -208,8 +215,7 @@ namespace Altar
                                 sb.Append(((long*)&pp->ValueRest)->ToString(CultureInfo.InvariantCulture));
                                 break;
                             case DataType.String:
-                                sb.Append("S:").Append(p.ValueRest).Append(' ')
-                                    .Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
+                                sb.Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
                                 break;
                         }
                         break;
