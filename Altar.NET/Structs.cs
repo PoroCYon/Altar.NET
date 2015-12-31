@@ -66,24 +66,53 @@ namespace Altar
         public uint TexPageIndex;
     }
     [StructLayout(LayoutKind.Sequential)]
+    public struct PathInfo
+    {
+        public string Name;
+        public uint Kind;
+        public uint Precision;
+        public float[] Data;
+    }
+    [StructLayout(LayoutKind.Sequential)]
     public struct ScriptInfo
     {
         public string Name;
         public uint CodeId;
     }
     [StructLayout(LayoutKind.Sequential)]
+    public struct FontInfo
+    {
+        public string CodeName  ;
+        public string SystemName;
+
+        public bool IsBold;
+        public uint TexPagId;
+
+        public PointF Scale;
+
+        public FontCharacter[] Characters;
+    }
+    [StructLayout(LayoutKind.Sequential)]
     public struct ObjectInfo
     {
         public string Name;
         public uint SpriteIndex;
-        public uint[] Data;
+
+        public ObjectPhysics Physics;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo
     {
         public string Name;
+        public string Caption;
         public Point Size;
+        public uint Speed;
+        public bool IsPersistent;
         public Colour Colour;
+        public uint World;
+        public BoundingBox Bounding;
+        public PointF Gravity;
+        public float MetresPerPixel;
 
         public RoomBackground[] Backgrounds;
         public RoomView      [] Views      ;
@@ -94,7 +123,7 @@ namespace Altar
     public struct TexturePageInfo
     {
         public Point16 Position, Size, RenderOffset;
-        public Point16 AnotherSize, YetAnotherSize;
+        public Rectangle16 BoundingBox;
         public uint SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -114,40 +143,23 @@ namespace Altar
     {
         public byte[] Wave;
     }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct FontInfo
-    {
-        public string CodeName  ;
-        public string SystemName;
-
-        public uint TexPagId;
-
-        public PointF Scale;
-
-        public FontCharacter[] Characters;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct PathInfo
-    {
-        public string Name;
-        public float[] Data;
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomBackground
     {
-        public bool IsEnabled;
+        public bool IsEnabled, IsForeground;
         public uint BgIndex;
         public Point Position;
         public bool TileX, TileY;
-        //public byte[] Data;
+        public Point Speed;
+        public bool StretchSprite;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomView
     {
         public bool IsEnabled;
         public Rectangle View, Port;
-        //public byte[] Data;
+        public Point Border, Speed;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomObject
@@ -155,8 +167,8 @@ namespace Altar
         public Point Position;
         public uint DefIndex;
         public PointF Scale;
-        public float Tint;
-        //public byte[] Data;
+        public Colour Colour;
+        public float Rotation;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomTile
@@ -166,13 +178,15 @@ namespace Altar
         public Point SourcePosition;
         public Point Size;
         public PointF Scale;
-        public float Tint;
+        public Colour Colour;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct FontCharacter
     {
         public char Character;
-        public Point16 RelativePosition, Size;
+        public Rectangle16 TexturePageFrame;
+        public ushort Shift;
+        public uint Offset;
     }
 }

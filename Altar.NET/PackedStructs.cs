@@ -12,10 +12,12 @@ namespace Altar
      * * SectionOption unknowns
      * * ObjectEntry unknowns (code?)
      * * SpriteEntry unknowns
-     * * weird TPAG unknowns (offsets?)
+     * * TextureEntry unknowns
      * * RoomEntry unknowns
+     * * RoomViewEntry unknowns
      * * RoomObjEntry unknowns
-     * * FontEntry/FontCharEntry unknowns
+     * * RoomTileEntry unknowns
+     * * FontChar unknowns
      * * PathEntry unknowns
      *
      */
@@ -47,33 +49,54 @@ namespace Altar
         internal string DebugDisplay() => Identity.ToString() + SR.COLON_S + SR.HEX_PRE + Size.ToString(SR.HEX_FM8);
     }
 
+    public static class InfoFlagsExt
+    {
+        public static byte StudioVersion(this InfoFlags flags)
+        {
+            flags &= InfoFlags.StudioVersionMask;
+
+            byte r = 0;
+
+            if ((flags & InfoFlags.StudioVersionB1) != 0)
+                r |= 1;
+            if ((flags & InfoFlags.StudioVersionB2) != 0)
+                r |= 2;
+            if ((flags & InfoFlags.StudioVersionB3) != 0)
+                r |= 4;
+
+            return r;
+        }
+    }
+
+    [Flags]
+    public enum InfoFlags : uint
+    {
+        Fullscreen        = 0x001,
+        SyncVertex1       = 0x002,
+        SyncVertex2       = 0x004,
+        Interpolate       = 0x008,
+        Unknown           = 0x010, // seems to be 1 all the time...
+        ShowCursor        = 0x020,
+        Sizeable          = 0x040,
+        ScreenKey         = 0x080,
+        SyncVertex3       = 0x100,
+        StudioVersionB1   = 0x200,
+        StudioVersionB2   = 0x400,
+        StudioVersionB3   = 0x800,
+        StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
+        SteamEnabled      = 0x1000,
+        LocalDataEnabled  = 0x2000
+
+        // others...?
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SectionGeneral
     {
-        [Flags]
-        public enum InfoFlags : uint
-        {
-            Fullscreen        = 0x001,
-            SyncVertex1       = 0x002,
-            SyncVertex2       = 0x004,
-            Interpolate       = 0x008,
-            Unknown           = 0x010, // debug?
-            ShowCursor        = 0x020,
-            Sizeable          = 0x040,
-            ScreenKey         = 0x080,
-            SyncVertex3       = 0x100,
-            StudioVersionB1   = 0x200,
-            StudioVersionB2   = 0x400,
-            StudioVersionB3   = 0x800,
-            StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
-            SteamEnabled      = 0x1000,
-            LocalDataEnabled  = 0x2000
-        }
-
         public SectionHeader Header;
 
         public bool Debug; // ?
-        Int24 _pad0; // unknown (0x00000E)
+        Int24 _pad0; // unknown (0x00000#)
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
@@ -92,7 +115,7 @@ namespace Altar
         public ulong Timestamp; // UNIX time (64-bit, luckily)
         public uint DisplayNameOffset;
         public uint ActiveTargets;
-        fixed uint _pad2[5]; // unknown (0, 0x00000016, 0, 0xFFFA068C 0x00001966)
+        fixed uint _pad2[5]; // unknown (0, *, 0, *, 0x00001966) -> more flags?
         public uint NumberCount;
         public uint Numbers;
     }
@@ -101,10 +124,35 @@ namespace Altar
     {
         public SectionHeader Header;
 
-        fixed uint _pad0[2]; // both unknown (0x80000000 (flags?), 2)
-        public uint SomeOffset; // TXTR?? (0x00CC7A14)
-        fixed uint _pad1[0xB]; // 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0
-        uint _pad2; // unknown (0x000000FF)
+        /*
+            uint color_depth;
+            uint resolution;
+            uint frequency;
+            uint buttonless;?
+            uint sync_vertex;
+            bool fullscreen_key; (1 bit)
+            bool help_key;
+            bool quit_key;
+            bool save_key;
+            bool screenshot_key;
+            bool close_secondary;
+            uint process_priority;
+            bool freeze_lose_focus;
+            bool? show_load_progress;
+            uint mbe_splash_bg_offset;?
+            uint mbe_splash_fg_offset;?
+            uint mbe_splash_ld_offset;?
+            bool load_transparency;
+            byte? load_alpha;
+            bool scale_load_progress;
+            bool display_errors;
+            bool write_errors;
+            bool abort_errors;
+            uint treat_uninit_zero;?
+            uint creation_event_order;?
+        */
+
+        fixed uint _pad[0xF]; // unknown: 0x80000000, 2, 0x00CC7A1#, 0, -1, 0, 0, 0, 0, *, 0, 0, 0, 0, 0x000000FF
         public CountOffsetsPair ConstMap;
     }
 
@@ -131,12 +179,15 @@ namespace Altar
 
         internal string DebugDisplay() => Header.DebugDisplay() + " -> " + List.DebugDisplay();
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
     public unsafe struct SectionRefDefs
     {
         public SectionHeader Header;
 
         public RefDefEntry Entries;
+
+        internal string DebugDisplay() => Header.DebugDisplay();
     }
 
     // ---
@@ -165,11 +216,14 @@ namespace Altar
     {
         public uint Name;
         public Point Size;
-        fixed uint _pad0[4]; // unknown
-        fixed uint _pad1[3]; // 0, 0, 0
-        fixed uint _pad2[4]; // unknown
-        public uint TextureCount;
-        public uint TextureAddresses;
+
+        public BoundingBox2 Bounding;
+
+        fixed uint _pad1[5]; // type? coltolerance? sepmasks? bboxmode? htile? vtile? for3D?
+
+        public Point Origin;
+
+        public CountOffsetsPair Textures;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
@@ -182,8 +236,12 @@ namespace Altar
     public unsafe struct PathEntry
     {
         public uint Name;
-        fixed uint _pad0[4]; // unknown
-        public float Data;
+        public uint Kind;
+        uint _pad0; // closed?
+        public uint Precision;
+        uint _pad1; // backroom?
+        // hsnap? vsnap?
+        public float Data; // ...
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ScriptEntry
@@ -195,8 +253,13 @@ namespace Altar
     public unsafe struct FontEntry
     {
         public uint CodeName, SystemName;
-        uint _pad0; // unknown
-        fixed uint _pad1[4]; // 0x00000000 0x00000000 0x00010020 0x0000007F
+        public uint EmSize;
+        public DwordBool Bold; // | renderhq | italic | includettf?
+        uint _pad; // renderhq? italic? includettf? ttfname?
+        public ushort RangeStart; //!? multiple ranges??
+        public byte Charset;
+        public byte AA;
+        public uint RangeEnd;
         public uint TPagOffset;
 
         public PointF Scale;
@@ -209,37 +272,37 @@ namespace Altar
         public uint Name;
         public uint SpriteIndex;
 
-        uint
-            _pad0, // unknown
-            _pad1, // 0
-            _pad3, // unknkown
-            _pad4, // 0
-            _pad5; // unknown
-        fixed uint  _pad6[4]; // -1, 0, 0, 0
-        fixed float _pad7[7]; // unknown
-        fixed float _pad8[2]; // 1, 0
+        fixed uint  _pad0[9]; // 1, 0, 0, 0, 0xFFFFFF9C, -1, 0, 0, 0
 
-        public CountOffsetsPair AList;
+        public ObjectPhysics Physics;
+
+        // more floats? // -32, -32, 32, 32
+
+        public CountOffsetsPair ShapePoints;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
     {
-        public uint Name, Name2;
+        public uint Name, Caption;
         public Point Size;
-        fixed uint _pad0[2]; // unknown
+        public uint Speed;
+        public DwordBool Persistent;
         public Colour Colour;
+
         fixed uint _pad1[3]; // unknown
+
         public uint BgOffset, ViewOffset, ObjOffset, TileOffset;
-        fixed uint _pad2[3]; // unknown
-        Point _pad_size; // 1024 * 768
-        uint _pad3; // unknown
-        fixed float _pad_flt[2]; // 10, 0.1
+
+        public uint World;
+        public BoundingBox Bounding;
+        public PointF Gravity;
+        public float MetresPerPixel;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry
     {
         public Point16 Position, Size, RenderOffset;
-        public Point16 AnotherSize, YetAnotherSize; // unknown function...
+        public Rectangle16 BoundingBox;
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -269,21 +332,38 @@ namespace Altar
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ObjectPhysics
+    {
+        public float
+            Density       ,
+            Restitution   ,
+            Group         ,
+            LinearDamping ,
+            AngularDamping,
+            Unknown0      ,
+            Friction      ,
+            Unknown1      ,
+            Kinematic;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomBgEntry
     {
-        public DwordBool IsEnabled;
-        uint _pad0; // 0
+        public DwordBool IsEnabled, IsForeground;
         public uint DefIndex;
         public Point Position;
         public DwordBool TileX, TileY;
-        fixed uint _pad1[3]; // 0, 0, 0
+        public Point Speed;
+        public DwordBool Stretch;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomViewEntry
     {
         public DwordBool IsEnabled;
         public Rectangle View, Port;
-        fixed uint _pad[5]; // 32, 32, -1, -1, -1
+        public Point Border, Speed;
+
+        uint _pad; // unknown (name offset?)
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry
@@ -293,8 +373,8 @@ namespace Altar
         uint _pad0; // a number increasing by one everytime (probably not an offset)
         uint _pad1; // -1
         public PointF Scale;
-        uint _pad2; // -1
-        public float Tint;
+        public Colour Colour;
+        public float Rotation;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomTileEntry
@@ -305,30 +385,29 @@ namespace Altar
         public Point Size;
         Point _pad; // a really high value, {X=1000000, Y=10000000}, Y keeps increasing by 1 per element
         public PointF Scale;
-        public float Tint;
+        public Colour Colour;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct FontCharEntry
     {
         public char Character; // wchar_t
-        public Point16 RelativePos; // relative to TPAG
-        public Point16 Size;
-        ushort _pad0; // unknown
-        uint   _pad1; // unknown
+        public Rectangle16 TexPagFrame;
+        public ushort Shift;
+        public uint Offset;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct PngChunck
+    public struct PngChunk
     {
-        public const uint ChunckEnd = 0x444E4549; // IEND
+        public const uint ChunkEnd = 0x444E4549; // IEND
 
         public uint Length, Type;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PngIhdr
     {
-        public PngChunck Header;
+        public PngChunk Header;
         public uint Width, Height;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

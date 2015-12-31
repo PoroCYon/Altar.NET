@@ -208,7 +208,7 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Rectangle : IEquatable<Rectangle>
     {
-        readonly static string Xs = "x";
+        internal readonly static string Xs = "x";
 
         public readonly int X, Y, Width, Height;
 
@@ -237,5 +237,102 @@ namespace Altar
 
         public static bool operator ==(Rectangle a, Rectangle b) =>  a.Equals(b);
         public static bool operator !=(Rectangle a, Rectangle b) => !a.Equals(b);
+    }
+    /// <summary>
+    /// AABB
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Rectangle16 : IEquatable<Rectangle16>
+    {
+        public readonly ushort X, Y, Width, Height;
+
+        public Rectangle16(ushort x, ushort y, ushort w, ushort h)
+        {
+            X = x;
+            Y = y;
+            Width = w;
+            Height = h;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj is Rectangle16)
+                return Equals((Rectangle16)obj);
+
+            return false;
+        }
+        public override int GetHashCode() => X.GetHashCode() ^ Y.GetHashCode() ^ Width.GetHashCode() ^ Height.GetHashCode();
+        public override string ToString() => Point.Xs + X + Point.Ys + Y + COMMA_S + Width + Rectangle.Xs + Height + C_BRACE;
+
+        public bool Equals(Rectangle16 other) => X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+
+        public static bool operator ==(Rectangle16 a, Rectangle16 b) =>  a.Equals(b);
+        public static bool operator !=(Rectangle16 a, Rectangle16 b) => !a.Equals(b);
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct BoundingBox : IEquatable<BoundingBox>
+    {
+        public readonly uint Top, Left, Right, Bottom;
+
+        public BoundingBox(uint top, uint l, uint r, uint bottom)
+        {
+            Top    = top   ;
+            Left   = l     ;
+            Right  = r     ;
+            Bottom = bottom;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj is BoundingBox)
+                return Equals((BoundingBox)obj);
+
+            return false;
+        }
+        public override int GetHashCode() => Top.GetHashCode() ^ Left.GetHashCode() ^ Right.GetHashCode() ^ Bottom.GetHashCode();
+        public override string ToString() => "{Top=" + Top + ", Left=" + Left + ", Right=" + Right + ", Bottom=" + Bottom + C_BRACE;
+
+        public bool Equals(BoundingBox other) => Top == other.Top && Left == other.Left && Right == other.Right && Bottom == other.Bottom;
+
+        public static bool operator ==(BoundingBox a, BoundingBox b) =>  a.Equals(b);
+        public static bool operator !=(BoundingBox a, BoundingBox b) => !a.Equals(b);
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct BoundingBox2 : IEquatable<BoundingBox2>
+    {
+        public readonly uint Left, Right, Bottom, Top;
+
+        public BoundingBox2(uint l, uint r, uint bottom, uint top)
+        {
+            Left   = l     ;
+            Right  = r     ;
+            Bottom = bottom;
+            Top    = top   ;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj is BoundingBox2)
+                return Equals((BoundingBox2)obj);
+
+            return false;
+        }
+        public override int GetHashCode() => Left.GetHashCode() ^ Right.GetHashCode() ^ Bottom.GetHashCode() ^ Top.GetHashCode();
+        public override string ToString() => "{Left=" + Left + ", Right=" + Right + ", Bottom=" + Bottom + ", Top=" + Top + C_BRACE;
+
+        public bool Equals(BoundingBox2 other) => Left == other.Left && Right == other.Right && Bottom == other.Bottom && Top == other.Top;
+
+        public static bool operator ==(BoundingBox2 a, BoundingBox2 b) =>  a.Equals(b);
+        public static bool operator !=(BoundingBox2 a, BoundingBox2 b) => !a.Equals(b);
     }
 }

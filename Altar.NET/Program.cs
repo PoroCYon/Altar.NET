@@ -6,6 +6,8 @@ using System.Text;
 
 namespace Altar
 {
+    // http://pastebin.com/9t783UNE
+
     using static SR;
 
     static class Program
@@ -331,8 +333,7 @@ namespace Altar
                             else
                                 sb.Append(c.Character);
                             sb.Append('\'').AppendLine().Append(SPACE_S).Append(SPACE_S)
-                                .Append("RelPos=").Append(c.RelativePosition).AppendLine().Append(SPACE_S).Append(SPACE_S)
-                                .Append("Size="  ).Append(c.Size).AppendLine();
+                                .Append("Frame=").Append(c.TexturePageFrame).AppendLine();
 
                             sb.Append(SPACE_S).Append(C_BRACE).AppendLine(COMMA_S);
                         }
