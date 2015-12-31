@@ -20,7 +20,7 @@ namespace Altar
 
             var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
             var len = re->Length;
-            var bc = (byte*)&re->Bytecode;
+            var bc = &re->Bytecode;
 
             var ret = new List<IntPtr>(); // doesn't like T* as type arg
 
