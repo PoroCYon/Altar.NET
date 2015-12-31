@@ -56,6 +56,11 @@ namespace Altar
             DIR_FNT  = "font/"   ,
             DIR_PATH = "path/"   ,
 
+            VAR  = "var"     ,
+            INST = "instance",
+            BOOL = "bool"    ,
+            STOG = "stog"    ,
+
             ERR_NO_FORM   = "No 'FORM' header.",
             ERR_FILE_NF_1 = "File \""          ,
             ERR_FILE_NF_2 = "\" not found."    ;
