@@ -49,9 +49,26 @@ namespace Altar
                 var vars = SectionReader.GetRefDefs(f, f.Variables);
                 var fns  = SectionReader.GetRefDefs(f, f.Functions);
 
+                var varAccs = Disassembler.GetReferenceTable(f, vars);
+                var  fnAccs = Disassembler.GetReferenceTable(f, fns );
+
+                var rdata = new RefData
+                {
+                    Variables = vars,
+                    Functions = fns ,
+
+                    VarAccessors  = varAccs,
+                    FuncAccessors =  fnAccs,
+                };
+
                 //TODO: serialize
                 var gen8 = SectionReader.GetGeneralInfo(f);
                 var optn = SectionReader.GetOptionInfo (f);
+
+                //var code = Disassembler.DisassembleCode(f, 143);
+                //var graph = Decompiler.BuildCFGraph(f, code);
+                //var exprs = Decompiler.ParseExpressions(f, rdata, graph[1]);
+                //var dasm = Disassembler.DisplayInstructions(f, rdata, code, graph[1].Instructions);
 
 
                 //if (f.Audio->Count >= 0)
@@ -290,16 +307,13 @@ namespace Altar
                 {
                     Console.Write("Fetching code... ");
 
-                    var varAccs = Disassembler.GetReferenceTable(f, vars);
-                    var  fnAccs = Disassembler.GetReferenceTable(f, fns );
-
                     //File.WriteAllText("vars.txt", String.Join(Environment.NewLine, varAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" + vars[kvp.Value].Name)));
                     //File.WriteAllText("funs.txt", String.Join(Environment.NewLine,  fnAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" +  fns[kvp.Value].Name)));
 
                     for (uint i = 0; i < f.Code->Count; i++)
                     {
                         var ci = Disassembler.DisassembleCode(f, i);
-                        var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci);
+                        var s  = Disassembler.DisplayInstructions(f, rdata, ci);
 
                         File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }
