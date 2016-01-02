@@ -299,7 +299,7 @@ namespace Altar
                     for (uint i = 0; i < f.Code->Count; i++)
                     {
                         var ci = Disassembler.DisassembleCode(f, i);
-                        var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci.Instructions);
+                        var s  = Disassembler.DisplayInstructions(f, varAccs, fnAccs, ci);
 
                         File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }

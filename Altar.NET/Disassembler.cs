@@ -108,8 +108,10 @@ namespace Altar
             return ret;
         }
 
-        public static string DisplayInstructions(GMFileContent content, Dictionary<IntPtr, int> varAccs, Dictionary<IntPtr, int> fnAccs, AnyInstruction*[] instrs)
+        public static string DisplayInstructions(GMFileContent content, Dictionary<IntPtr, int> varAccs, Dictionary<IntPtr, int> fnAccs, CodeInfo code, AnyInstruction*[] instructions = null)
         {
+            var instrs = instructions ?? code.Instructions;
+
             if (instrs.Length == 0)
                 return String.Empty;
 
@@ -118,7 +120,7 @@ namespace Altar
 
             var sb = new StringBuilder();
 
-            var firstInstr = instrs[0];
+            var firstInstr = code.Instructions[0];
 
             for (int i = 0; i < instrs.Length; i++)
             {

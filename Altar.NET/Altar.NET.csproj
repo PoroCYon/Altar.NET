@@ -7,7 +7,7 @@
     <ProjectGuid>{D09B3815-ED4A-4857-BA88-26655E34F041}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Altar.NET</RootNamespace>
+    <RootNamespace>Altar</RootNamespace>
     <AssemblyName>Altar.NET</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Decompiler.cs" />
+    <Compile Include="DecompTypes.cs" />
     <Compile Include="DisasmTypes.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="GMFile.cs" />
