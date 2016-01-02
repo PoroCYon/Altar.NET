@@ -58,7 +58,7 @@ namespace Altar
                     Functions = fns ,
 
                     VarAccessors  = varAccs,
-                    FuncAccessors =  fnAccs,
+                    FuncAccessors =  fnAccs
                 };
 
                 //TODO: serialize

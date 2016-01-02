@@ -4,6 +4,8 @@ using System.Linq;
 
 namespace Altar
 {
+    using static SR;
+
     public enum BranchType : byte
     {
         Unconditional, // br
@@ -107,7 +109,7 @@ namespace Altar
         public object Value;
         public DataType OriginalType;
 
-        public override string ToString() => (Value ?? SR.NULL).ToString();
+        public override string ToString() => (Value ?? NULL).ToString();
     }
     public class VariableExpression : Expression
     {
@@ -116,7 +118,7 @@ namespace Altar
         public InstanceType Owner;
         public DataType OriginalType;
 
-        public override string ToString() => Owner.ToPrettyString() + SR.DOT + Variable.Name + Type.ToPrettyString();
+        public override string ToString() => Owner.ToPrettyString() + DOT + Variable.Name + Type.ToPrettyString();
     }
     public class UnaryOperatorExpression : Expression
     {
@@ -124,7 +126,7 @@ namespace Altar
         public UnaryOperator Operator;
         public DataType OriginalType;
 
-        public override string ToString() => SR.O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToString() : Operator.ToString()) + SR.SPACE_S + Input + SR.C_PAREN;
+        public override string ToString() => O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToPrettyString() : Operator.ToString().ToLowerInvariant()) + SPACE_S + Input + C_PAREN;
     }
     public class BinaryOperatorExpression : Expression
     {
@@ -133,7 +135,7 @@ namespace Altar
         public BinaryOperator Operator;
         public DataType OriginalType;
 
-        public override string ToString() => SR.O_PAREN + Operator + SR.SPACE_S + Arg1 + SR.SPACE_S + Arg2 + SR.C_PAREN;
+        public override string ToString() => O_PAREN + Operator.ToString().ToLowerInvariant() + SPACE_S + Arg1 + SPACE_S + Arg2 + C_PAREN;
     }
     public class CallExpression : Expression
     {
@@ -141,7 +143,7 @@ namespace Altar
         public VariableType Type;
         public ReferenceDef Function;
 
-        public override string ToString() => SR.O_PAREN + Function.Name + Type.ToPrettyString() + SR.SPACE_S + String.Join(SR.SPACE_S, Arguments.Select(o => o.ToString())) + SR.C_PAREN;
+        public override string ToString() => O_PAREN + Function.Name + Type.ToPrettyString() + SPACE_S + String.Join(SPACE_S, Arguments.Select(o => o.ToString())) + C_PAREN;
     }
     public class SetExpression : Expression
     {
@@ -151,7 +153,7 @@ namespace Altar
         public ReferenceDef Target;
         public DataType OriginalType;
 
-        public override string ToString() => SR.O_PAREN + Owner.ToPrettyString() + SR.DOT + Target + Type.ToPrettyString() + " = " + Value + SR.C_PAREN;
+        public override string ToString() => SR.O_PAREN + Owner.ToPrettyString() + DOT + Target + Type.ToPrettyString() + EQ_S + Value + C_PAREN;
     }
 
     public static class DecompExt
