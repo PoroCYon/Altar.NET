@@ -13,9 +13,9 @@ namespace Altar
             public uint BranchToAddress;
         }
 
-        static GraphBranch[] EmptyGBArray   = { };
-        static GraphVertex[] EmptyGVArray   = { };
-        static Expression [] EmptyExprArray = { };
+        readonly static GraphBranch[] EmptyGBArray   = { };
+        readonly static GraphVertex[] EmptyGVArray   = { };
+        readonly static Expression [] EmptyExprArray = { };
 
         static List<CodeBlock> SplitBlocks (GMFileContent content, CodeInfo code)
         {

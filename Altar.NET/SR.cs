@@ -23,6 +23,8 @@ namespace Altar
             O_PAREN   = "(" ,
             DEL_CHAR  = "^H",
 
+            EQ_S = " = ",
+
             BRACKETS = "[]",
             HEX_PRE  = "0x",
             HEX_FM8  = "X8",
