@@ -10,9 +10,10 @@ namespace Altar
      *
      * * SectionGeneral unknowns
      * * SectionOption unknowns
-     * * ObjectEntry unknowns (code?)
-     * * SpriteEntry unknowns
      * * TextureEntry unknowns
+     * * SpriteEntry unknowns
+     * * ObjectEntry unknowns
+     * * BgEntry unknowns
      * * RoomEntry unknowns
      * * RoomViewEntry unknowns
      * * RoomObjEntry unknowns
@@ -115,7 +116,7 @@ namespace Altar
         public ulong Timestamp; // UNIX time (64-bit, luckily)
         public uint DisplayNameOffset;
         public uint ActiveTargets;
-        fixed uint _pad2[5]; // unknown (0, *, 0, *, 0x00001966) -> more flags?
+        fixed uint _pad2[5]; // unknown (0, *, 0, *, *) -> more flags?
         public uint NumberCount;
         public uint Numbers;
     }
@@ -152,7 +153,7 @@ namespace Altar
             uint creation_event_order;?
         */
 
-        fixed uint _pad[0xF]; // unknown: 0x80000000, 2, 0x00CC7A1#, 0, -1, 0, 0, 0, 0, *, 0, 0, 0, 0, 0x000000FF
+        fixed uint _pad[0xF]; // unknown: 0x80000000, 2, 0x00CC7A1#, 0, *, 0, 0, 0, 0, *, 0, 0, 0, 0, 0x000000FF
         public CountOffsetsPair ConstMap;
     }
 
@@ -272,11 +273,12 @@ namespace Altar
         public uint Name;
         public uint SpriteIndex;
 
-        fixed uint  _pad0[9]; // 1, 0, 0, 0, 0xFFFFFF9C, -1, 0, 0, 0
+        fixed uint _pad0[9]; // 1, 0, 0, 0, *, *, 0, 0, 0
 
         public ObjectPhysics Physics;
 
-        // more floats? // -32, -32, 32, 32
+        // more floats? (4)
+        //!? BUT WHEN?
 
         public CountOffsetsPair ShapePoints;
     }
@@ -289,7 +291,8 @@ namespace Altar
         public DwordBool Persistent;
         public Colour Colour;
 
-        fixed uint _pad1[3]; // unknown
+        // showColour? isometric? [hv]snap?
+        fixed uint _pad0[3]; // unknown: 1, * (can be -1 -> option?), * (<10)
 
         public uint BgOffset, ViewOffset, ObjOffset, TileOffset;
 

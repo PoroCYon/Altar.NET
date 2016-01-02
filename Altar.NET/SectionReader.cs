@@ -127,6 +127,7 @@ namespace Altar
             ret.SpriteIndex = oe->SpriteIndex;
             ret.Physics     = oe->Physics;
 
+            // floats messing things up - do not uncomment for now (see SectionReader.cs, struct ObjectEntry)
             //ret.Data = new uint[oe->ShapePoints.Count];
 
             //for (uint i = 0; i < oe->ShapePoints.Count; i++)
