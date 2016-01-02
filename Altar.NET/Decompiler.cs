@@ -6,10 +6,18 @@ namespace Altar
 {
     public unsafe static class Decompiler
     {
-        static GraphBranch[] EmptyGBArray = { };
-        static GraphVertex[] EmptyGVArray = { };
+        struct CodeBlock
+        {
+            public List<IntPtr> Instructions;
+            public BranchType Type;
+            public uint BranchToAddress;
+        }
 
-        static List<CodeBlock> SplitBlocks(GMFileContent content, CodeInfo code)
+        static GraphBranch[] EmptyGBArray   = { };
+        static GraphVertex[] EmptyGVArray   = { };
+        static Expression [] EmptyExprArray = { };
+
+        static List<CodeBlock> SplitBlocks (GMFileContent content, CodeInfo code)
         {
             var blocks = new List<CodeBlock>();
             var curBl  = new List<IntPtr>();
@@ -136,17 +144,165 @@ namespace Altar
         }
 
         /// <summary>
-        /// Returns the entry vertex of the code.
+        /// Builds a control flow graph from bytecode.
         /// </summary>
         /// <param name="content"></param>
         /// <param name="code"></param>
-        /// <returns></returns>
-        public static GraphVertex[] BuildGraph(GMFileContent content, CodeInfo code)
+        /// <returns>the entry vertex of the code.</returns>
+        public static GraphVertex[] BuildCFGraph(GMFileContent content, CodeInfo code)
         {
             if (code.Instructions.Length == 0)
                 return EmptyGVArray;
 
             return CreateVertices(content, code);
+        }
+
+        public static Expression[] ParseExpressions(GMFileContent content, RefData rdata, GraphVertex vertex)
+        {
+            if (vertex.Instructions.Length == 0)
+                return EmptyExprArray;
+
+            var stack = new Stack<Expression>();
+            var instr = vertex.Instructions;
+
+            for (int i = 0; i < instr.Length; i++)
+            {
+                var ins = instr[i];
+
+                var pst = (SingleTypeInstruction*)ins;
+                var pdt = (DoubleTypeInstruction*)ins;
+                var pcl = (CallInstruction      *)ins;
+                var pps = (PushInstruction      *)ins;
+                var pse = (SetInstruction       *)ins;
+
+                var st = ins->SingleType;
+                var dt = ins->DoubleType;
+                var cl = ins->Call      ;
+                var ps = ins->Push      ;
+                var se = ins->Set       ;
+
+                var t1 = ins->Kind() == InstructionKind.SingleType ? st.Type
+                      : (ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type1 : 0);
+                var t2 = ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type2
+                      : (ins->Kind() == InstructionKind.SingleType ? st.Type        : 0);
+
+                switch (ins->Code())
+                {
+                    case OpCode.Dup:
+                        stack.Push(stack.Peek());
+                        break;
+                    case OpCode.Pop:
+                        //stack.Pop();
+                        break;
+                    case OpCode.Pushenv: // ...?
+                    case OpCode.Popenv :
+                        break;
+                    default:
+                        switch (ins->ExprType())
+                        {
+                            #region variable
+                            case ExpressionType.Variable:
+                                stack.Push(new VariableExpression
+                                {
+                                    OriginalType = t1,
+                                    ReturnType   = t2,
+                                    Type         = ((Reference*)&pps->ValueRest)->Type,
+                                    Owner        = (InstanceType)ps.Value,
+                                    Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]]
+                                });
+                                break;
+                            #endregion
+                            #region literal
+                            case ExpressionType.Literal:
+                                object v         = null;
+                                var rest         = &pps->ValueRest;
+
+                                switch (ps.Type)
+                                {
+                                    case DataType.Int16:
+                                        v = ps.Value;
+                                        break;
+                                    case DataType.Boolean:
+                                        v = ((DwordBool*)rest)->IsTrue();
+                                        break;
+                                    case DataType.Double:
+                                        v = *(double*)rest;
+                                        break;
+                                    case DataType.Single:
+                                        v = *(float*)rest;
+                                        break;
+                                    case DataType.Int32:
+                                        v = *(int*)rest;
+                                        break;
+                                    case DataType.Int64:
+                                        v = *(long*)rest;
+                                        break;
+                                    case DataType.String:
+                                        v = SectionReader.GetStringInfo(content, ps.ValueRest);
+                                        break;
+                                }
+
+                                stack.Push(new LiteralExpression
+                                {
+                                    OriginalType = t1,
+                                    ReturnType   = t2,
+                                    Value = v
+                                });
+                                break;
+                            #endregion
+                            #region set
+                            case ExpressionType.Set:
+                                stack.Push(new SetExpression
+                                {
+                                    OriginalType = t1,
+                                    ReturnType   = t2,
+                                    Type         = se.DestVar.Type,
+                                    Owner        = se.Instance,
+                                    Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                                    Value        = stack.Pop()
+                                });
+                                break;
+                            #endregion
+                            #region call
+                            case ExpressionType.Call:
+                                stack.Push(new CallExpression
+                                {
+                                    ReturnType = t1,
+                                    Type       = cl.Function.Type,
+                                    Function   = rdata.Functions[rdata.FuncAccessors[(IntPtr)ins]],
+                                    Arguments  = stack.PopMany(cl.Arguments).ToArray()
+                                });
+                                break;
+                            #endregion
+                            #region binaryop
+                            case ExpressionType.BinaryOp:
+                                stack.Push(new BinaryOperatorExpression
+                                {
+                                    OriginalType = t1,
+                                    ReturnType   = t2,
+                                    Arg1         = stack.Pop(),
+                                    Arg2         = stack.Pop(),
+                                    Operator     = ins->BinaryOp()
+                                });
+                                break;
+                            #endregion
+                            #region unaryop
+                            case ExpressionType.UnaryOp:
+                                stack.Push(new UnaryOperatorExpression
+                                {
+                                    OriginalType = t1,
+                                    ReturnType   = t2,
+                                    Input        = stack.Pop(),
+                                    Operator     = ins->UnaryOp()
+                                });
+                                break;
+                            #endregion
+                        }
+                        break;
+                }
+            }
+
+            return stack.Reverse().ToArray();
         }
     }
 }

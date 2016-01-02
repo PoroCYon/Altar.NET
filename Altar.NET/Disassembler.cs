@@ -108,15 +108,12 @@ namespace Altar
             return ret;
         }
 
-        public static string DisplayInstructions(GMFileContent content, Dictionary<IntPtr, int> varAccs, Dictionary<IntPtr, int> fnAccs, CodeInfo code, AnyInstruction*[] instructions = null)
+        public static string DisplayInstructions(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instructions = null)
         {
             var instrs = instructions ?? code.Instructions;
 
             if (instrs.Length == 0)
                 return String.Empty;
-
-            var vars = SectionReader.GetRefDefs(content, content.Variables);
-            var fns  = SectionReader.GetRefDefs(content, content.Functions);
 
             var sb = new StringBuilder();
 
@@ -165,7 +162,7 @@ namespace Altar
 
                         sb.Append(':');
 
-                        sb.Append(vars[varAccs[(IntPtr)iptr]].Name);
+                        sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);
                         sb.Append(s.DestVar.Type.ToPrettyString());
                         break;
                     #endregion
@@ -198,7 +195,7 @@ namespace Altar
                                 }
                                 sb.Append(':');
 
-                                sb.Append(vars[varAccs[(IntPtr)iptr]].Name);
+                                sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);
                                 sb.Append(rv.Type.ToPrettyString());
                                 break;
                             case DataType.Boolean:
@@ -229,7 +226,7 @@ namespace Altar
                         sb.Append(c.ReturnType.ToPrettyString()).Append(':')
                             .Append(c.Arguments).Append(' ');
 
-                        sb.Append(fns[fnAccs[(IntPtr)iptr]].Name);
+                        sb.Append(rdata.Functions[rdata.FuncAccessors[(IntPtr)iptr]].Name);
                         sb.Append(c.Function.Type.ToPrettyString());
                         break;
                     #endregion

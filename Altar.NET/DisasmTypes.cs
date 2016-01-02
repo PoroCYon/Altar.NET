@@ -87,13 +87,12 @@ namespace Altar
 
     public enum InstructionKind : byte
     {
-        SingleType,
-        DoubleType,
-        Goto      ,
-
-        Set       ,
-        Push      ,
-        Call      ,
+        SingleType = 1,
+        DoubleType    ,
+        Goto          ,
+        Set           ,
+        Push          ,
+        Call          ,
         Break
     }
 
@@ -221,7 +220,13 @@ namespace Altar
         public BreakInstruction Break;
     }
 
-    public static class DecompExt
+    public struct RefData
+    {
+        public ReferenceDef[] Variables, Functions;
+        public Dictionary<IntPtr, int> VarAccessors, FuncAccessors;
+    }
+
+    public static class DisasmExt
     {
         public static InstructionKind Kind(this OpCode code)
         {
@@ -267,8 +272,8 @@ namespace Altar
                 case OpCode.Br:
                 case OpCode.Brt:
                 case OpCode.Brf:
-                case OpCode.Pushenv:
-                case OpCode.Popenv:
+                case OpCode.Pushenv: // ?
+                case OpCode.Popenv:  // ?
                     return InstructionKind.Goto;
             }
 

@@ -18,6 +18,9 @@ namespace Altar
             UNDERSC   = "_" ,
             C_BRACKET = "]" ,
             O_BRACKET = "[" ,
+            DOT       = "." ,
+            C_PAREN   = ")" ,
+            O_PAREN   = "(" ,
             DEL_CHAR  = "^H",
 
             BRACKETS = "[]",
@@ -60,6 +63,7 @@ namespace Altar
             INST = "instance",
             BOOL = "bool"    ,
             STOG = "stog"    ,
+            NULL = "null"    ,
 
             ERR_NO_FORM   = "No 'FORM' header.",
             ERR_FILE_NF_1 = "File \""          ,
