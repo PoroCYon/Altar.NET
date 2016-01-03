@@ -32,6 +32,9 @@ namespace Altar
         {
             var file = Path.GetFullPath(args.Length == 0 ? DATA_WIN : args[0]);
 
+            if (Directory.Exists(file) && !File.Exists(file))
+                file += Path.DirectorySeparatorChar + DATA_WIN;
+
             if (!File.Exists(file))
                 Console.WriteLine(ERR_FILE_NF_1 + file + ERR_FILE_NF_2);
 
@@ -46,8 +49,13 @@ namespace Altar
             {
                 var sb = new StringBuilder();
 
-                var vars = SectionReader.GetRefDefs(f, f.Variables);
-                var fns  = SectionReader.GetRefDefs(f, f.Functions);
+                #region init stuff
+                //TODO: serialize
+                var gen8 = SectionReader.GetGeneralInfo(f);
+                var optn = SectionReader.GetOptionInfo(f);
+
+                var vars = gen8.CanDisassembleCode ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
+                var fns  = gen8.CanDisassembleCode ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
 
                 var varAccs = Disassembler.GetReferenceTable(f, vars);
                 var  fnAccs = Disassembler.GetReferenceTable(f, fns );
@@ -60,15 +68,7 @@ namespace Altar
                     VarAccessors  = varAccs,
                     FuncAccessors =  fnAccs
                 };
-
-                //TODO: serialize
-                var gen8 = SectionReader.GetGeneralInfo(f);
-                var optn = SectionReader.GetOptionInfo (f);
-
-                //var code = Disassembler.DisassembleCode(f, 143);
-                //var graph = Decompiler.BuildCFGraph(f, code);
-                //var exprs = Decompiler.ParseExpressions(f, rdata, graph[1]);
-                //var dasm = Disassembler.DisplayInstructions(f, rdata, code, graph[1].Instructions);
+                #endregion
 
 
                 //if (f.Audio->Count >= 0)
@@ -305,20 +305,25 @@ namespace Altar
                 #region code
                 if (f.Code->Count > 0)
                 {
-                    Console.Write("Fetching code... ");
-
-                    //File.WriteAllText("vars.txt", String.Join(Environment.NewLine, varAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" + vars[kvp.Value].Name)));
-                    //File.WriteAllText("funs.txt", String.Join(Environment.NewLine,  fnAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" +  fns[kvp.Value].Name)));
-
-                    for (uint i = 0; i < f.Code->Count; i++)
+                    if (!gen8.CanDisassembleCode)
+                        Console.WriteLine("Cannot disassemble bytecode with version >0xE, skipping...");
+                    else
                     {
-                        var ci = Disassembler.DisassembleCode(f, i);
-                        var s  = Disassembler.DisplayInstructions(f, rdata, ci);
+                        Console.Write("Fetching code... ");
 
-                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
+                        //File.WriteAllText("vars.txt", String.Join(Environment.NewLine, varAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" + vars[kvp.Value].Name)));
+                        //File.WriteAllText("funs.txt", String.Join(Environment.NewLine,  fnAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" +  fns[kvp.Value].Name)));
+
+                        for (uint i = 0; i < f.Code->Count; i++)
+                        {
+                            var ci = Disassembler.DisassembleCode(f, i);
+                            var s  = Disassembler.DisplayInstructions(f, rdata, ci);
+
+                            File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
+                        }
+
+                        Console.WriteLine(DONE);
                     }
-
-                    Console.WriteLine(DONE);
                 }
                 #endregion
 
@@ -360,6 +365,7 @@ namespace Altar
                 }
                 #endregion
                 #region paths
+                if (f.Paths->Count > 0)
                 {
                     Console.Write("Fetching paths... ");
 
