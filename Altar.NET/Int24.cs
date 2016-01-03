@@ -12,25 +12,21 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 3), DebuggerDisplay("{DebugDisplay()}")]
     public struct Int24 : IEquatable<Int24>, IComparable<Int24>, IFormattable, IConvertible
     {
-        ushort _word;
-        byte   _byte;
+        byte _byte0, _byte1, _byte2;
 
         public uint UValue
         {
             get
             {
-                return _byte | ((uint)_word & 0x0000FF00) | (((uint)_word & 0x000000FF) << 16);
-                      //(uint)_byte << 16 | _word;
+                return _byte0 | (uint)_byte1 << 8 | (uint)_byte2 << 16;
             }
             private set
             {
                 unchecked
                 {
-                    _byte = (byte)(value & 0x000000FF);
-                    _word = (ushort)((value & 0x0000FF00) | ((value & 0x00FF0000) >> 16));
-
-                    //_word = (ushort)(value & 0x0000FFFF);
-                    //_byte = (byte)((value & 0x00FF0000) >> 16);
+                    _byte0 = (byte)( value & 0x000000FF       );
+                    _byte1 = (byte)((value & 0x0000FF00) >>  8);
+                    _byte2 = (byte)((value & 0x00FF0000) >> 16);
                 }
             }
         }
@@ -40,52 +36,57 @@ namespace Altar
             {
                 var v = UValue;
 
-                uint ur = 0;
+                int r = 0;
 
-                ur |= v & 0x007FFFFF;
+                r = (int)(v & 0x007FFFFF);
 
                 if ((v & 0x00800000) != 0)
-                    ur |= 0xFFF00000;
+                    r *= -1;
 
-                return unchecked((int)ur);
+                return r;
+            }
+            set
+            {
+                var i = (uint)(value & 0x00FFFFFF);
+
+                UValue = (i & 0x007FFFFFF) | (value < 0 ? (uint)0x00800000 : 0);
             }
         }
 
         [DebuggerStepThrough]
-        public Int24(ushort value)
+        public Int24(byte value)
         {
-            _word = 0;
-            _byte = 0;
+            _byte0 = 0;
+            _byte1 = 0;
+            _byte2 = 0;
 
             UValue = value;
         }
         [DebuggerStepThrough]
-        public Int24(byte   value)
+        public Int24(ushort value)
         {
-            _word = 0;
-            _byte = 0;
+            _byte0 = 0;
+            _byte1 = 0;
+            _byte2 = 0;
 
             UValue = value;
         }
         [DebuggerStepThrough]
         public Int24(uint   value)
         {
-            _word = 0;
-            _byte = 0;
+            _byte0 = 0;
+            _byte1 = 0;
+            _byte2 = 0;
 
             UValue = value;
         }
         public Int24( int   value)
         {
-            _word = 0;
-            _byte = 0;
+            _byte0 = 0;
+            _byte1 = 0;
+            _byte2 = 0;
 
-            unchecked
-            {
-                var i = (uint)value;
-
-                UValue = (i & 0x007FFFFFF) | (value < 0 ? (uint)0x00800000 : 0);
-            }
+            Value = value;
         }
 
         [DebuggerStepThrough]
@@ -105,7 +106,7 @@ namespace Altar
         public override string ToString() => Value.ToString();
 
         [DebuggerStepThrough]
-        public bool Equals(Int24 other) => other._word == _word && other._byte == _byte;
+        public bool Equals(Int24 other) => _byte0 == other._byte0 && _byte1 == other._byte1 && _byte2 == other._byte2;
 
         [DebuggerStepThrough]
         public int CompareTo(Int24 other) => Value.CompareTo(other.Value);
@@ -125,15 +126,15 @@ namespace Altar
         [DebuggerStepThrough]
         public bool    ToBoolean(IFormatProvider _) => Value != 0;
         [DebuggerStepThrough]
-        public char    ToChar   (IFormatProvider _) => (char)Value;
+        public char    ToChar   (IFormatProvider _) => unchecked((char)(UValue & 0xFFFF));
         [DebuggerStepThrough]
-        public sbyte   ToSByte  (IFormatProvider _) => unchecked((sbyte )Value);
+        public sbyte   ToSByte  (IFormatProvider _) => unchecked((sbyte ) Value);
         [DebuggerStepThrough]
-        public byte    ToByte   (IFormatProvider _) => unchecked(( byte )Value);
+        public byte    ToByte   (IFormatProvider _) => unchecked(( byte )(UValue & 0xFF));
         [DebuggerStepThrough]
-        public short   ToInt16  (IFormatProvider _) => unchecked(( short)Value);
+        public short   ToInt16  (IFormatProvider _) => unchecked(( short) Value);
         [DebuggerStepThrough]
-        public ushort  ToUInt16 (IFormatProvider _) => unchecked((ushort)Value);
+        public ushort  ToUInt16 (IFormatProvider _) => unchecked((ushort)(UValue & 0xFFFF));
         [DebuggerStepThrough]
         public int     ToInt32  (IFormatProvider _) => Value;
         [DebuggerStepThrough]
@@ -200,6 +201,18 @@ namespace Altar
         public static Int24 operator +(Int24 v) => v;
         [DebuggerStepThrough]
         public static Int24 operator -(Int24 v) => new Int24(-v.Value);
+
+        [DebuggerStepThrough]
+        public static Int24 operator &(Int24 a, Int24 b) => new Int24(a.UValue & b.UValue);
+        [DebuggerStepThrough]
+        public static Int24 operator |(Int24 a, Int24 b) => new Int24(a.UValue | b.UValue);
+        [DebuggerStepThrough]
+        public static Int24 operator ^(Int24 a, Int24 b) => new Int24(a.UValue ^ b.UValue);
+
+        [DebuggerStepThrough]
+        public static Int24 operator <<(Int24 a, int b) => new Int24(a.UValue << b);
+        [DebuggerStepThrough]
+        public static Int24 operator >>(Int24 a, int b) => new Int24(a.UValue >> b);
 
         [DebuggerStepThrough]
         public static bool operator > (Int24 a, Int24 b) => a.Value >  b.Value;

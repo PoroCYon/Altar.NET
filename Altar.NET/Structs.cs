@@ -19,6 +19,7 @@ namespace Altar
     public struct GeneralInfo
     {
         public bool IsDebug;
+        public uint BytecodeVersion;
         public string FileName;
         public string Configuration;
         public uint GameId;
@@ -31,6 +32,8 @@ namespace Altar
         public DateTime Timestamp;
 
         public uint[] WeirdNumbers;
+
+        public bool CanDisassembleCode => BytecodeVersion <= 0x0E;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct OptionInfo
@@ -85,7 +88,10 @@ namespace Altar
         public string CodeName  ;
         public string SystemName;
 
-        public bool IsBold;
+        public uint EmSize;
+        public bool IsBold, IsItalic;
+        public FontAntiAliasing AntiAliasing;
+        public byte Charset;
         public uint TexPagId;
 
         public PointF Scale;
@@ -97,6 +103,9 @@ namespace Altar
     {
         public string Name;
         public uint SpriteIndex;
+
+        public bool IsVisible, IsSolid, IsPersistent;
+        public int Depth;
 
         public ObjectPhysics Physics;
     }
@@ -181,6 +190,11 @@ namespace Altar
         public Colour Colour;
     }
 
+    public enum FontAntiAliasing : byte
+    {
+        Off
+        // other values
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct FontCharacter
     {

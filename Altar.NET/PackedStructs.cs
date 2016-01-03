@@ -18,7 +18,7 @@ namespace Altar
      * * RoomViewEntry unknowns
      * * RoomObjEntry unknowns
      * * RoomTileEntry unknowns
-     * * FontChar unknowns
+     * * FontEntry unknowns
      * * PathEntry unknowns
      *
      */
@@ -31,10 +31,20 @@ namespace Altar
 
         internal string DebugDisplay() => "{Count=" + SR.HEX_PRE + Count.ToString(SR.HEX_FM8) + SR.C_BRACE;
     }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RefDefEntry
     {
-        public uint Name;
+        public uint NameOffset;
+        public uint Occurrences;
+        public uint FirstAddress;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct RefDefEntryWithOthers
+    {
+        public uint NameOffset;
+        uint _pad0; // unknown, some flags?
+        uint _pad1; // unknown
         public uint Occurrences;
         public uint FirstAddress;
     }
@@ -97,7 +107,7 @@ namespace Altar
         public SectionHeader Header;
 
         public bool Debug; // ?
-        Int24 _pad0; // unknown (0x00000#)
+        public Int24 BytecodeVersion; // probably (could also be build, but it only works with HIGHER builds): // >0x00000E -> DisassembleCode breaks
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
@@ -199,6 +209,7 @@ namespace Altar
         Embedded = 0x01,
         Normal   = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
     }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SoundEntry
     {
@@ -242,7 +253,7 @@ namespace Altar
         public uint Precision;
         uint _pad1; // backroom?
         // hsnap? vsnap?
-        public float Data; // ...
+        public float Data; // how arranged?
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ScriptEntry
@@ -255,12 +266,13 @@ namespace Altar
     {
         public uint CodeName, SystemName;
         public uint EmSize;
-        public DwordBool Bold; // | renderhq | italic | includettf?
-        uint _pad; // renderhq? italic? includettf? ttfname?
-        public ushort RangeStart; //!? multiple ranges??
+        public DwordBool Bold;
+        public DwordBool Italic;
+        // renderhq? includettf? ttfname? WHERE?
+        ushort _ignore0; // ascii range start (probably, only one) -> use Chars
         public byte Charset;
-        public byte AA;
-        public uint RangeEnd;
+        public FontAntiAliasing AntiAliasing;
+        uint _ignore1; // ascii range end (probably, only one) -> use Chars
         public uint TPagOffset;
 
         public PointF Scale;
@@ -273,14 +285,17 @@ namespace Altar
         public uint Name;
         public uint SpriteIndex;
 
-        fixed uint _pad0[9]; // 1, 0, 0, 0, *, *, 0, 0, 0
+        public DwordBool Visible, Solid;
+        public int Depth;
+        public DwordBool Persistent;
+
+        fixed uint _pad0[5]; // * (usually somewhere near -1), * (usually -1), 0, 0, 0
 
         public ObjectPhysics Physics;
 
-        // more floats? (4)
-        //!? BUT WHEN?
+        //!? more floats (4)? BUT WHEN??
 
-        public CountOffsetsPair ShapePoints;
+        //public CountOffsetsPair ShapePoints;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
@@ -291,7 +306,7 @@ namespace Altar
         public DwordBool Persistent;
         public Colour Colour;
 
-        // showColour? isometric? [hv]snap?
+        // showColour? isometric? [hv]snap? enableViews? clearViewBackground? clearDisplayBuffer?
         fixed uint _pad0[3]; // unknown: 1, * (can be -1 -> option?), * (<10)
 
         public uint BgOffset, ViewOffset, ObjOffset, TileOffset;
@@ -324,7 +339,7 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
     {
-        uint _pad; // 1
+        uint _pad; // unknown
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -366,15 +381,15 @@ namespace Altar
         public Rectangle View, Port;
         public Point Border, Speed;
 
-        uint _pad; // unknown (name offset?)
+        uint _pad; // unknown (name offset? usually -1)
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry
     {
         public Point Position;
         public uint DefIndex;
-        uint _pad0; // a number increasing by one everytime (probably not an offset)
-        uint _pad1; // -1
+        uint _count; // 100000 (0x186A0), keeps increasing by  per element
+        uint _pad; // -1
         public PointF Scale;
         public Colour Colour;
         public float Rotation;
@@ -386,7 +401,8 @@ namespace Altar
         public uint DefIndex;
         public Point SourcePos;
         public Point Size;
-        Point _pad; // a really high value, {X=1000000, Y=10000000}, Y keeps increasing by 1 per element
+        uint _magicnum; // somewhere near 1000000 (log), usually
+        uint _count; // 10000000, keeps increasing by 1 per element
         public PointF Scale;
         public Colour Colour;
     }

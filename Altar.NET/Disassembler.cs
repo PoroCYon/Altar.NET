@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -15,6 +16,8 @@ namespace Altar
     {
         public static CodeInfo DisassembleCode(GMFileContent content, uint id)
         {
+            if (content.General->BytecodeVersion > 0xE)
+                throw new InvalidDataException("Cannot disassemble bytecode with version >0xE.");
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 

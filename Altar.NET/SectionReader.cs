@@ -66,7 +66,7 @@ namespace Altar
             return -1L;
         }
 
-        static T[] ReadList<T>(GMFileContent content, CountOffsetsPair* list, Func<IntPtr, T> readThing)
+        static T[] ReadList<T>(GMFileContent content, CountOffsetsPair* list, Func<GMFileContent, IntPtr, T> readThing)
         {
             if (readThing == null)
                 throw new ArgumentNullException(nameof(readThing));
@@ -77,32 +77,11 @@ namespace Altar
             var addresses = &list->Offsets;
 
             for (uint i = 0; i < len; i++)
-                ret[i] = readThing((IntPtr)GMFile.PtrFromOffset(content, addresses[i]));
+                ret[i] = readThing(content, (IntPtr)GMFile.PtrFromOffset(content, addresses[i]));
 
             return ret;
         }
 
-        static SpriteInfo      SpriteFromOffset(GMFileContent content, uint off)
-        {
-            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, off);
-
-            var ret = new SpriteInfo();
-
-            ret.Name = StringFromOffset(content, se->Name);
-            ret.Size = se->Size;
-
-            ret.TextureIndices = new uint[se->Textures.Count];
-
-            for (uint i = 0; i < se->Textures.Count; i++)
-                for (uint j = 0; j < content.TexturePages->Count; j++)
-                    if ((&se->Textures.Offsets)[i] == (&content.TexturePages->Offsets)[j])
-                    {
-                        ret.TextureIndices[i] = j;
-                        break;
-                    }
-
-            return ret;
-        }
         static TexturePageInfo TPagFromOffset  (GMFileContent content, uint off)
         {
             var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, off);
@@ -117,50 +96,8 @@ namespace Altar
 
             return ret;
         }
-        static ObjectInfo      ObjectFromOffset(GMFileContent content, uint off)
-        {
-            var ret = new ObjectInfo();
 
-            var oe = (ObjectEntry*)GMFile.PtrFromOffset(content, off);
-
-            ret.Name        = StringFromOffset(content, oe->Name);
-            ret.SpriteIndex = oe->SpriteIndex;
-            ret.Physics     = oe->Physics;
-
-            // floats messing things up - do not uncomment for now (see SectionReader.cs, struct ObjectEntry)
-            //ret.Data = new uint[oe->ShapePoints.Count];
-
-            //for (uint i = 0; i < oe->ShapePoints.Count; i++)
-            //    ret.Data[i] = *(uint*)GMFile.PtrFromOffset(content, (&oe->ShapePoints.Offsets)[i]);
-
-            return ret;
-        }
-        static RoomInfo        RoomFromOffset  (GMFileContent content, uint off)
-        {
-            var ret = new RoomInfo();
-
-            var re = (RoomEntry*)GMFile.PtrFromOffset(content, off);
-
-            ret.Name           = StringFromOffset(content, re->Name   );
-            ret.Caption        = StringFromOffset(content, re->Caption);
-            ret.Size           = re->Size          ;
-            ret.Speed          = re->Speed         ;
-            ret.Colour         = re->Colour        ;
-            ret.World          = re->World         ;
-            ret.Bounding       = re->Bounding      ;
-            ret.Gravity        = re->Gravity       ;
-            ret.MetresPerPixel = re->MetresPerPixel;
-            ret.IsPersistent   = re->Persistent.IsTrue();
-
-            ret.Backgrounds = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->BgOffset  ), ReadRoomBg  );
-            ret.Views       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ViewOffset), ReadRoomView);
-            ret.Objects     = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ObjOffset ), ReadRoomObj );
-            ret.Tiles       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->TileOffset), ReadRoomTile);
-
-            return ret;
-        }
-
-        static RoomBackground ReadRoomBg  (IntPtr p)
+        static RoomBackground ReadRoomBg  (GMFileContent content, IntPtr p)
         {
             var entry = (RoomBgEntry*)p;
 
@@ -177,7 +114,7 @@ namespace Altar
 
             return b;
         }
-        static RoomView       ReadRoomView(IntPtr p)
+        static RoomView       ReadRoomView(GMFileContent content, IntPtr p)
         {
             var entry = (RoomViewEntry*)p;
 
@@ -191,7 +128,7 @@ namespace Altar
 
             return v;
         }
-        static RoomObject     ReadRoomObj (IntPtr p)
+        static RoomObject     ReadRoomObj (GMFileContent content, IntPtr p)
         {
             var entry = (RoomObjEntry*)p;
 
@@ -205,7 +142,7 @@ namespace Altar
 
             return o;
         }
-        static RoomTile       ReadRoomTile(IntPtr p)
+        static RoomTile       ReadRoomTile(GMFileContent content, IntPtr p)
         {
             var entry = (RoomTileEntry*)p;
 
@@ -227,14 +164,15 @@ namespace Altar
 
             var ge = content.General;
 
-            ret.IsDebug       = ge->Debug;
-            ret.FileName      = StringFromOffset(content, ge->FilenameOffset);
-            ret.Configuration = StringFromOffset(content, ge->ConfigOffset);
-            ret.GameId        = ge->GameId;
-            ret.Name          = StringFromOffset(content, ge->NameOffset);
-            ret.Version       = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
-            ret.WindowSize    = ge->WindowSize;
-            ret.DisplayName   = StringFromOffset(content, ge->DisplayNameOffset);
+            ret.IsDebug         = ge->Debug;
+            ret.FileName        = StringFromOffset(content, ge->FilenameOffset);
+            ret.Configuration   = StringFromOffset(content, ge->ConfigOffset);
+            ret.GameId          = ge->GameId;
+            ret.Name            = StringFromOffset(content, ge->NameOffset);
+            ret.Version         = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
+            ret.WindowSize      = ge->WindowSize;
+            ret.DisplayName     = StringFromOffset(content, ge->DisplayNameOffset);
+            ret.BytecodeVersion = ge->BytecodeVersion;
 
             ret.LicenseMD5Hash = new byte[0x10];
             Marshal.Copy((IntPtr)ge->MD5, ret.LicenseMD5Hash, 0, 0x10);
@@ -287,7 +225,24 @@ namespace Altar
             if (id >= content.Sprites->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return SpriteFromOffset(content, (&content.Sprites->Offsets)[id]);
+            var se = (SpriteEntry*)GMFile.PtrFromOffset(content, (&content.Sprites->Offsets)[id]);
+
+            var ret = new SpriteInfo();
+
+            ret.Name = StringFromOffset(content, se->Name);
+            ret.Size = se->Size;
+
+            ret.TextureIndices = new uint[se->Textures.Count];
+
+            for (uint i = 0; i < se->Textures.Count; i++)
+                for (uint j = 0; j < content.TexturePages->Count; j++)
+                    if ((&se->Textures.Offsets)[i] == (&content.TexturePages->Offsets)[j])
+                    {
+                        ret.TextureIndices[i] = j;
+                        break;
+                    }
+
+            return ret;
         }
         public static BackgroundInfo  GetBgInfo     (GMFileContent content, uint id)
         {
@@ -365,10 +320,14 @@ namespace Altar
 
             var tpag = TPagFromOffset(content, fe->TPagOffset);
 
-            ret.CodeName   = StringFromOffset(content, fe->CodeName  );
-            ret.SystemName = StringFromOffset(content, fe->SystemName);
-
-            ret.Scale = fe->Scale;
+            ret.CodeName     = StringFromOffset(content, fe->CodeName  );
+            ret.SystemName   = StringFromOffset(content, fe->SystemName);
+            ret.EmSize       = fe->EmSize;
+            ret.IsBold       = fe->Bold  .IsTrue();
+            ret.IsItalic     = fe->Italic.IsTrue();
+            ret.Charset      = fe->Charset;
+            ret.AntiAliasing = fe->AntiAliasing;
+            ret.Scale        = fe->Scale;
 
             for (uint i = 0; i < content.TexturePages->Count; i++)
                 if (fe->TPagOffset == (&content.TexturePages->Offsets)[i])
@@ -377,7 +336,7 @@ namespace Altar
                     break;
                 }
 
-            ret.Characters = ReadList(content, &fe->Chars, p =>
+            ret.Characters = ReadList(content, &fe->Chars, (_, p) =>
             {
                 var entry = (FontCharEntry*)p;
 
@@ -398,14 +357,52 @@ namespace Altar
             if (id >= content.Objects->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return ObjectFromOffset(content, (&content.Objects->Offsets)[id]);
+            var ret = new ObjectInfo();
+
+            var oe = (ObjectEntry*)GMFile.PtrFromOffset(content, (&content.Objects->Offsets)[id]);
+
+            ret.Name         = StringFromOffset(content, oe->Name);
+            ret.SpriteIndex  = oe->SpriteIndex;
+            ret.Physics      = oe->Physics;
+            ret.IsVisible    = oe->Visible.IsTrue();
+            ret.IsSolid      = oe->Solid.IsTrue();
+            ret.Depth        = oe->Depth;
+            ret.IsPersistent = oe->Persistent.IsTrue();
+
+            // floats messing things up - do not uncomment for now (see PackedStructs.cs, struct ObjectEntry)
+            //ret.Data = new uint[oe->ShapePoints.Count];
+
+            //for (uint i = 0; i < oe->ShapePoints.Count; i++)
+            //    ret.Data[i] = *(uint*)GMFile.PtrFromOffset(content, (&oe->ShapePoints.Offsets)[i]);
+
+            return ret;
         }
         public static RoomInfo        GetRoomInfo   (GMFileContent content, uint id)
         {
             if (id >= content.Rooms->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return RoomFromOffset(content, (&content.Rooms->Offsets)[id]);
+            var ret = new RoomInfo();
+
+            var re = (RoomEntry*)GMFile.PtrFromOffset(content, (&content.Rooms->Offsets)[id]);
+
+            ret.Name           = StringFromOffset(content, re->Name   );
+            ret.Caption        = StringFromOffset(content, re->Caption);
+            ret.Size           = re->Size          ;
+            ret.Speed          = re->Speed         ;
+            ret.Colour         = re->Colour        ;
+            ret.World          = re->World         ;
+            ret.Bounding       = re->Bounding      ;
+            ret.Gravity        = re->Gravity       ;
+            ret.MetresPerPixel = re->MetresPerPixel;
+            ret.IsPersistent   = re->Persistent.IsTrue();
+
+            ret.Backgrounds = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->BgOffset  ), ReadRoomBg  );
+            ret.Views       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ViewOffset), ReadRoomView);
+            ret.Objects     = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ObjOffset ), ReadRoomObj );
+            ret.Tiles       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->TileOffset), ReadRoomTile);
+
+            return ret;
         }
         public static TexturePageInfo GetTexPageInfo(GMFileContent content, uint id)
         {
@@ -500,23 +497,63 @@ namespace Altar
             return ret;
         }
 
-        public static ReferenceDef[] GetRefDefs(GMFileContent content, SectionRefDefs* section)
+        // C# doesn't like pointers of generic types...
+        static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, uint elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter)
         {
-            var r = new ReferenceDef[(section->Header.Size / 12)];
+            amount = amount == 0 ? section->Header.Size / rdeSize : amount;
+            var r = new ReferenceDef[amount];
 
             uint i = 0;
-            for (RefDefEntry* rde = &section->Entries; i < section->Header.Size / 12; rde++, i++)
+            for (var rde = (byte*)&section->Entries + elemOff * sizeof(uint); i < amount; rde += rdeSize, i++)
+                r[i] = iter((IntPtr)rde);
+
+            return r;
+        }
+
+        // FFS YoYo Games, WHY?
+#pragma warning disable CSE0003 // "Use expression-bodied members": too ugly with those lambdas
+        public static ReferenceDef[] GetRefDefs          (GMFileContent content, SectionRefDefs* section)
+        {
+            return GetRefDefsInternal(content, section, 0, 0, 12 /* sizeof RefDefEntry */, p =>
             {
+                var rde = (RefDefEntry*)p;
                 var ret = new ReferenceDef();
 
-                ret.Name         = StringFromOffset(content, rde->Name);
-                ret.Occurrences  = rde->Occurrences ;
-                ret.FirstOffset  = rde->FirstAddress;
+                ret.Name        = StringFromOffset(content, rde->NameOffset);
+                ret.Occurrences = rde->Occurrences ;
+                ret.FirstOffset = rde->FirstAddress;
 
-                r[i] = ret;
-            }
-
-            return r.ToArray();
+                return ret;
+            });
         }
+        public static ReferenceDef[] GetRefDefsWithLength(GMFileContent content, SectionRefDefs* section)
+        {
+            return GetRefDefsInternal(content, section, 1, section->Entries.NameOffset /* actually length, because reasons */, 12, p =>
+            {
+                var rde = (RefDefEntry*)p;
+                var ret = new ReferenceDef();
+
+                ret.Name        = StringFromOffset(content, rde->NameOffset);
+                ret.Occurrences = rde->Occurrences ;
+                ret.FirstOffset = rde->FirstAddress;
+
+                return ret;
+            });
+        }
+        public static ReferenceDef[] GetRefDefsWithOthers(GMFileContent content, SectionRefDefs* section)
+        {
+            return GetRefDefsInternal(content, section, 3, 0, 20 /* sizeof RefDefEntryWithOthers */, p =>
+            {
+                var rde = (RefDefEntryWithOthers*)p; // they really are doing a Redigit here (well, this AND the DwordBools (instead of 1-byte bools or bit flags))
+                var ret = new ReferenceDef();
+
+                ret.Name = StringFromOffset(content, rde->NameOffset);
+                ret.Occurrences = rde->Occurrences;
+                ret.FirstOffset = rde->FirstAddress;
+
+                return ret;
+            });
+        }
+#pragma warning restore CSE0003
     }
 }
