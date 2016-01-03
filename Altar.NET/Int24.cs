@@ -47,7 +47,7 @@ namespace Altar
             }
             set
             {
-                var i = (uint)(value & 0x00FFFFFF);
+                var i = (uint)Math.Abs(value);
 
                 UValue = (i & 0x007FFFFFF) | (value < 0 ? (uint)0x00800000 : 0);
             }
