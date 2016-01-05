@@ -119,16 +119,6 @@ namespace Altar
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct Instruction
-    {
-        public uint InstrData;
-
-        public OpCode          OpCode => (OpCode)((InstrData & 0xFF000000) >> 24);
-        public uint            Rest   => (uint  )( InstrData & 0x00FFFFFF       );
-        public InstructionKind Kind   => OpCode.Kind();
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SingleTypeInstruction
     {
         ushort _padding;
@@ -201,8 +191,11 @@ namespace Altar
     {
         [FieldOffset(0)]
         public uint InstrData;
+
         [FieldOffset(0)]
-        public Instruction Generic;
+        public Int24 Rest;
+        [FieldOffset(3)]
+        public OpCode OpCode;
 
         [FieldOffset(0)]
         public SingleTypeInstruction SingleType;

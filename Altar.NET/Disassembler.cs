@@ -93,7 +93,7 @@ namespace Altar
             for (int i = 0; i < defs.Length; i++)
             {
                 var offTotal = defs[i].FirstOffset;
-                var addr     = (Instruction*)GMFile.PtrFromOffset(content, offTotal);
+                var addr     = (AnyInstruction*)GMFile.PtrFromOffset(content, offTotal);
 
                 for (int j = 0; j < defs[i].Occurrences /*&& curOffset != 0*/; j++)
                 {
@@ -103,7 +103,7 @@ namespace Altar
                     {
                         var off = ((uint*)addr)[1] & 0x00FFFFFF;
 
-                        addr = (Instruction*)GMFile.PtrFromOffset(content, offTotal += off); //! '+=', not '+'
+                        addr = (AnyInstruction*)GMFile.PtrFromOffset(content, offTotal += off); //! '+=', not '+'
                     }
                 }
             }

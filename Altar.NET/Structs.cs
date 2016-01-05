@@ -44,22 +44,29 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct SoundInfo
     {
-        public string Name      ;
-        public bool   IsEmbedded;
-        public string Type      ;
-        public string File      ;
-        public float  VolumeMod ;
-        public float  PitchMod  ;
+        public string Name        ;
+        public bool   IsEmbedded  ;
+        public bool   IsCompressed;
+        public string Type        ;
+        public string File        ;
+        public float  VolumeMod   ;
+        public float  PitchMod    ;
+        public float  PanMod      ;
         /// <summary>
-        /// -1 if unused? Only makes sense when embedded?
+        /// -1 if unused? Only makes sense when embedded or compressed?
         /// </summary>
-        public int    AudioId   ;
+        public int    AudioId     ;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo
     {
         public string Name;
         public Point Size;
+        public BoundingBox2 Bounding;
+        public uint BBoxMode;
+        public uint SepMasks;
+        public Point Origin;
+
         public uint[] TextureIndices;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -72,9 +79,10 @@ namespace Altar
     public struct PathInfo
     {
         public string Name;
-        public uint Kind;
+        public bool IsSmooth;
+        public bool IsClosed;
         public uint Precision;
-        public float[] Data;
+        public PathPoint[] Points;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct ScriptInfo
@@ -104,10 +112,16 @@ namespace Altar
         public string Name;
         public uint SpriteIndex;
 
-        public bool IsVisible, IsSolid, IsPersistent;
+        public bool IsVisible;
+        public bool IsSolid;
         public int Depth;
+        public bool IsPersistent;
+
+        public uint? ParentId ;
+        public uint? TexMaskId;
 
         public ObjectPhysics Physics;
+        //public uint[] ShapePoints;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo
@@ -118,6 +132,10 @@ namespace Altar
         public uint Speed;
         public bool IsPersistent;
         public Colour Colour;
+
+        public bool EnableViews;
+        public bool ShowColour;
+
         public uint World;
         public BoundingBox Bounding;
         public PointF Gravity;
@@ -169,6 +187,7 @@ namespace Altar
         public bool IsEnabled;
         public Rectangle View, Port;
         public Point Border, Speed;
+        public uint? ObjectId;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomObject

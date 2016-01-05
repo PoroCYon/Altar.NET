@@ -8,18 +8,16 @@ namespace Altar
 {
     /*TODO:
      *
-     * * SectionGeneral unknowns
-     * * SectionOption unknowns
-     * * TextureEntry unknowns
-     * * SpriteEntry unknowns
-     * * ObjectEntry unknowns
-     * * BgEntry unknowns
-     * * RoomEntry unknowns
-     * * RoomViewEntry unknowns
-     * * RoomObjEntry unknowns
-     * * RoomTileEntry unknowns
-     * * FontEntry unknowns
-     * * PathEntry unknowns
+     * *! SectionGeneral
+     * *! SectionOption
+     * *! TextureEntry
+     * *! SpriteEntry
+     * *! ObjectEntry
+     * *  BgEntry?
+     * *! RoomEntry
+     * *  RoomObjEntry?
+     * *  RoomTileEntry?
+     * *  FontEntry?
      *
      */
 
@@ -206,8 +204,19 @@ namespace Altar
     [Flags]
     public enum SoundEntryFlags : uint
     {
-        Embedded = 0x01,
-        Normal   = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
+        Embedded   = 0x01, // NotStreamed?
+        Compressed = 0x02,
+        Normal     = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
+    }
+    [Flags]
+    public enum RoomEntryFlags
+    {
+        EnableViews = 1,
+        ShowColour  = 2
+
+        // isometric?
+        // clearViewBg?
+        // clearDisplayBuf?
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -217,10 +226,10 @@ namespace Altar
         public SoundEntryFlags Flags;
         public uint TypeOffset;
         public uint FileOffset;
-        uint _pad0; // 0
+        public uint _pad; // effects?
         public float Volume;
         public float Pitch ;
-        uint _pad1; // 0
+        public float Pan   ; // probably
         public int AudioId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -231,11 +240,14 @@ namespace Altar
 
         public BoundingBox2 Bounding;
 
-        fixed uint _pad1[5]; // type? coltolerance? sepmasks? bboxmode? htile? vtile? for3D?
+        fixed uint _pad[3]; // type? coltolerance? htile? vtile? for3D?
+        public uint BBoxMode;
+        public uint SepMasks;
 
         public Point Origin;
 
         public CountOffsetsPair Textures;
+        // colkind?
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
@@ -248,12 +260,12 @@ namespace Altar
     public unsafe struct PathEntry
     {
         public uint Name;
-        public uint Kind;
-        uint _pad0; // closed?
+        public DwordBool IsSmooth;
+        public DwordBool IsClosed;
         public uint Precision;
-        uint _pad1; // backroom?
-        // hsnap? vsnap?
-        public float Data; // how arranged?
+
+        public uint PointCount;
+        public PathPoint Points;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ScriptEntry
@@ -285,11 +297,15 @@ namespace Altar
         public uint Name;
         public uint SpriteIndex;
 
-        public DwordBool Visible, Solid;
+        public DwordBool Visible;
+        public DwordBool Solid;
         public int Depth;
         public DwordBool Persistent;
 
-        fixed uint _pad0[5]; // * (usually somewhere near -1), * (usually -1), 0, 0, 0
+        public int ParentId; // OBJT
+        public int MaskId  ; // SPRT
+
+        fixed uint _pad[3]; // 0, 0, 0
 
         public ObjectPhysics Physics;
 
@@ -300,14 +316,17 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
     {
-        public uint Name, Caption;
+        public uint Name;
+        public uint Caption;
         public Point Size;
         public uint Speed;
         public DwordBool Persistent;
         public Colour Colour;
 
-        // showColour? isometric? [hv]snap? enableViews? clearViewBackground? clearDisplayBuffer?
-        fixed uint _pad0[3]; // unknown: 1, * (can be -1 -> option?), * (<10)
+        // isometric? [hv]snap? clearViewBackground? clearDisplayBuffer?
+        fixed uint _pad[2]; // unknown: 1, * (can be -1 -> option?)
+
+        public RoomEntryFlags Flags;
 
         public uint BgOffset, ViewOffset, ObjOffset, TileOffset;
 
@@ -339,7 +358,7 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
     {
-        uint _pad; // unknown
+        uint _pad; // unknown, a low int value
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -381,7 +400,7 @@ namespace Altar
         public Rectangle View, Port;
         public Point Border, Speed;
 
-        uint _pad; // unknown (name offset? usually -1)
+        public int ObjectId; // can be -1
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry
@@ -389,7 +408,7 @@ namespace Altar
         public Point Position;
         public uint DefIndex;
         uint _count; // 100000 (0x186A0), keeps increasing by  per element
-        uint _pad; // -1
+        uint _pad; // -1 (locked?)
         public PointF Scale;
         public Colour Colour;
         public float Rotation;
@@ -414,6 +433,13 @@ namespace Altar
         public Rectangle16 TexPagFrame;
         public ushort Shift;
         public uint Offset;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct PathPoint
+    {
+        public PointF Position;
+        public float Speed;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

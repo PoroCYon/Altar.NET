@@ -177,18 +177,20 @@ namespace Altar
                 {
                     Console.Write("Fetching audio... ");
 
-                    var ii = 0;
-                    var infoTable =
-                        Enumerable.Range(0, (int)f.Sounds->Count)
-                            .Select(i => SectionReader.GetSoundInfo(f, (uint)i))
-                            .Where(si => si.IsEmbedded)
-                            .ToDictionary(_ => ii++, si => si);
+                    var sounds = Enumerable.Range(0, (int)f.Sounds->Count)
+                                    .Select(i => SectionReader.GetSoundInfo(f, (uint)i));
 
-                    for (uint i = 0; i < f.Audio->Count; i++)
+                    var infoTable = new Dictionary<int, SoundInfo>();
+
+                    foreach (var s in sounds)
+                        if ((s.IsEmbedded || s.IsCompressed) && s.AudioId != -1)
+                            infoTable[s.AudioId] = s;
+
+                    for (int i = 0; i < f.Audio->Count; i++)
                     {
-                        var ai = SectionReader.GetAudioInfo(f, i);
+                        var ai = SectionReader.GetAudioInfo(f, (uint)i);
 
-                        File.WriteAllBytes(DIR_WAV + infoTable[(int)i].Name + EXT_WAV, ai.Wave);
+                        File.WriteAllBytes(DIR_WAV + infoTable[i].Name + EXT_WAV, ai.Wave);
                     }
 
                     Console.WriteLine(DONE);
@@ -373,7 +375,7 @@ namespace Altar
                     {
                         var pi = SectionReader.GetPathInfo(f, i);
 
-                        File.WriteAllText(DIR_PATH + pi.Name + EXT_TXT, String.Join(COMMA_S, pi.Data.Select(v => v.ToString())));
+                        File.WriteAllText(DIR_PATH + pi.Name + EXT_TXT, String.Join(COMMA_S, pi.Points.Select(v => v.ToString())));
                     }
 
                     Console.WriteLine(DONE);

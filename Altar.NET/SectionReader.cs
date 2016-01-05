@@ -126,6 +126,8 @@ namespace Altar
             v.Border    = entry->Border;
             v.Speed     = entry->Speed ;
 
+            v.ObjectId = entry->ObjectId < 0 ? null : (uint?)entry->ObjectId;
+
             return v;
         }
         static RoomObject     ReadRoomObj (GMFileContent content, IntPtr p)
@@ -215,8 +217,9 @@ namespace Altar
             ret.VolumeMod = se->Volume;
             ret.PitchMod  = se->Pitch ;
 
-            ret.AudioId    =  se->AudioId;
-            ret.IsEmbedded = (se->Flags & SoundEntryFlags.Embedded) != 0;
+            ret.AudioId      =  se->AudioId;
+            ret.IsEmbedded   = (se->Flags & SoundEntryFlags.Embedded  ) != 0;
+            ret.IsCompressed = (se->Flags & SoundEntryFlags.Compressed) != 0;
 
             return ret;
         }
@@ -229,8 +232,12 @@ namespace Altar
 
             var ret = new SpriteInfo();
 
-            ret.Name = StringFromOffset(content, se->Name);
-            ret.Size = se->Size;
+            ret.Name     = StringFromOffset(content, se->Name);
+            ret.Size     = se->Size    ;
+            ret.Bounding = se->Bounding;
+            ret.BBoxMode = se->BBoxMode;
+            ret.SepMasks = se->SepMasks;
+            ret.Origin   = se->Origin  ;
 
             ret.TextureIndices = new uint[se->Textures.Count];
 
@@ -267,31 +274,22 @@ namespace Altar
         }
         public static PathInfo        GetPathInfo   (GMFileContent content, uint id)
         {
-            var l = content.Paths;
-            if (id >= l->Count)
+            if (id >= content.Paths->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var curOff = (&l->Offsets)[id];
+            var curOff = (&content.Paths->Offsets)[id];
             var pe = (PathEntry*)GMFile.PtrFromOffset(content, curOff);
 
             var ret = new PathInfo();
 
             ret.Name      = StringFromOffset(content, pe->Name);
-            ret.Kind      = pe->Kind     ;
+            ret.IsSmooth  = pe->IsSmooth.IsTrue();
+            ret.IsClosed  = pe->IsClosed.IsTrue();
             ret.Precision = pe->Precision;
 
-            var nextOff = id == l->Count - 1 ? l->Header.Size - 4 : (&l->Offsets)[id + 1];
-
-            var curPtr = (byte*)pe;
-            var len = ((byte*)GMFile.PtrFromOffset(content, nextOff) - curPtr);
-            if (len < 0L)
-                len = 0x38L;
-
-            len    -= sizeof(uint) * 5;
-            curPtr += sizeof(uint) * 5;
-
-            ret.Data = new float[len / sizeof(float)];
-            Marshal.Copy((IntPtr)curPtr, ret.Data, 0, ret.Data.Length);
+            ret.Points = new PathPoint[pe->PointCount];
+            for (uint i = 0; i < pe->PointCount; i++)
+                ret.Points[i] = (&pe->Points)[i];
 
             return ret;
         }
@@ -363,11 +361,15 @@ namespace Altar
 
             ret.Name         = StringFromOffset(content, oe->Name);
             ret.SpriteIndex  = oe->SpriteIndex;
-            ret.Physics      = oe->Physics;
             ret.IsVisible    = oe->Visible.IsTrue();
-            ret.IsSolid      = oe->Solid.IsTrue();
+            ret.IsSolid      = oe->Solid  .IsTrue();
             ret.Depth        = oe->Depth;
             ret.IsPersistent = oe->Persistent.IsTrue();
+
+            ret.ParentId  = oe->ParentId < 0 ? null : (uint?)oe->ParentId;
+            ret.TexMaskId = oe->MaskId   < 0 ? null : (uint?)oe->MaskId  ;
+
+            ret.Physics = oe->Physics;
 
             // floats messing things up - do not uncomment for now (see PackedStructs.cs, struct ObjectEntry)
             //ret.Data = new uint[oe->ShapePoints.Count];
@@ -386,16 +388,20 @@ namespace Altar
 
             var re = (RoomEntry*)GMFile.PtrFromOffset(content, (&content.Rooms->Offsets)[id]);
 
-            ret.Name           = StringFromOffset(content, re->Name   );
-            ret.Caption        = StringFromOffset(content, re->Caption);
-            ret.Size           = re->Size          ;
-            ret.Speed          = re->Speed         ;
-            ret.Colour         = re->Colour        ;
+            ret.Name         = StringFromOffset(content, re->Name   );
+            ret.Caption      = StringFromOffset(content, re->Caption);
+            ret.Size         = re->Size          ;
+            ret.Speed        = re->Speed         ;
+            ret.IsPersistent = re->Persistent.IsTrue();
+            ret.Colour       = re->Colour        ;
+
+            ret.EnableViews = (re->Flags & RoomEntryFlags.EnableViews) != 0;
+            ret.ShowColour  = (re->Flags & RoomEntryFlags.ShowColour ) != 0;
+
             ret.World          = re->World         ;
             ret.Bounding       = re->Bounding      ;
             ret.Gravity        = re->Gravity       ;
             ret.MetresPerPixel = re->MetresPerPixel;
-            ret.IsPersistent   = re->Persistent.IsTrue();
 
             ret.Backgrounds = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->BgOffset  ), ReadRoomBg  );
             ret.Views       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ViewOffset), ReadRoomView);
