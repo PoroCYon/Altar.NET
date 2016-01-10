@@ -121,7 +121,8 @@ namespace Altar
         public uint? TexMaskId;
 
         public ObjectPhysics Physics;
-        //public uint[] ShapePoints;
+        public float[] OtherFloats;
+        public Point[] ShapePoints;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo
