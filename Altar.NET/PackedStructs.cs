@@ -309,9 +309,7 @@ namespace Altar
 
         public ObjectPhysics Physics;
 
-        //!? more floats (4)? BUT WHEN??
-
-        //public CountOffsetsPair ShapePoints;
+        public ObjectRest Rest;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomEntry
@@ -380,7 +378,17 @@ namespace Altar
             Unknown0      ,
             Friction      ,
             Unknown1      ,
-            Kinematic;
+            Kinematic     ;
+    }
+    [StructLayout(LayoutKind.Explicit, Pack = 1)]
+    public unsafe struct ObjectRest
+    {
+        [FieldOffset(0)]
+        public fixed float MoreFloats[4];
+        [FieldOffset(0)]
+        public CountOffsetsPair ShapePoints;
+        [FieldOffset(0x10)]
+        public CountOffsetsPair ShapePoints_IfMoreFloats;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

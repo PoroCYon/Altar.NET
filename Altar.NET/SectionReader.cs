@@ -12,6 +12,8 @@ namespace Altar
         // http://undertale.rawr.ws/unpacking
         // https://www.reddit.com/r/Underminers/comments/3teemm/wip_documenting_stringstxt/
 
+        static float[] EmptyFloatArr = { };
+
         static uint PngLength(PngHeader* png)
         {
 #pragma warning disable RECS0065
@@ -371,11 +373,25 @@ namespace Altar
 
             ret.Physics = oe->Physics;
 
-            // floats messing things up - do not uncomment for now (see PackedStructs.cs, struct ObjectEntry)
-            //ret.Data = new uint[oe->ShapePoints.Count];
+            var hasMore = oe->Rest.ShapePoints.Count > 0x00FFFFFF;
+            var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
 
-            //for (uint i = 0; i < oe->ShapePoints.Count; i++)
-            //    ret.Data[i] = *(uint*)GMFile.PtrFromOffset(content, (&oe->ShapePoints.Offsets)[i]);
+            if (hasMore)
+            {
+                ret.OtherFloats = new float[4];
+
+                Marshal.Copy((IntPtr)(oe->Rest.MoreFloats), ret.OtherFloats, 0, 4);
+            }
+            else
+                ret.OtherFloats = EmptyFloatArr;
+
+            ret.ShapePoints = new Point[shapeCop->Count / 2];
+
+            for (uint i = 0; i < shapeCop->Count / 2; i++)
+                ret.ShapePoints[i] = new Point(
+                    *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2    ]),
+                    *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2 + 1])
+                );
 
             return ret;
         }
