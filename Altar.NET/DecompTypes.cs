@@ -14,15 +14,14 @@ namespace Altar
     }
     public unsafe class GraphVertex
     {
-        public uint FirstInstrAddress;
         public AnyInstruction*[] Instructions;
         public GraphBranch[] Branches;
     }
-    public class GraphBranch
+    public unsafe class GraphBranch
     {
         public GraphVertex ToVertex;
         public BranchType Type;
-        public uint BranchToAddress;
+        public AnyInstruction* BranchTo;
     }
 
     public static class BranchTypeExt

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Altar
 {
@@ -8,125 +9,171 @@ namespace Altar
     {
         struct CodeBlock
         {
-            public List<IntPtr> Instructions;
+            public AnyInstruction*[] Instructions;
             public BranchType Type;
-            public uint BranchToAddress;
+            public AnyInstruction* BranchTo;
         }
 
         readonly static GraphBranch[] EmptyGBArray   = { };
         readonly static GraphVertex[] EmptyGVArray   = { };
         readonly static Expression [] EmptyExprArray = { };
 
-        static List<CodeBlock> SplitBlocks (GMFileContent content, CodeInfo code)
+        static int ComparePtrs(IntPtr a, IntPtr b) => a.ToInt64().CompareTo(b.ToInt64());
+        static int IndexOfPtr(AnyInstruction*[] arr, AnyInstruction* elem)
+        {
+            for (int i = 0; i < arr.Length; i++)
+                if (elem == arr[i])
+                    return i;
+
+            return -1;
+        }
+        static int IndexOfPtr(AnyInstruction*[] arr, IntPtr ptr) => IndexOfPtr(arr, (AnyInstruction*)ptr);
+        static AnyInstruction*[] MPtrListToPtrArr(IList<IntPtr> l)
+        {
+            var r = new AnyInstruction*[l.Count];
+
+            for (int i = 0; i < r.Length; i++)
+                r[i] = (AnyInstruction*)l[i];
+
+            return r;
+        }
+
+        static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
         {
             var blocks = new List<CodeBlock>();
-            var curBl  = new List<IntPtr>();
             var instr  = code.Instructions;
-            var firstI = (long)instr[0];
 
-            // find all branch-to instructions
-            var targets = new List<long>();
-            for (int i = 0; i < instr.Length; i++)
-                if (instr[i]->Kind() == InstructionKind.Goto)
-                    targets.Add((long)instr[i] - firstI + instr[i]->Goto.Offset);
+            var ret = new List<IntPtr>();
 
-            // split code into blocks separated by br[tf]? instructions
+            ret.Add((IntPtr)instr[0]);
+
             for (int i = 0; i < instr.Length; i++)
             {
-                curBl.Add((IntPtr)instr[i]);
-
-                if (instr[i]->Kind() == InstructionKind.Goto)
+                var ins = instr[i];
+                if (ins->Kind() == InstructionKind.Goto)
                 {
-                    blocks.Add(new CodeBlock
+                    IntPtr p;
+                    // instructions after a 'goto'
+                    if (i < instr.Length - 1)
                     {
-                        Instructions = curBl,
-                        Type = instr[i]->Goto.Type(),
-                        BranchToAddress = (uint)((long)instr[i] - firstI) + instr[i]->Goto.Offset
-                    });
+                        p = (IntPtr)instr[i + 1];
 
-                    curBl = new List<IntPtr>();
+                        if (!ret.Contains(p))
+                            ret.Add(p);
+                    }
+
+                    // goto targets
+                    p = (IntPtr)((long)ins + ins->Goto.Offset);
+
+                    if (!ret.Contains(p))
+                        ret.Add(p);
                 }
-                else if (targets.Contains((long)instr[i] - firstI))
+            }
+
+            ret.Sort(ComparePtrs);
+
+            var ret_ = new AnyInstruction*[ret.Count];
+
+            for (int i = 0; i < ret_.Length; i++)
+                ret_[i] = (AnyInstruction*)ret[i];
+
+            return ret_;
+        }
+        static CodeBlock[] SplitBlocks (CodeInfo code)
+        {
+            var blocks = new List<CodeBlock>();
+            var instr = code.Instructions;
+
+            var jumpTo = FindJumpOffsets(code);
+
+            for (int i = 0; i < jumpTo.Length; i++)
+            {
+                var instrs = new List<IntPtr>();
+                var br = jumpTo[i];
+                var ind = IndexOfPtr(instr, br);
+                AnyInstruction* nextAddr = null;
+
+                for (var j = ind; j != -1 && j < instr.Length; j++)
                 {
+                    var ins = instr[j];
+
+                    if (i != jumpTo.Length - 1 && ins == jumpTo[i + 1]) // sorted
+                    {
+                        nextAddr = ins;
+                        break;
+                    }
+
+                    instrs.Add((IntPtr)ins);
+                }
+
+                if (i == jumpTo.Length - 1 && br > instr[instr.Length - 1]) // implicit 'ret' after last instruction
+                {
+                    if (instrs.Count != 0)
+                        blocks.Add(new CodeBlock
+                        {
+                            Instructions = MPtrListToPtrArr(instrs),
+                            BranchTo     = null,
+                            Type         = BranchType.Unconditional
+                        });
+                }
+                else
+                {
+                    var lastI = (AnyInstruction*)(instrs[instrs.Count - 1]);
+
                     blocks.Add(new CodeBlock
                     {
-                        Instructions = curBl,
-                        Type = BranchType.Unconditional,
-                        BranchToAddress = i == instr.Length - 1 ? 0xFFFFFFFF : (uint)((long)instr[i + 1] - firstI)
+                        Instructions = MPtrListToPtrArr(instrs),
+                        BranchTo     = lastI->Kind() == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset) : nextAddr /* can be null */,
+                        Type         = lastI->Kind() == InstructionKind.Goto ? lastI->Goto.Type() : BranchType.Unconditional
                     });
                 }
             }
 
-            if (curBl.Count != 0)
-                blocks.Add(new CodeBlock
-                {
-                    Type = BranchType.Unconditional,
-                    BranchToAddress = 0xFFFFFFFF,
-                    Instructions = curBl
-                });
-
-            return blocks;
+            return blocks.ToArray();
         }
         static GraphVertex[] CreateVertices(GMFileContent content, CodeInfo code)
         {
-            var blocks = SplitBlocks(content, code);
+            var blocks = SplitBlocks(code);
             var instr = code.Instructions;
             var firstI = (long)instr[0];
 
             // only one block -> just return it as a single vertex
-            if (blocks.Count == 1)
-            {
-                var bis = blocks[0].Instructions;
-                var r = new GraphVertex
+            if (blocks.Length == 1)
+                return new[]
                 {
-                    Branches = EmptyGBArray,
-                    FirstInstrAddress = 0,
-                    Instructions = new AnyInstruction*[bis.Count]
+                    new GraphVertex
+                    {
+                        Branches     = EmptyGBArray,
+                        Instructions = blocks[0].Instructions
+                    }
                 };
 
-                for (int i = 0; i < bis.Count; i++)
-                    r.Instructions[i] = (AnyInstruction*)bis[i];
-
-                return new[] { r };
-            }
-
-            // find all branch-to instructions
-            var targets = new List<long>();
-            for (int i = 0; i < instr.Length; i++)
-                if (instr[i]->Kind() == InstructionKind.Goto)
-                    targets.Add((long)instr[i] - firstI + instr[i]->Goto.Offset);
-
-            var vertices = new GraphVertex[blocks.Count];
+            var vertices = new GraphVertex[blocks.Length];
 
             // create list of vertices
-            for (int i = 0; i < blocks.Count; i++)
+            for (int i = 0; i < blocks.Length; i++)
             {
-                var blk = blocks[i];
-                var ins = blk.Instructions;
-                var hasNext = i < blocks.Count - 1 && blk.Type != BranchType.Unconditional /* no need to check if uncond */;
+                var blk     = blocks[i];
+                var hasNext = i < blocks.Length - 1 && blk.Type != BranchType.Unconditional /* no need to check if uncond */;
 
                 vertices[i] = new GraphVertex
                 {
-                    FirstInstrAddress = (uint)((long)ins[0] - firstI),
-                    Instructions = new AnyInstruction*[ins.Count],
-                    Branches = new GraphBranch[hasNext ? 2 : 1]
+                    Instructions = blk.Instructions,
+                    Branches     = new GraphBranch[hasNext ? 2 : 1]
                 };
 
                 vertices[i].Branches[0] = new GraphBranch
                 {
-                    BranchToAddress = blk.BranchToAddress,
-                    Type = blk.Type
+                    BranchTo = blk.BranchTo,
+                    Type     = blk.Type
                 };
 
                 if (hasNext)
                     vertices[i].Branches[1] = new GraphBranch
                     {
-                        BranchToAddress = (uint)((long)blocks[i + 1].Instructions[0] - firstI),
-                        Type = blk.Type.Invert()
+                        BranchTo = blocks[i + 1].Instructions[0],
+                        Type     = blk.Type.Invert(),
                     };
-
-                for (int j = 0; j < ins.Count; j++)
-                    vertices[i].Instructions[j] = (AnyInstruction*)ins[j];
             }
 
             // connect vertex branches to target vertices
@@ -136,19 +183,13 @@ namespace Altar
 
                 for (int j = 0; j < v.Branches.Length; j++)
                     v.Branches[j].ToVertex =
-                        vertices.FirstOrDefault(ve => ve.FirstInstrAddress == v.Branches[j].BranchToAddress)
+                        vertices.FirstOrDefault(ve => ve.Instructions[0] == v.Branches[j].BranchTo)
                             ?? (i == vertices.Length - 1 ? null : vertices[i + 1]);
             }
 
             return vertices;
         }
 
-        /// <summary>
-        /// Builds a control flow graph from bytecode.
-        /// </summary>
-        /// <param name="content"></param>
-        /// <param name="code"></param>
-        /// <returns>the entry vertex of the code.</returns>
         public static GraphVertex[] BuildCFGraph(GMFileContent content, CodeInfo code)
         {
             if (code.Instructions.Length == 0)
@@ -303,6 +344,109 @@ namespace Altar
             }
 
             return stack.Reverse().ToArray();
+        }
+
+        /*static void DecompileVertex(GMFileContent content, RefData rdata, GraphVertex g, StringBuilder sb, List<uint> visited)
+        {
+            var exprs = ParseExpressions(content, rdata, g);
+
+            sb.Append("GML_").Append(g.FirstInstrAddress.ToString(SR.HEX_FM8)).AppendLine(": ");
+
+            foreach (var e in exprs)
+                sb.Append("    ").AppendLine(e.ToString());
+
+            visited.Add(g.FirstInstrAddress);
+
+            if (g.Branches.Length == 0)
+                return;
+
+            for (int j = 0; j < g.Branches.Length; j++)
+            {
+                var b = g.Branches[j];
+
+                switch (b.Type)
+                {
+                    case BranchType.IfFalse:
+                        sb.Append("if false ");
+                        break;
+                    case BranchType.IfTrue:
+                        sb.Append("if true ");
+                        break;
+                }
+
+                sb.Append("goto GML_").AppendLine(b.BranchToAddress.ToString(SR.HEX_FM8));
+
+                if (j != g.Branches.Length - 1)
+                    sb.Append("else ");
+            }
+
+            for (int j = 0; j < g.Branches.Length; j++)
+            {
+                var next = g.Branches[j].ToVertex;
+
+                if (next == null)
+                    sb.AppendLine("    ret");
+                else if (!visited.Contains(next.FirstInstrAddress))
+                    DecompileVertex(content, rdata, next, sb, visited);
+
+                //visited.Add(next);
+            }
+        }*/
+
+        public static string DecompileCode(GMFileContent content, RefData rdata, uint id)
+        {
+            var sb = new StringBuilder();
+
+            var code = Disassembler.DisassembleCode(content, id);
+            var graph = BuildCFGraph(content, code);
+            var dasm = Disassembler.DisplayInstructions(content, rdata, code);
+
+            //DecompileVertex(content, rdata, graph[0], sb, new List<uint>());
+
+            //for (uint i = 0; i < graph.Length; i++)
+            //{
+            //    var g = graph[i];
+            //    var exprs = ParseExpressions(content, rdata, g);
+
+            //    sb.Append("GML_").Append(g.FirstInstrAddress.ToString(SR.HEX_FM8)).AppendLine(": ");
+
+            //    foreach (var e in exprs)
+            //        sb.Append("    ").AppendLine(e.ToString());
+
+            //    if (g.Branches.Length == 0)
+            //        continue;
+
+            //    // * goto 0xFFFFFF
+            //    // else goto \n else
+
+            //    for (int j = 0; j < g.Branches.Length; j++)
+            //    {
+            //        var b = g.Branches[j];
+
+            //        //if (j != g.Branches.Length - 1)
+            //        //{
+            //            switch (b.Type)
+            //            {
+            //                case BranchType.IfFalse:
+            //                    sb.Append("if false ");
+            //                    break;
+            //                case BranchType.IfTrue:
+            //                    sb.Append("if true " );
+            //                    break;
+            //            }
+
+            //            sb.Append("goto GML_").AppendLine(b.BranchToAddress.ToString(SR.HEX_FM8))
+            //              .Append("else ");
+            //        //}
+            //        //else
+            //        if (b.BranchToAddress == 0xFFFFFF)
+            //            sb.Append("    ret");
+            //    }
+
+            //    sb.AppendLine();
+            //}
+
+            return sb.ToString();
         }
     }
 }

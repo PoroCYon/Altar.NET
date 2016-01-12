@@ -70,9 +70,10 @@ namespace Altar
                 };
                 #endregion
 
+                var src = Decompiler.DecompileCode(f, rdata, 143);
 
-                //if (f.Audio->Count >= 0)
-                //    return;
+                if (f.Audio->Count >= 0)
+                    return;
 
                 #region strings
                 if (f.Strings->Count > 0)
