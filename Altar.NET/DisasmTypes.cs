@@ -78,8 +78,8 @@ namespace Altar
         Br      = 0xB7,
         Brt     = 0xB8,
         Brf     = 0xB9,
-        Pushenv = 0xBB,
-        Popenv  = 0xBC,
+        PushEnv = 0xBB,
+        PopEnv  = 0xBC,
         Push    = 0xC0,
         Call    = 0xDA,
         Break   = 0xFF
@@ -93,7 +93,9 @@ namespace Altar
         Set           ,
         Push          ,
         Call          ,
-        Break
+        Break         ,
+        PushEnv       ,
+        PopEnv
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -265,9 +267,12 @@ namespace Altar
                 case OpCode.Br:
                 case OpCode.Brt:
                 case OpCode.Brf:
-                case OpCode.Pushenv: // ?
-                case OpCode.Popenv:  // ?
                     return InstructionKind.Goto;
+
+                case OpCode.PushEnv:
+                    return InstructionKind.PushEnv;
+                case OpCode.PopEnv:
+                    return InstructionKind.PopEnv;
             }
 
             throw new ArgumentOutOfRangeException(nameof(code));

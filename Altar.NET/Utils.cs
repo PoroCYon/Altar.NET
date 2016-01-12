@@ -50,10 +50,7 @@ namespace Altar
             if (amount > stack.Count || amount < 0)
                 throw new ArgumentOutOfRangeException(nameof(amount));
 
-            for (int i = 0; i < amount; i++)
-                yield return stack.Pop();
-
-            yield break;
+            return stack.PopWhile(_ => --amount >= 0);
         }
         public static IEnumerable<T> PopWhile<T>(this Stack<T> stack, Predicate<T> p)
         {
@@ -80,10 +77,7 @@ namespace Altar
             if (amount > queue.Count || amount < 0)
                 throw new ArgumentOutOfRangeException(nameof(amount));
 
-            for (int i = 0; i < amount; i++)
-                yield return queue.Dequeue();
-
-            yield break;
+            return queue.DequeueWhile(_ => --amount >= 0);
         }
         public static IEnumerable<T> DequeueWhile<T>(this Queue<T> queue, Predicate<T> p)
         {
