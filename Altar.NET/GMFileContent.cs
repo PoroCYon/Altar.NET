@@ -104,7 +104,7 @@ namespace Altar
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
 
-        internal uint[] HeaderOffsets = new uint[(int)SectionHeaders.Count];
+        internal long[] HeaderOffsets = new long[(int)SectionHeaders.Count];
 
         void Disposing()
         {

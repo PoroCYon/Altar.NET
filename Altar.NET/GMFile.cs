@@ -102,7 +102,7 @@ namespace Altar
                         break;
                 }
 
-                ret.HeaderOffsets[headersMet++] = (uint)((byte*)hdr - (byte*)basePtr);
+                ret.HeaderOffsets[headersMet++] = (byte*)hdr - (byte*)basePtr;
                 hdr = unchecked((SectionHeader*)((IntPtr)hdr + (int)hdr->Size) + 1);
             }
 
@@ -112,11 +112,9 @@ namespace Altar
         }
 
         [DebuggerStepThrough]
-        public static unsafe void* PtrFromOffset(GMFileContent file,  int offset) => (void*)(file.RawData.BPtr + offset);
+        public static unsafe void* PtrFromOffset(GMFileContent file, long offset) => file.RawData.BPtr + offset;
         [DebuggerStepThrough]
-        public static unsafe void* PtrFromOffset(GMFileContent file, uint offset) => (void*)(file.RawData.BPtr + offset);
-        [DebuggerStepThrough]
-        public static unsafe SectionHeaders ChunkOf(GMFileContent file, uint offset)
+        public static unsafe SectionHeaders ChunkOf(GMFileContent file, long offset)
         {
             var sorted = file.HeaderOffsets.OrderBy(i => i).ToArray();
 

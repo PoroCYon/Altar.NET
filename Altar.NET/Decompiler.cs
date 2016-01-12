@@ -18,26 +18,6 @@ namespace Altar
         readonly static GraphVertex[] EmptyGVArray   = { };
         readonly static Expression [] EmptyExprArray = { };
 
-        static int ComparePtrs(IntPtr a, IntPtr b) => a.ToInt64().CompareTo(b.ToInt64());
-        static int IndexOfPtr(AnyInstruction*[] arr, AnyInstruction* elem)
-        {
-            for (int i = 0; i < arr.Length; i++)
-                if (elem == arr[i])
-                    return i;
-
-            return -1;
-        }
-        static int IndexOfPtr(AnyInstruction*[] arr, IntPtr ptr) => IndexOfPtr(arr, (AnyInstruction*)ptr);
-        static AnyInstruction*[] MPtrListToPtrArr(IList<IntPtr> l)
-        {
-            var r = new AnyInstruction*[l.Count];
-
-            for (int i = 0; i < r.Length; i++)
-                r[i] = (AnyInstruction*)l[i];
-
-            return r;
-        }
-
         static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
         {
             var blocks = new List<CodeBlock>();
@@ -70,7 +50,7 @@ namespace Altar
                 }
             }
 
-            ret.Sort(ComparePtrs);
+            ret.Sort(Utils.ComparePtrs);
 
             var ret_ = new AnyInstruction*[ret.Count];
 
@@ -90,7 +70,7 @@ namespace Altar
             {
                 var instrs = new List<IntPtr>();
                 var br = jumpTo[i];
-                var ind = IndexOfPtr(instr, br);
+                var ind = Utils.IndexOfPtr(instr, br);
                 AnyInstruction* nextAddr = null;
 
                 for (var j = ind; j != -1 && j < instr.Length; j++)
@@ -111,7 +91,7 @@ namespace Altar
                     if (instrs.Count != 0)
                         blocks.Add(new CodeBlock
                         {
-                            Instructions = MPtrListToPtrArr(instrs),
+                            Instructions = Utils.MPtrListToPtrArr(instrs),
                             BranchTo     = null,
                             Type         = BranchType.Unconditional
                         });
@@ -122,7 +102,7 @@ namespace Altar
 
                     blocks.Add(new CodeBlock
                     {
-                        Instructions = MPtrListToPtrArr(instrs),
+                        Instructions = Utils.MPtrListToPtrArr(instrs),
                         BranchTo     = lastI->Kind() == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset) : nextAddr /* can be null */,
                         Type         = lastI->Kind() == InstructionKind.Goto ? lastI->Goto.Type() : BranchType.Unconditional
                     });

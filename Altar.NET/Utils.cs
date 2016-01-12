@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Altar
 {
-    public static class Utils
+    public unsafe static class Utils
     {
         public static int PadTo(int v, int p)
         {
@@ -22,6 +22,26 @@ namespace Altar
         public static uint SwapEnd24Hi(uint i) => SwapEnd24Lo(i >> 8);
 
         public static uint SwapEnd32(uint v) => (v & 0xFF000000) >> 24 | (v & 0x00FF0000) >> 8 | (v & 0x0000FF00) << 8 | (v & 0x000000FF) << 24;
+
+        public static int ComparePtrs(IntPtr a, IntPtr b) => a.ToInt64().CompareTo(b.ToInt64());
+        public static int IndexOfPtr(AnyInstruction*[] arr, AnyInstruction* elem)
+        {
+            for (int i = 0; i < arr.Length; i++)
+                if (elem == arr[i])
+                    return i;
+
+            return -1;
+        }
+        public static int IndexOfPtr(AnyInstruction*[] arr, IntPtr ptr) => IndexOfPtr(arr, (AnyInstruction*)ptr);
+        public static AnyInstruction*[] MPtrListToPtrArr(IList<IntPtr> l)
+        {
+            var r = new AnyInstruction*[l.Count];
+
+            for (int i = 0; i < r.Length; i++)
+                r[i] = (AnyInstruction*)l[i];
+
+            return r;
+        }
     }
     public static class Extensions
     {
