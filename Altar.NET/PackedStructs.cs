@@ -345,7 +345,7 @@ namespace Altar
     {
         public uint Name;
         public int Length;
-        public byte Bytecode;
+        public uint Bytecode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct StringEntry

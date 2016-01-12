@@ -27,14 +27,12 @@ namespace Altar
 
             var ret = new List<IntPtr>(); // doesn't like T* as type arg
 
-            var bcb = (uint*)bc;
-
             var l = Utils.PadTo(len, 4);
             AnyInstruction* instr;
 
-            for (uint i = 0; i * 4 < l; )
+            for (uint i = 0; i * 4 < l; /* see loop end */)
             {
-                instr = (AnyInstruction*)(bcb + i);
+                instr = (AnyInstruction*)((byte*)bc + i);
 
                 ret.Add((IntPtr)instr);
 
@@ -73,17 +71,11 @@ namespace Altar
                 i += blocks;
             }
 
-            var retarr = new AnyInstruction*[ret.Count];
-
-            for (int i = 0; i < retarr.Length; i++)
-                retarr[i] = (AnyInstruction*)ret[i];
-
-            var retfinal = new CodeInfo();
-
-            retfinal.Name = SectionReader.StringFromOffset(content, re->Name);
-            retfinal.Instructions = retarr;
-
-            return retfinal;
+            return new CodeInfo
+            {
+                Name         = SectionReader.StringFromOffset(content, re->Name),
+                Instructions = Utils.MPtrListToPtrArr(ret)
+            };
         }
 
         public static Dictionary<IntPtr, int> GetReferenceTable(GMFileContent content, ReferenceDef[] defs)
@@ -92,7 +84,7 @@ namespace Altar
 
             for (int i = 0; i < defs.Length; i++)
             {
-                var offTotal = defs[i].FirstOffset;
+                var offTotal = (long)defs[i].FirstOffset;
                 var addr     = (AnyInstruction*)GMFile.PtrFromOffset(content, offTotal);
 
                 for (int j = 0; j < defs[i].Occurrences /*&& curOffset != 0*/; j++)
@@ -101,7 +93,7 @@ namespace Altar
 
                     if (j < defs[i].Occurrences - 1) // at least one more iteration afterwards
                     {
-                        var off = ((uint*)addr)[1] & 0x00FFFFFF;
+                        var off = ((uint*)addr)[1] & 0x00FFFFFFL;
 
                         addr = (AnyInstruction*)GMFile.PtrFromOffset(content, offTotal += off); //! '+=', not '+'
                     }

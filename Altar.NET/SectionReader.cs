@@ -14,11 +14,11 @@ namespace Altar
 
         static float[] EmptyFloatArr = { };
 
-        static uint PngLength(PngHeader* png)
+        static long PngLength(PngHeader* png)
         {
 #pragma warning disable RECS0065
             if (png == null)
-                return 0;
+                return 0L;
 #pragma warning restore RECS0065
 
             var chunk = &png->IHDR.Header;
@@ -26,12 +26,12 @@ namespace Altar
             while (chunk->Type != PngChunk.ChunkEnd)
             {
                 if (chunk->Length == 0)
-                    return 0;
+                    return 0L;
 
-                chunk = unchecked((PngChunk*)((IntPtr)chunk + (int)Utils.SwapEnd32(chunk->Length) + 0xC));
+                chunk = (PngChunk*)((byte*)chunk + Utils.SwapEnd32(chunk->Length) + 0xC);
             }
 
-            return unchecked((uint)((long)++chunk - (long)png));
+            return (long)++chunk - (long)png;
         }
 
         internal static void   ReadString(byte* ptr, StringBuilder sb)
@@ -51,7 +51,7 @@ namespace Altar
 
             return sb.ToString();
         }
-        internal static string StringFromOffset(GMFileContent content, uint off)
+        internal static string StringFromOffset(GMFileContent content, long off)
         {
             if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00)
                 return String.Empty;
@@ -84,7 +84,7 @@ namespace Altar
             return ret;
         }
 
-        static TexturePageInfo TPagFromOffset  (GMFileContent content, uint off)
+        static TexturePageInfo TPagFromOffset  (GMFileContent content, long off)
         {
             var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, off);
 
@@ -373,7 +373,7 @@ namespace Altar
 
             ret.Physics = oe->Physics;
 
-            var hasMore = oe->Rest.ShapePoints.Count > 0x00FFFFFF;
+            var hasMore = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
 
             if (hasMore)
@@ -485,7 +485,7 @@ namespace Altar
             for (uint i = 0; i < list->Count; i++)
             {
                 var  curOff = (&list->Offsets)[i];
-                var nextOff = i == list->Count - 1 ? list->Header.Size - 4 : (&list->Offsets)[i + 1];
+                var nextOff = i == list->Count - 1L ? list->Header.Size - 4L : (&list->Offsets)[i + 1];
 
                 var curPtr = (byte*)GMFile.PtrFromOffset(content,  curOff);
                 var len    = elemLen <= 0L ? ((byte*)GMFile.PtrFromOffset(content, nextOff) - curPtr) : elemLen;
@@ -520,7 +520,7 @@ namespace Altar
         }
 
         // C# doesn't like pointers of generic types...
-        static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, uint elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter)
+        static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, long elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter)
         {
             amount = amount == 0 ? section->Header.Size / rdeSize : amount;
             var r = new ReferenceDef[amount];
