@@ -16,7 +16,7 @@ namespace Altar
 
         readonly static GraphBranch[] EmptyGBArray   = { };
         readonly static GraphVertex[] EmptyGVArray   = { };
-        readonly static Expression [] EmptyExprArray = { };
+        readonly static Statement  [] EmptyStmtArray = { };
 
         static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
         {
@@ -178,13 +178,13 @@ namespace Altar
             return CreateVertices(content, code);
         }
 
-        public static Expression[] ParseExpressions(GMFileContent content, RefData rdata, GraphVertex vertex)
+        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, AnyInstruction*[] instr)
         {
-            if (vertex.Instructions.Length == 0)
-                return EmptyExprArray;
+            if (instr.Length == 0)
+                return EmptyStmtArray;
 
             var stack = new Stack<Expression>();
-            var instr = vertex.Instructions;
+            var stmts = new List <Statement >();
 
             for (int i = 0; i < instr.Length; i++)
             {
@@ -195,6 +195,8 @@ namespace Altar
                 var pcl = (CallInstruction      *)ins;
                 var pps = (PushInstruction      *)ins;
                 var pse = (SetInstruction       *)ins;
+                var pbr = (GotoInstruction      *)ins;
+                var pbk = (BreakInstruction     *)ins;
 
                 var st = ins->SingleType;
                 var dt = ins->DoubleType;
@@ -210,13 +212,59 @@ namespace Altar
                 switch (ins->Code())
                 {
                     case OpCode.Dup:
-                        stack.Push(stack.Peek());
+                        stmts.Add(new DupStatement());
                         break;
                     case OpCode.Pop:
-                        //stack.Pop();
+                        if (stack.Count > 0 && stack.Peek() is CallExpression)
+                            stmts.Add(new CallStatement
+                            {
+                                Call = stack.Pop() as CallExpression
+                            });
+                        else
+                            stmts.Add(new PopStatement());
                         break;
-                    case OpCode.Pushenv: // ...?
-                    case OpCode.Popenv :
+                    case OpCode.PushEnv:
+                        stmts.Add(new PushEnvStatement()); // ?
+                        break;
+                    case OpCode.PopEnv:
+                        stmts.Add(new PopEnvStatement());
+                        break;
+                    case OpCode.Brt:
+                    case OpCode.Brf:
+                    case OpCode.Br:
+                        stmts.Add(new BranchStatement
+                        {
+                            Type         = pbr->Type(),
+                            Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
+                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset),
+                            TargetOffset = (byte*)ins - (byte*)instr[0]
+                        });
+                        break;
+                    case OpCode.Break:
+                        stmts.Add(new BreakStatement
+                        {
+                            Signal = pbk->Signal,
+                            Type   = pbk->Type
+                        });
+                        break;
+                    case OpCode.Ret:
+                    case OpCode.Exit: // ?
+                        stmts.Add(new ReturnStatement
+                        {
+                            ReturnType = pst->Type,
+                            RetValue   = stack.Pop()
+                        });
+                        break;
+                    case OpCode.Set:
+                        stmts.Add(new SetStatement
+                        {
+                            OriginalType = t1,
+                            ReturnType   = t2,
+                            Type         = se.DestVar.Type,
+                            Owner        = se.Instance,
+                            Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                            Value        = stack.Pop()
+                        });
                         break;
                     default:
                         switch (ins->ExprType())
@@ -271,19 +319,6 @@ namespace Altar
                                 });
                                 break;
                             #endregion
-                            #region set
-                            case ExpressionType.Set:
-                                stack.Push(new SetExpression
-                                {
-                                    OriginalType = t1,
-                                    ReturnType   = t2,
-                                    Type         = se.DestVar.Type,
-                                    Owner        = se.Instance,
-                                    Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                    Value        = stack.Pop()
-                                });
-                                break;
-                            #endregion
                             #region call
                             case ExpressionType.Call:
                                 stack.Push(new CallExpression
@@ -323,108 +358,20 @@ namespace Altar
                 }
             }
 
-            return stack.Reverse().ToArray();
+            // what with things in the stack?
+            return stmts.ToArray();
         }
-
-        /*static void DecompileVertex(GMFileContent content, RefData rdata, GraphVertex g, StringBuilder sb, List<uint> visited)
-        {
-            var exprs = ParseExpressions(content, rdata, g);
-
-            sb.Append("GML_").Append(g.FirstInstrAddress.ToString(SR.HEX_FM8)).AppendLine(": ");
-
-            foreach (var e in exprs)
-                sb.Append("    ").AppendLine(e.ToString());
-
-            visited.Add(g.FirstInstrAddress);
-
-            if (g.Branches.Length == 0)
-                return;
-
-            for (int j = 0; j < g.Branches.Length; j++)
-            {
-                var b = g.Branches[j];
-
-                switch (b.Type)
-                {
-                    case BranchType.IfFalse:
-                        sb.Append("if false ");
-                        break;
-                    case BranchType.IfTrue:
-                        sb.Append("if true ");
-                        break;
-                }
-
-                sb.Append("goto GML_").AppendLine(b.BranchToAddress.ToString(SR.HEX_FM8));
-
-                if (j != g.Branches.Length - 1)
-                    sb.Append("else ");
-            }
-
-            for (int j = 0; j < g.Branches.Length; j++)
-            {
-                var next = g.Branches[j].ToVertex;
-
-                if (next == null)
-                    sb.AppendLine("    ret");
-                else if (!visited.Contains(next.FirstInstrAddress))
-                    DecompileVertex(content, rdata, next, sb, visited);
-
-                //visited.Add(next);
-            }
-        }*/
 
         public static string DecompileCode(GMFileContent content, RefData rdata, uint id)
         {
             var sb = new StringBuilder();
 
-            var code = Disassembler.DisassembleCode(content, id);
+            var code  = Disassembler.DisassembleCode(content, id);
+            var dasm  = Disassembler.DisplayInstructions(content, rdata, code); // for debugging
             var graph = BuildCFGraph(content, code);
-            var dasm = Disassembler.DisplayInstructions(content, rdata, code);
+            var stmts = ParseStatements(content, rdata, graph[0].Instructions /* ? */);
 
-            //DecompileVertex(content, rdata, graph[0], sb, new List<uint>());
-
-            //for (uint i = 0; i < graph.Length; i++)
-            //{
-            //    var g = graph[i];
-            //    var exprs = ParseExpressions(content, rdata, g);
-
-            //    sb.Append("GML_").Append(g.FirstInstrAddress.ToString(SR.HEX_FM8)).AppendLine(": ");
-
-            //    foreach (var e in exprs)
-            //        sb.Append("    ").AppendLine(e.ToString());
-
-            //    if (g.Branches.Length == 0)
-            //        continue;
-
-            //    // * goto 0xFFFFFF
-            //    // else goto \n else
-
-            //    for (int j = 0; j < g.Branches.Length; j++)
-            //    {
-            //        var b = g.Branches[j];
-
-            //        //if (j != g.Branches.Length - 1)
-            //        //{
-            //            switch (b.Type)
-            //            {
-            //                case BranchType.IfFalse:
-            //                    sb.Append("if false ");
-            //                    break;
-            //                case BranchType.IfTrue:
-            //                    sb.Append("if true " );
-            //                    break;
-            //            }
-
-            //            sb.Append("goto GML_").AppendLine(b.BranchToAddress.ToString(SR.HEX_FM8))
-            //              .Append("else ");
-            //        //}
-            //        //else
-            //        if (b.BranchToAddress == 0xFFFFFF)
-            //            sb.Append("    ret");
-            //    }
-
-            //    sb.AppendLine();
-            //}
+            // TODO
 
             return sb.ToString();
         }

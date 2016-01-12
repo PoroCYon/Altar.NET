@@ -125,7 +125,7 @@ namespace Altar
         public UnaryOperator Operator;
         public DataType OriginalType;
 
-        public override string ToString() => O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToPrettyString() : Operator.ToString().ToLowerInvariant()) + SPACE_S + Input + C_PAREN;
+        public override string ToString() => O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToPrettyString() : Operator.ToPrettyString()) + SPACE_S + Input + C_PAREN;
     }
     public class BinaryOperatorExpression : Expression
     {
@@ -134,7 +134,7 @@ namespace Altar
         public BinaryOperator Operator;
         public DataType OriginalType;
 
-        public override string ToString() => O_PAREN + Operator.ToString().ToLowerInvariant() + SPACE_S + Arg1 + SPACE_S + Arg2 + C_PAREN;
+        public override string ToString() => O_PAREN + Operator.ToPrettyString() + SPACE_S + Arg1 + SPACE_S + Arg2 + C_PAREN;
     }
     public class CallExpression : Expression
     {
@@ -144,16 +144,98 @@ namespace Altar
 
         public override string ToString() => O_PAREN + Function.Name + Type.ToPrettyString() + SPACE_S + String.Join(SPACE_S, Arguments.Select(o => o.ToString())) + C_PAREN;
     }
-    public class SetExpression : Expression
+
+    // ---
+
+    //TODO: put these string literals in SR
+    public abstract class Statement { }
+
+    public class SetStatement : Statement
     {
         public Expression Value;
         public VariableType Type;
         public InstanceType Owner;
         public ReferenceDef Target;
         public DataType OriginalType;
+        public DataType ReturnType;
 
-        public override string ToString() => SR.O_PAREN + Owner.ToPrettyString() + DOT + Target + Type.ToPrettyString() + EQ_S + Value + C_PAREN;
+        public override string ToString() => O_PAREN + Owner.ToPrettyString() + DOT + Target + Type.ToPrettyString() + EQ_S + Value + C_PAREN;
     }
+    public class CallStatement : Statement
+    {
+        public CallExpression Call;
+
+        public override string ToString() => Call.ToString();
+    }
+    public unsafe class BranchStatement : Statement
+    {
+        public BranchType Type;
+        /// <summary>
+        /// Null if <see cref="Type" /> == <see cref="BranchType.Unconditional" />.
+        /// </summary>
+        public Expression Conditional;
+        public AnyInstruction* Target;
+        public long TargetOffset;
+
+        public override string ToString()
+        {
+            var s = String.Empty;
+
+            switch (Type)
+            {
+                case BranchType.IfFalse:
+                    s = "if !" + Conditional + SPACE_S;
+                    break;
+                case BranchType.IfTrue:
+                    s = "if " + Conditional + SPACE_S;
+                    break;
+            }
+
+            s += "goto ";
+
+            s += HEX_PRE + TargetOffset.ToString(HEX_FM8);
+
+            return s;
+        }
+    }
+    public class BreakStatement : Statement
+    {
+        public DataType Type;
+        public uint Signal;
+    }
+    public class ReturnStatement : Statement
+    {
+        public DataType ReturnType;
+        public Expression RetValue;
+    }
+    public class PushEnvStatement : Statement
+    {
+        // ?
+
+        public override string ToString() => "pushenv";
+    }
+    public class PopEnvStatement : Statement
+    {
+        public override string ToString() => "popenv";
+    }
+
+    // temp
+    public class PushStatement : Statement
+    {
+        public Expression Expr;
+
+        public override string ToString() => "push " + Expr;
+    }
+    public class PopStatement : Statement
+    {
+        public override string ToString() => "pop";
+    }
+    public class DupStatement : Statement
+    {
+        public override string ToString() => "dup";
+    }
+
+    // ---
 
     public static class DecompExt
     {
@@ -238,6 +320,60 @@ namespace Altar
                 return ExpressionType.BinaryOp;
 
             return 0;
+        }
+
+        //TODO: put these string literals in SR
+        public static string ToPrettyString(this UnaryOperator  op)
+        {
+            switch (op)
+            {
+                case UnaryOperator.Complement:
+                    return "~";
+                case UnaryOperator.Negation:
+                    return "-";
+            }
+
+            return op.ToString().ToLowerInvariant();
+        }
+        public static string ToPrettyString(this BinaryOperator op)
+        {
+            switch (op)
+            {
+                case BinaryOperator.Addition:
+                    return "+";
+                case BinaryOperator.And:
+                    return "&";
+                case BinaryOperator.Division:
+                    return "/";
+                case BinaryOperator.Equality:
+                    return "==";
+                case BinaryOperator.GreaterThan:
+                    return ">";
+                case BinaryOperator.GTOrEqual:
+                    return ">=";
+                case BinaryOperator.Inequality:
+                    return "!=";
+                case BinaryOperator.LeftShift:
+                    return "<<";
+                case BinaryOperator.LowerThan:
+                    return "<";
+                case BinaryOperator.LTOrEqual:
+                    return "<=";
+                case BinaryOperator.Modulo:
+                    return "%";
+                case BinaryOperator.Multiplication:
+                    return "*";
+                case BinaryOperator.Or:
+                    return "|";
+                case BinaryOperator.RightShift:
+                    return ">>";
+                case BinaryOperator.Subtraction:
+                    return "-";
+                case BinaryOperator.Xor:
+                    return "^";
+            }
+
+            return op.ToString().ToLowerInvariant();
         }
     }
 }

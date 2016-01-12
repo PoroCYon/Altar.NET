@@ -32,7 +32,7 @@ namespace Altar
 
             for (uint i = 0; i * 4 < l; /* see loop end */)
             {
-                instr = (AnyInstruction*)((byte*)bc + i);
+                instr = (AnyInstruction*)(bc + i);
 
                 ret.Add((IntPtr)instr);
 
@@ -44,6 +44,8 @@ namespace Altar
                     case InstructionKind.DoubleType:
                     case InstructionKind.Goto:
                     case InstructionKind.Break:
+                    case InstructionKind.PopEnv:
+                    case InstructionKind.PushEnv:
                         blocks = 1;
                         break;
                     case InstructionKind.Call:
@@ -138,6 +140,14 @@ namespace Altar
                         var g = iptr->Goto;
 
                         sb.Append(HEX_PRE).Append((relInstr + g.Offset).ToString(HEX_FM6));
+                        break;
+
+                    //TODO: add these string literals to SR
+                    case InstructionKind.PushEnv:
+                        sb.Append("pushenv");
+                        break;
+                    case InstructionKind.PopEnv:
+                        sb.Append("popenv");
                         break;
 
                     #region set
