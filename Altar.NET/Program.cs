@@ -70,7 +70,8 @@ namespace Altar
                 };
                 #endregion
 
-                //var src = Decompiler.ParseStatements(f, rdata, Disassembler.DisassembleCode(f, 143).Instructions);
+                //var c__ = Disassembler.DisassembleCode(f, 143);
+                //var src = Decompiler.ParseStatements(f, rdata, c__.Instructions);
 
                 //if (f.Audio->Count >= 0)
                 //    return;

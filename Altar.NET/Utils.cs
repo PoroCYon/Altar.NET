@@ -45,13 +45,6 @@ namespace Altar
     }
     public static class Extensions
     {
-        public static IEnumerable<T> PopMany <T>(this Stack<T> stack, int amount)
-        {
-            if (amount > stack.Count || amount < 0)
-                throw new ArgumentOutOfRangeException(nameof(amount));
-
-            return stack.PopWhile(_ => --amount >= 0);
-        }
         public static IEnumerable<T> PopWhile<T>(this Stack<T> stack, Predicate<T> p)
         {
             if (p == null)
@@ -62,6 +55,14 @@ namespace Altar
 
             yield break;
         }
+        public static IEnumerable<T> PopMany <T>(this Stack<T> stack, int amount)
+        {
+            if (amount > stack.Count || amount < 0)
+                throw new ArgumentOutOfRangeException(nameof(amount));
+
+            return stack.PopWhile(_ => --amount >= 0);
+        }
+        public static IEnumerable<T> PopAll  <T>(this Stack<T> stack) => stack.PopWhile(_ => true);
 
         public static void PushRange<T>(this Stack<T> stack, IEnumerable<T> toPush)
         {
@@ -72,13 +73,6 @@ namespace Altar
                 stack.Push(e);
         }
 
-        public static IEnumerable<T> DequeueMany <T>(this Queue<T> queue, int amount)
-        {
-            if (amount > queue.Count || amount < 0)
-                throw new ArgumentOutOfRangeException(nameof(amount));
-
-            return queue.DequeueWhile(_ => --amount >= 0);
-        }
         public static IEnumerable<T> DequeueWhile<T>(this Queue<T> queue, Predicate<T> p)
         {
             if (p == null)
@@ -89,6 +83,14 @@ namespace Altar
 
             yield break;
         }
+        public static IEnumerable<T> DequeueMany <T>(this Queue<T> queue, int amount)
+        {
+            if (amount > queue.Count || amount < 0)
+                throw new ArgumentOutOfRangeException(nameof(amount));
+
+            return queue.DequeueWhile(_ => --amount >= 0);
+        }
+        public static IEnumerable<T> DequeueAll  <T>(this Queue<T> queue) => queue.DequeueWhile(_ => true);
 
         public static void EnqueueRange<T>(this Queue<T> queue, IEnumerable<T> toEnq)
         {
