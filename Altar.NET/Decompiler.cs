@@ -178,13 +178,17 @@ namespace Altar
             return CreateVertices(content, code);
         }
 
-        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, AnyInstruction*[] instr)
+        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null)
         {
+            stack = stack ?? new Stack<Expression>();
+            instr = instr ?? code.Instructions;
+
             if (instr.Length == 0)
                 return EmptyStmtArray;
 
-            var stack = new Stack<Expression>();
-            var stmts = new List <Statement >();
+            var stmts = new List<Statement>();
+
+            var firstI = code.Instructions[0];
 
             for (int i = 0; i < instr.Length; i++)
             {
@@ -240,15 +244,17 @@ namespace Altar
                         break;
                     #endregion
                     #region branch
+                    //TODO:
                     case OpCode.Brt:
                     case OpCode.Brf:
                     case OpCode.Br:
+                        //TODO: wrong offset? (to the next statement group instead of the one that is (or seems to be) the intended target
                         AddStmt(new BranchStatement
                         {
                             Type         = pbr->Type(),
                             Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset),
-                            TargetOffset = (byte*)ins - (byte*)instr[0]
+                            TargetOffset = (byte*)ins - (byte*)firstI + 4L // cheat in output generation
                         });
                         break;
                     #endregion
@@ -379,12 +385,28 @@ namespace Altar
         {
             var sb = new StringBuilder();
 
-            var code  = Disassembler.DisassembleCode(content, id);
-            var dasm  = Disassembler.DisplayInstructions(content, rdata, code); // for debugging
-            var graph = BuildCFGraph(content, code);
-            var stmts = ParseStatements(content, rdata, graph[0].Instructions /* ? */);
+            var stack = new Stack<Expression>();
 
-            // TODO
+            var code  = Disassembler.DisassembleCode(content, id);
+
+            var firstI = (long)code.Instructions[0];
+
+            var graph = BuildCFGraph(content, code);
+
+            var indent = "    ";
+
+            //TODO: CFG kind recognition stuff (if, if/else, for, while, etc)
+            foreach (var g in graph)
+            {
+                var stmts = ParseStatements(content, rdata, code, g.Instructions, stack);
+
+                sb  .Append(SR.HEX_PRE)
+                    .Append(((long)g.Instructions[0] - firstI).ToString(SR.HEX_FM6))
+                    .AppendLine(SR.COLON);
+
+                foreach (var s in stmts)
+                    sb.Append(indent).AppendLine(s.ToString());
+            }
 
             return sb.ToString();
         }
