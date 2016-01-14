@@ -71,7 +71,9 @@ namespace Altar
                 #endregion
 
                 //var c__ = Disassembler.DisassembleCode(f, 143);
-                //var src = Decompiler.ParseStatements(f, rdata, c__.Instructions);
+                //var stm = Decompiler.ParseStatements(f, rdata, c__);
+                //var str = String.Join(Environment.NewLine, stm.Select(s => s.ToString()));
+                //var d = Decompiler.DecompileCode(f, rdata, 143);
 
                 //if (f.Audio->Count >= 0)
                 //    return;
