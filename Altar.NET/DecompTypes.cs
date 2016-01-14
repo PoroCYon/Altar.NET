@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace Altar
@@ -106,18 +107,53 @@ namespace Altar
     public class LiteralExpression : Expression
     {
         public object Value;
-        public DataType OriginalType;
 
-        public override string ToString() => (Value ?? NULL).ToString();
+        public override string ToString()
+        {
+            switch (ReturnType)
+            {
+                case DataType.Boolean:
+                    if (Value is bool)
+                        return (bool)Value ? TRUE : FALSE;
+                    break;
+                case DataType.Double:
+                    if (Value is double)
+                        return ((double)Value).ToString(CultureInfo.InvariantCulture) + DOUBLE_L;
+                    break;
+                case DataType.Int16:
+                    if (Value is short)
+                        return ((short)Value).ToString(CultureInfo.InvariantCulture) + SHORT_L;
+                    break;
+                case DataType.Int32:
+                    if (Value is int)
+                        return ((int)Value).ToString(CultureInfo.InvariantCulture);
+                    break;
+                case DataType.Int64:
+                    if (Value is long)
+                        return ((long)Value).ToString(CultureInfo.InvariantCulture);
+                    break;
+                case DataType.Single:
+                    if (Value is float)
+                        return ((float)Value).ToString(CultureInfo.InvariantCulture) + SINGLE_L;
+                    break;
+                case DataType.String:
+                    if (Value is string)
+                        return (string)Value;
+                    break;
+                default:
+                    return O_PAREN + ReturnType.ToPrettyString() + SPACE_S + Value + C_PAREN;
+            }
+
+            throw new ArgumentException("Invalid object value " + Value.GetType() + " for data type " + ReturnType.ToPrettyString(), nameof(Value));
+        }
     }
     public class VariableExpression : Expression
     {
         public ReferenceDef Variable;
         public VariableType Type;
         public InstanceType Owner;
-        public DataType OriginalType;
 
-        public override string ToString() => Owner.ToPrettyString() + DOT + Variable.Name + Type.ToPrettyString();
+        public override string ToString() => Owner.ToPrettyString() + DOT + Variable.Name + Type.ToPrettyString() /*+ COLON + ReturnType.ToPrettyString()*/ /* it's always variable */;
     }
     public class UnaryOperatorExpression : Expression
     {
@@ -142,12 +178,11 @@ namespace Altar
         public VariableType Type;
         public ReferenceDef Function;
 
-        public override string ToString() => O_PAREN + Function.Name + Type.ToPrettyString() + SPACE_S + String.Join(SPACE_S, Arguments.Select(o => o.ToString())) + C_PAREN;
+        public override string ToString() => O_PAREN + Function.Name + Type.ToPrettyString() + COLON + ReturnType.ToPrettyString() + SPACE_S + String.Join(SPACE_S, Arguments.Select(o => o.ToString())) + C_PAREN;
     }
 
     // ---
 
-    //TODO: put these string literals in SR
     public abstract class Statement { }
 
     public class SetStatement : Statement
@@ -165,7 +200,7 @@ namespace Altar
     {
         public CallExpression Call;
 
-        public override string ToString() => Call.ToString();
+        public override string ToString() => CALL + SPACE_S + Call.ToString();
     }
     public unsafe class BranchStatement : Statement
     {
@@ -184,14 +219,14 @@ namespace Altar
             switch (Type)
             {
                 case BranchType.IfFalse:
-                    s = "if !" + Conditional + SPACE_S;
+                    s = IFF + Conditional + SPACE_S;
                     break;
                 case BranchType.IfTrue:
-                    s = "if " + Conditional + SPACE_S;
+                    s = IFT + Conditional + SPACE_S;
                     break;
             }
 
-            s += "goto ";
+            s += GOTO;
 
             s += HEX_PRE + TargetOffset.ToString(HEX_FM8);
 
@@ -202,37 +237,41 @@ namespace Altar
     {
         public DataType Type;
         public uint Signal;
+
+        public override string ToString() => BREAK + Type.ToPrettyString() + SPACE_S + Signal;
     }
     public class ReturnStatement : Statement
     {
         public DataType ReturnType;
         public Expression RetValue;
+
+        public override string ToString() => RET + ReturnType.ToPrettyString() + SPACE_S + RetValue;
     }
     public class PushEnvStatement : Statement
     {
         // ?
 
-        public override string ToString() => "pushenv";
+        public override string ToString() => PUSHE;
     }
     public class PopEnvStatement : Statement
     {
-        public override string ToString() => "popenv";
+        public override string ToString() => POPE;
     }
 
-    // temp
+    // temp..?
     public class PushStatement : Statement
     {
         public Expression Expr;
 
-        public override string ToString() => "push " + Expr;
+        public override string ToString() => PUSH + Expr;
     }
     public class PopStatement : Statement
     {
-        public override string ToString() => "pop";
+        public override string ToString() => POP;
     }
     public class DupStatement : Statement
     {
-        public override string ToString() => "dup";
+        public override string ToString() => DUP;
     }
 
     // ---
@@ -322,15 +361,14 @@ namespace Altar
             return 0;
         }
 
-        //TODO: put these string literals in SR
         public static string ToPrettyString(this UnaryOperator  op)
         {
             switch (op)
             {
                 case UnaryOperator.Complement:
-                    return "~";
+                    return TILDE;
                 case UnaryOperator.Negation:
-                    return "-";
+                    return DASH;
             }
 
             return op.ToString().ToLowerInvariant();
@@ -340,37 +378,37 @@ namespace Altar
             switch (op)
             {
                 case BinaryOperator.Addition:
-                    return "+";
+                    return PLUS;
                 case BinaryOperator.And:
-                    return "&";
+                    return AMP;
                 case BinaryOperator.Division:
-                    return "/";
+                    return SLASH;
                 case BinaryOperator.Equality:
-                    return "==";
+                    return EQUAL;
                 case BinaryOperator.GreaterThan:
-                    return ">";
+                    return GT;
                 case BinaryOperator.GTOrEqual:
-                    return ">=";
+                    return GTE;
                 case BinaryOperator.Inequality:
-                    return "!=";
+                    return NEQUAL;
                 case BinaryOperator.LeftShift:
-                    return "<<";
+                    return LEFTSH;
                 case BinaryOperator.LowerThan:
-                    return "<";
+                    return LT;
                 case BinaryOperator.LTOrEqual:
-                    return "<=";
+                    return LTE;
                 case BinaryOperator.Modulo:
-                    return "%";
+                    return MOD;
                 case BinaryOperator.Multiplication:
-                    return "*";
+                    return ASTERISK;
                 case BinaryOperator.Or:
-                    return "|";
+                    return VBAR;
                 case BinaryOperator.RightShift:
-                    return ">>";
+                    return RIGHTSH;
                 case BinaryOperator.Subtraction:
-                    return "-";
+                    return DASH;
                 case BinaryOperator.Xor:
-                    return "^";
+                    return XOR;
             }
 
             return op.ToString().ToLowerInvariant();

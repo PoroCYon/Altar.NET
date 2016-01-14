@@ -21,6 +21,7 @@ namespace Altar
         /// <summary>
         /// Unused
         /// </summary>
+        [Obsolete("Unused")]
         Instance,
         Int16 = 0x0F
     }
@@ -306,7 +307,9 @@ namespace Altar
         public static uint            Rest(this AnyInstruction instr) => instr.InstrData & 0x00FFFFFF;
         public static InstructionKind Kind(this AnyInstruction instr) => instr.Code().Kind();
 
+#pragma warning disable 618
         public static string ToPrettyString(this DataType     type) => type == DataType.Variable ? VAR : type == DataType.Instance ? INST : type == DataType.Boolean ? BOOL : type.ToString().ToLowerInvariant();
+#pragma warning restore 618
         public static string ToPrettyString(this InstanceType type) => type == InstanceType.StackTopOrGlobal ? STOG : type.ToString().ToLowerInvariant();
         public static string ToPrettyString(this VariableType type)
         {

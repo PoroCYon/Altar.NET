@@ -142,12 +142,11 @@ namespace Altar
                         sb.Append(HEX_PRE).Append((relInstr + g.Offset).ToString(HEX_FM6));
                         break;
 
-                    //TODO: add these string literals to SR
                     case InstructionKind.PushEnv:
-                        sb.Append("pushenv");
+                        sb.Append(PUSHE);
                         break;
                     case InstructionKind.PopEnv:
-                        sb.Append("popenv");
+                        sb.Append(POPE);
                         break;
 
                     #region set

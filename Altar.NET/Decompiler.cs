@@ -152,7 +152,7 @@ namespace Altar
                     vertices[i].Branches[1] = new GraphBranch
                     {
                         BranchTo = blocks[i + 1].Instructions[0],
-                        Type     = blk.Type.Invert(),
+                        Type     = blk.Type.Invert()
                     };
             }
 
@@ -209,30 +209,41 @@ namespace Altar
                 var t2 = ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type2
                       : (ins->Kind() == InstructionKind.SingleType ? st.Type        : 0);
 
+                Action<Statement> AddStmt = s =>
+                {
+                    // flush stack
+                    stmts.AddRange(stack.PopAll().Reverse().Select(e => new PushStatement { Expr = e }));
+
+                    stmts.Add(s);
+                };
+
                 switch (ins->Code())
                 {
+                    #region stack stuff
                     case OpCode.Dup:
-                        stmts.Add(new DupStatement());
+                        AddStmt(new DupStatement());
                         break;
                     case OpCode.Pop:
                         if (stack.Count > 0 && stack.Peek() is CallExpression)
-                            stmts.Add(new CallStatement
+                            AddStmt(new CallStatement
                             {
                                 Call = stack.Pop() as CallExpression
                             });
                         else
-                            stmts.Add(new PopStatement());
+                            AddStmt(new PopStatement());
                         break;
                     case OpCode.PushEnv:
-                        stmts.Add(new PushEnvStatement()); // ?
+                        AddStmt(new PushEnvStatement()); // ?
                         break;
                     case OpCode.PopEnv:
-                        stmts.Add(new PopEnvStatement());
+                        AddStmt(new PopEnvStatement());
                         break;
+                    #endregion
+                    #region branch
                     case OpCode.Brt:
                     case OpCode.Brf:
                     case OpCode.Br:
-                        stmts.Add(new BranchStatement
+                        AddStmt(new BranchStatement
                         {
                             Type         = pbr->Type(),
                             Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
@@ -240,8 +251,10 @@ namespace Altar
                             TargetOffset = (byte*)ins - (byte*)instr[0]
                         });
                         break;
+                    #endregion
+                    #region break, ret, exit
                     case OpCode.Break:
-                        stmts.Add(new BreakStatement
+                        AddStmt(new BreakStatement
                         {
                             Signal = pbk->Signal,
                             Type   = pbk->Type
@@ -249,17 +262,18 @@ namespace Altar
                         break;
                     case OpCode.Ret:
                     case OpCode.Exit: // ?
-                        stmts.Add(new ReturnStatement
+                        AddStmt(new ReturnStatement
                         {
                             ReturnType = pst->Type,
                             RetValue   = stack.Pop()
                         });
                         break;
+                    #endregion
                     case OpCode.Set:
-                        stmts.Add(new SetStatement
+                        AddStmt(new SetStatement
                         {
-                            OriginalType = t1,
-                            ReturnType   = t2,
+                            OriginalType = se.Types.Type1,
+                            ReturnType   = se.Types.Type2,
                             Type         = se.DestVar.Type,
                             Owner        = se.Instance,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
@@ -273,8 +287,7 @@ namespace Altar
                             case ExpressionType.Variable:
                                 stack.Push(new VariableExpression
                                 {
-                                    OriginalType = t1,
-                                    ReturnType   = t2,
+                                    ReturnType   = ps.Type,
                                     Type         = ((Reference*)&pps->ValueRest)->Type,
                                     Owner        = (InstanceType)ps.Value,
                                     Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]]
@@ -313,9 +326,8 @@ namespace Altar
 
                                 stack.Push(new LiteralExpression
                                 {
-                                    OriginalType = t1,
-                                    ReturnType   = t2,
-                                    Value = v
+                                    ReturnType = ps.Type,
+                                    Value      = v
                                 });
                                 break;
                             #endregion
@@ -323,10 +335,10 @@ namespace Altar
                             case ExpressionType.Call:
                                 stack.Push(new CallExpression
                                 {
-                                    ReturnType = t1,
+                                    ReturnType = cl.ReturnType,
                                     Type       = cl.Function.Type,
                                     Function   = rdata.Functions[rdata.FuncAccessors[(IntPtr)ins]],
-                                    Arguments  = stack.PopMany(cl.Arguments).ToArray()
+                                    Arguments  = stack.PopMany(cl.Arguments).Reverse().ToArray()
                                 });
                                 break;
                             #endregion
@@ -358,7 +370,8 @@ namespace Altar
                 }
             }
 
-            // what with things in the stack?
+            //var str = String.Join(Environment.NewLine, stmts.Select(s => s.ToString()));
+
             return stmts.ToArray();
         }
 
