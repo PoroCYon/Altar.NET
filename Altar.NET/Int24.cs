@@ -171,11 +171,19 @@ namespace Altar
         public static explicit operator Int24(char   value) => new Int24(value);
         [DebuggerStepThrough]
         public static explicit operator Int24( int   value) => new Int24(value);
+        [DebuggerStepThrough]
+        public static explicit operator Int24(ulong  value) => unchecked(new Int24((uint)value));
+        [DebuggerStepThrough]
+        public static explicit operator Int24( long  value) => unchecked(new Int24(( int)value));
 
         [DebuggerStepThrough]
         public static implicit operator uint  (Int24 value) => value.UValue;
         [DebuggerStepThrough]
         public static implicit operator  int  (Int24 value) => value. Value;
+        [DebuggerStepThrough]
+        public static implicit operator ulong (Int24 value) => value.UValue;
+        [DebuggerStepThrough]
+        public static implicit operator  long (Int24 value) => value. Value;
         [DebuggerStepThrough]
         public static explicit operator ushort(Int24 value) => value.ToUInt16(null);
         [DebuggerStepThrough]

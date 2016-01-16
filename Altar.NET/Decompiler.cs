@@ -86,16 +86,16 @@ namespace Altar
                     instrs.Add((IntPtr)ins);
                 }
 
+                if (instrs.Count == 0)
+                    continue;
+
                 if (i == jumpTo.Length - 1 && br > instr[instr.Length - 1]) // implicit 'ret' after last instruction
-                {
-                    if (instrs.Count != 0)
-                        blocks.Add(new CodeBlock
-                        {
-                            Instructions = Utils.MPtrListToPtrArr(instrs),
-                            BranchTo     = null,
-                            Type         = BranchType.Unconditional
-                        });
-                }
+                    blocks.Add(new CodeBlock
+                    {
+                        Instructions = Utils.MPtrListToPtrArr(instrs),
+                        BranchTo     = null,
+                        Type         = BranchType.Unconditional
+                    });
                 else
                 {
                     var lastI = (AnyInstruction*)(instrs[instrs.Count - 1]);
@@ -178,10 +178,11 @@ namespace Altar
             return CreateVertices(content, code);
         }
 
-        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null)
+        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null, List<Expression> dupTars = null)
         {
-            stack = stack ?? new Stack<Expression>();
-            instr = instr ?? code.Instructions;
+            stack   = stack   ?? new Stack<Expression>();
+            dupTars = dupTars ?? new List <Expression>();
+            instr   = instr   ?? code.Instructions;
 
             if (instr.Length == 0)
                 return EmptyStmtArray;
@@ -190,10 +191,57 @@ namespace Altar
 
             var firstI = code.Instructions[0];
 
+            //TODO: use locals
+            Action<Statement> AddStmt = s =>
+            {
+                var readd = new Stack<Expression>();
+
+                // flush stack
+                //? not sure if this is a good idea
+                stmts.AddRange(stack.PopAll().Where(e =>
+                {
+                    if (dupTars.Contains(e))
+                    {
+                        readd.Push(e);
+                        return false;
+                    }
+
+                    return true;
+                }).Reverse().Select(e =>
+                    e is UnaryOperatorExpression &&
+                            ((UnaryOperatorExpression)e).Operator == UnaryOperator.Duplicate
+                        ? (Statement)new DupStatement() : new PushStatement { Expr = e }));
+
+                stack.PushRange(readd);
+
+                stmts.Add(s);
+            };
+            Func<VariableType, Expression> TryGetIndex = vt =>
+            {
+                Expression ind = null;
+
+                if (vt == VariableType.Array)
+                {
+                    ind = stack.Pop();
+
+                    //TODO: sometimes borks due to a preceding dup expression...?
+                    var m5 = stack.Pop();
+                    if (!(m5 is LiteralExpression) || !(((LiteralExpression)m5).Value is short) || (short)((LiteralExpression)m5).Value != -5)
+                    {
+                        stack.Push(m5 );
+                        stack.Push(ind);
+                        ind = null;
+                    }
+                }
+
+                return ind;
+            };
+
             for (int i = 0; i < instr.Length; i++)
             {
                 var ins = instr[i];
 
+                #region stuff
                 var pst = (SingleTypeInstruction*)ins;
                 var pdt = (DoubleTypeInstruction*)ins;
                 var pcl = (CallInstruction      *)ins;
@@ -202,30 +250,57 @@ namespace Altar
                 var pbr = (GotoInstruction      *)ins;
                 var pbk = (BreakInstruction     *)ins;
 
-                var st = ins->SingleType;
-                var dt = ins->DoubleType;
-                var cl = ins->Call      ;
-                var ps = ins->Push      ;
-                var se = ins->Set       ;
+                var st  = ins->SingleType;
+                var dt  = ins->DoubleType;
+                var cl  = ins->Call      ;
+                var ps  = ins->Push      ;
+                var se  = ins->Set       ;
 
                 var t1 = ins->Kind() == InstructionKind.SingleType ? st.Type
                       : (ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type1 : 0);
                 var t2 = ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type2
                       : (ins->Kind() == InstructionKind.SingleType ? st.Type        : 0);
-
-                Action<Statement> AddStmt = s =>
-                {
-                    // flush stack
-                    stmts.AddRange(stack.PopAll().Reverse().Select(e => new PushStatement { Expr = e }));
-
-                    stmts.Add(s);
-                };
+                #endregion
 
                 switch (ins->Code())
                 {
-                    #region stack stuff
+                    #region dup, pop
                     case OpCode.Dup:
-                        AddStmt(new DupStatement());
+                        var normal = true;
+                        if (i < instr.Length - 1 && instr[i + 1]->OpCode == OpCode.Push)
+                        {
+                            var n = &instr[i + 1]->Push;
+                            var t = ((Reference*)&n->ValueRest)->Type;
+
+                            if (t == VariableType.Array && stack.Count > 1)
+                            {
+                                normal = false;
+
+                                stack.Push(stack.Skip(1).First()); // second item
+                                stack.Push(stack.Skip(1).First()); // first  item (original stack top)
+                            }
+                        }
+
+                        if (!normal)
+                            break;
+
+                        if (!dupTars.Contains(stack.Peek()))
+                            dupTars.Add(stack.Peek());
+
+                        if (stack.Peek().WalkExprTree(e => e is CallExpression).Any(_ => _))
+                        {
+                            stack.Push(new UnaryOperatorExpression
+                            {
+                                Input        = stack.Peek(),
+                                Operator     = UnaryOperator.Duplicate,
+                                OriginalType = stack.Peek().ReturnType,
+                                ReturnType   = st.Type
+                            });
+
+                            //AddStmt(new DupStatement());
+                        }
+                        else
+                            stack.Push(stack.Peek());
                         break;
                     case OpCode.Pop:
                         if (stack.Count > 0 && stack.Peek() is CallExpression)
@@ -236,25 +311,30 @@ namespace Altar
                         else
                             AddStmt(new PopStatement());
                         break;
+                    #endregion
+                    #region env
                     case OpCode.PushEnv:
-                        AddStmt(new PushEnvStatement()); // ?
-                        break;
-                    case OpCode.PopEnv:
-                        AddStmt(new PopEnvStatement());
+                    case OpCode.PopEnv :
+                        //TODO: use actual '(with obj ...)' syntax
+                        //! it might mess with the CFG structure
+                        AddStmt(new EnvStatement
+                        {
+                            Operator     = ins->Code() == OpCode.PushEnv ? EnvStackOperator.PushEnv : EnvStackOperator.PopEnv,
+                            Target = (AnyInstruction*)((byte*)ins + pbr->Offset),
+                            TargetOffset = (byte*)ins + pbr->Offset - (byte*)firstI
+                        });
                         break;
                     #endregion
                     #region branch
-                    //TODO:
                     case OpCode.Brt:
                     case OpCode.Brf:
                     case OpCode.Br:
-                        //TODO: wrong offset? (to the next statement group instead of the one that is (or seems to be) the intended target
                         AddStmt(new BranchStatement
                         {
                             Type         = pbr->Type(),
                             Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset),
-                            TargetOffset = (byte*)ins - (byte*)firstI + 4L // cheat in output generation
+                            TargetOffset = (byte*)ins + pbr->Offset - (byte*)firstI
                         });
                         break;
                     #endregion
@@ -275,7 +355,9 @@ namespace Altar
                         });
                         break;
                     #endregion
+                    #region set
                     case OpCode.Set:
+                        var ind = TryGetIndex(se.DestVar.Type); // call before Value's pop
                         AddStmt(new SetStatement
                         {
                             OriginalType = se.Types.Type1,
@@ -283,20 +365,25 @@ namespace Altar
                             Type         = se.DestVar.Type,
                             Owner        = se.Instance,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                            Value        = stack.Pop()
+                            Value        = stack.Pop(),
+                            ArrayIndex   = ind ?? TryGetIndex(se.DestVar.Type)
                         });
                         break;
+                    #endregion
                     default:
                         switch (ins->ExprType())
                         {
                             #region variable
                             case ExpressionType.Variable:
+                                var vt = ((Reference*)&pps->ValueRest)->Type;
+
                                 stack.Push(new VariableExpression
                                 {
                                     ReturnType   = ps.Type,
-                                    Type         = ((Reference*)&pps->ValueRest)->Type,
+                                    Type         = vt,
                                     Owner        = (InstanceType)ps.Value,
-                                    Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]]
+                                    Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                                    ArrayIndex   = TryGetIndex(vt)
                                 });
                                 break;
                             #endregion
@@ -305,6 +392,7 @@ namespace Altar
                                 object v         = null;
                                 var rest         = &pps->ValueRest;
 
+                                #region get value
                                 switch (ps.Type)
                                 {
                                     case DataType.Int16:
@@ -329,6 +417,7 @@ namespace Altar
                                         v = SectionReader.GetStringInfo(content, ps.ValueRest);
                                         break;
                                 }
+                                #endregion
 
                                 stack.Push(new LiteralExpression
                                 {
@@ -376,8 +465,6 @@ namespace Altar
                 }
             }
 
-            //var str = String.Join(Environment.NewLine, stmts.Select(s => s.ToString()));
-
             return stmts.ToArray();
         }
 
@@ -386,8 +473,12 @@ namespace Altar
             var sb = new StringBuilder();
 
             var stack = new Stack<Expression>();
+            var dupts = new List <Expression>();
 
             var code  = Disassembler.DisassembleCode(content, id);
+
+            if (code.Instructions.Length == 0)
+                return String.Empty;
 
             var firstI = (long)code.Instructions[0];
 

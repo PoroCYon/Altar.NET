@@ -28,6 +28,7 @@ namespace Altar
             "path"
         };
 
+        [STAThread]
         unsafe static void Main(string[] args)
         {
             var file = Path.GetFullPath(args.Length == 0 ? DATA_WIN : args[0]);
@@ -70,10 +71,9 @@ namespace Altar
                 };
                 #endregion
 
-                //var c__ = Disassembler.DisassembleCode(f, 143);
-                //var stm = Decompiler.ParseStatements(f, rdata, c__);
-                //var str = String.Join(Environment.NewLine, stm.Select(s => s.ToString()));
-                //var d = Decompiler.DecompileCode(f, rdata, 143);
+                //var d = Decompiler.DecompileCode(f, rdata, 1);
+
+                //System.Windows.Forms.Clipboard.SetText(d);
 
                 //if (f.Audio->Count >= 0)
                 //    return;

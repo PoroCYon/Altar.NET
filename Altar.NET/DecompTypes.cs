@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 
@@ -58,15 +59,16 @@ namespace Altar
 
     // ---
 
-    public enum UnaryOperator
+    public enum UnaryOperator : byte
     {
         Negation   = 1,
         Complement    ,
         Return        ,
         Exit          ,
-        Convert
+        Convert       ,
+        Duplicate
     }
-    public enum BinaryOperator
+    public enum BinaryOperator : byte
     {
         Addition       = 1,
         Subtraction       ,
@@ -85,7 +87,7 @@ namespace Altar
         GTOrEqual         ,
         LTOrEqual
     }
-    public enum ExpressionType
+    public enum ExpressionType : byte
     {
         Literal  = 1,
         Variable    ,
@@ -138,7 +140,13 @@ namespace Altar
                     break;
                 case DataType.String:
                     if (Value is string)
-                        return (string)Value;
+                        return "\"" + ((string)Value)
+                            .Replace("\\", "\\\\")
+                            .Replace("\n", "\\n")
+                            .Replace("\r", "\\r")
+                            .Replace("\t", "\\t")
+                            .Replace("\b", "\\b")
+                            .Replace("\0", "\\0") + "\"";
                     break;
                 default:
                     return O_PAREN + ReturnType.ToPrettyString() + SPACE_S + Value + C_PAREN;
@@ -152,8 +160,20 @@ namespace Altar
         public ReferenceDef Variable;
         public VariableType Type;
         public InstanceType Owner;
+        /// <summary>
+        /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
+        /// </summary>
+        public Expression ArrayIndex;
 
-        public override string ToString() => Owner.ToPrettyString() + DOT + Variable.Name + Type.ToPrettyString() /*+ COLON + ReturnType.ToPrettyString()*/ /* it's always variable */;
+        public override string ToString()
+        {
+            var a = Owner.ToPrettyString() + DOT + Variable.Name;
+
+            if (ArrayIndex != null && Type == VariableType.Array)
+                return a + O_BRACKET + ArrayIndex + C_BRACKET;
+
+            return a + Type.ToPrettyString();
+        }
     }
     public class UnaryOperatorExpression : Expression
     {
@@ -161,7 +181,13 @@ namespace Altar
         public UnaryOperator Operator;
         public DataType OriginalType;
 
-        public override string ToString() => O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToPrettyString() : Operator.ToPrettyString()) + SPACE_S + Input + C_PAREN;
+        public override string ToString()
+        {
+            if (Operator == UnaryOperator.Duplicate)
+                return O_PAREN + DUP + SPACE_S + ReturnType.ToPrettyString() + C_PAREN;
+
+            return O_PAREN + (Operator == UnaryOperator.Convert ? ReturnType.ToPrettyString() : Operator.ToPrettyString()) + SPACE_S + Input + C_PAREN;
+        }
     }
     public class BinaryOperatorExpression : Expression
     {
@@ -183,6 +209,12 @@ namespace Altar
 
     // ---
 
+    public enum EnvStackOperator : byte
+    {
+        PushEnv,
+        PopEnv
+    }
+
     public abstract class Statement { }
 
     public class SetStatement : Statement
@@ -193,14 +225,28 @@ namespace Altar
         public ReferenceDef Target;
         public DataType OriginalType;
         public DataType ReturnType;
+        /// <summary>
+        /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
+        /// </summary>
+        public Expression ArrayIndex;
 
-        public override string ToString() => O_PAREN + Owner.ToPrettyString() + DOT + Target + Type.ToPrettyString() + EQ_S + Value + C_PAREN;
+        public override string ToString()
+        {
+            var a = O_PAREN + Owner.ToPrettyString() + DOT + Target.Name;
+
+            if (Type == VariableType.Array && ArrayIndex != null)
+                a += O_BRACKET + ArrayIndex + C_BRACKET;
+            else
+                a += Type.ToPrettyString();
+
+            return a + EQ_S + Value + C_PAREN;
+        }
     }
     public class CallStatement : Statement
     {
         public CallExpression Call;
 
-        public override string ToString() => CALL + SPACE_S + Call.ToString();
+        public override string ToString() => CALL + Call.ToString();
     }
     public unsafe class BranchStatement : Statement
     {
@@ -228,7 +274,7 @@ namespace Altar
 
             s += GOTO;
 
-            s += HEX_PRE + TargetOffset.ToString(HEX_FM8);
+            s += HEX_PRE + TargetOffset.ToString(HEX_FM6);
 
             return s;
         }
@@ -243,19 +289,20 @@ namespace Altar
     public class ReturnStatement : Statement
     {
         public DataType ReturnType;
+        /// <summary>
+        /// Null if it is an 'exit' instruction.
+        /// </summary>
         public Expression RetValue;
 
-        public override string ToString() => RET + ReturnType.ToPrettyString() + SPACE_S + RetValue;
+        public override string ToString() => RET_S + ReturnType.ToPrettyString() + (RetValue != null ? SPACE_S + RetValue : String.Empty);
     }
-    public class PushEnvStatement : Statement
+    public unsafe class EnvStatement : Statement
     {
-        // ?
+        public EnvStackOperator Operator;
+        public AnyInstruction* Target;
+        public long TargetOffset;
 
-        public override string ToString() => PUSHE;
-    }
-    public class PopEnvStatement : Statement
-    {
-        public override string ToString() => POPE;
+        public override string ToString() => Operator.ToPrettyString() + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
     }
 
     // temp..?
@@ -278,6 +325,7 @@ namespace Altar
 
     public static class DecompExt
     {
+        [DebuggerHidden]
         public static UnaryOperator  UnaryOp (this OpCode code)
         {
             switch (code)
@@ -292,10 +340,13 @@ namespace Altar
                     return UnaryOperator.Exit;
                 case OpCode.Conv:
                     return UnaryOperator.Convert;
+                case OpCode.Dup:
+                    return UnaryOperator.Duplicate;
             }
 
             return 0;
         }
+        [DebuggerHidden]
         public static BinaryOperator BinaryOp(this OpCode code)
         {
             switch (code)
@@ -337,9 +388,12 @@ namespace Altar
             return 0;
         }
 
+        [DebuggerHidden]
         public static UnaryOperator  UnaryOp (this AnyInstruction instr) => instr.Code().UnaryOp ();
+        [DebuggerHidden]
         public static BinaryOperator BinaryOp(this AnyInstruction instr) => instr.Code().BinaryOp();
 
+        [DebuggerHidden]
         public static ExpressionType ExprType(this AnyInstruction instr)
         {
             var c = instr.Code();
@@ -361,6 +415,7 @@ namespace Altar
             return 0;
         }
 
+        [DebuggerHidden]
         public static string ToPrettyString(this UnaryOperator  op)
         {
             switch (op)
@@ -373,6 +428,7 @@ namespace Altar
 
             return op.ToString().ToLowerInvariant();
         }
+        [DebuggerHidden]
         public static string ToPrettyString(this BinaryOperator op)
         {
             switch (op)
@@ -412,6 +468,48 @@ namespace Altar
             }
 
             return op.ToString().ToLowerInvariant();
+        }
+        [DebuggerHidden]
+        public static string ToPrettyString(this EnvStackOperator op) => op.ToString().ToLowerInvariant();
+
+        public static IEnumerable<T> WalkExprTree<T>(this Expression e, Func<Expression, IEnumerable<T>> fn)
+        {
+            if (fn == null)
+                throw new ArgumentNullException(nameof(fn));
+
+            var r = fn(e);
+
+            if (e is UnaryOperatorExpression)
+                r = r.Concat(WalkExprTree(((UnaryOperatorExpression)e).Input, fn));
+            else if (e is BinaryOperatorExpression)
+                r = r
+                    .Concat(WalkExprTree(((BinaryOperatorExpression)e).Arg1, fn))
+                    .Concat(WalkExprTree(((BinaryOperatorExpression)e).Arg2, fn));
+            else if (e is CallExpression)
+                r = r.Concat(((CallExpression)e).Arguments.SelectMany(fn));
+
+            return r;
+        }
+        public static IEnumerable<T> WalkExprTree<T>(this Expression e, Func<Expression, T> fn)
+        {
+            if (fn == null)
+                throw new ArgumentNullException(nameof(fn));
+
+            return e.WalkExprTree<T>(_ => new T[] { fn(_) });
+        }
+        public static void WalkExprTree(this Expression e, Action<Expression> act)
+        {
+            if (act == null)
+                throw new ArgumentNullException(nameof(act));
+
+            var EmptyArr = new byte[0];
+
+            foreach (var __ in // evaluate the enumerable, it is lazy by default
+                e.WalkExprTree(_ =>
+                {
+                    act(_);
+                    return EmptyArr;
+                })) { }
         }
     }
 }
