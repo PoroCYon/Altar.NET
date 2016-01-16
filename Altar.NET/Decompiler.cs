@@ -43,7 +43,7 @@ namespace Altar
                     }
 
                     // goto targets
-                    p = (IntPtr)((long)ins + ins->Goto.Offset);
+                    p = (IntPtr)((long)ins + ins->Goto.Offset * 4L);
 
                     if (!ret.Contains(p))
                         ret.Add(p);
@@ -103,7 +103,7 @@ namespace Altar
                     blocks.Add(new CodeBlock
                     {
                         Instructions = Utils.MPtrListToPtrArr(instrs),
-                        BranchTo     = lastI->Kind() == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset) : nextAddr /* can be null */,
+                        BranchTo     = lastI->Kind() == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset * 4L) : nextAddr /* can be null */,
                         Type         = lastI->Kind() == InstructionKind.Goto ? lastI->Goto.Type() : BranchType.Unconditional
                     });
                 }
@@ -197,7 +197,7 @@ namespace Altar
                 var readd = new Stack<Expression>();
 
                 // flush stack
-                //? not sure if this is a good idea
+                //? not sure if this is a good idea (random 'push'es in the wild) (see TODO)
                 stmts.AddRange(stack.PopAll().Where(e =>
                 {
                     if (dupTars.Contains(e))
@@ -224,7 +224,6 @@ namespace Altar
                 {
                     ind = stack.Pop();
 
-                    //TODO: sometimes borks due to a preceding dup expression...?
                     var m5 = stack.Pop();
                     if (!(m5 is LiteralExpression) || !(((LiteralExpression)m5).Value is short) || (short)((LiteralExpression)m5).Value != -5)
                     {
@@ -250,11 +249,11 @@ namespace Altar
                 var pbr = (GotoInstruction      *)ins;
                 var pbk = (BreakInstruction     *)ins;
 
-                var st  = ins->SingleType;
-                var dt  = ins->DoubleType;
-                var cl  = ins->Call      ;
-                var ps  = ins->Push      ;
-                var se  = ins->Set       ;
+                var st = ins->SingleType;
+                var dt = ins->DoubleType;
+                var cl = ins->Call      ;
+                var ps = ins->Push      ;
+                var se = ins->Set       ;
 
                 var t1 = ins->Kind() == InstructionKind.SingleType ? st.Type
                       : (ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type1 : 0);
@@ -313,15 +312,21 @@ namespace Altar
                         break;
                     #endregion
                     #region env
+                    //TODO: use actual '(with obj ...)' syntax
+                    //! it might mess with the CFG structure
                     case OpCode.PushEnv:
-                    case OpCode.PopEnv :
-                        //TODO: use actual '(with obj ...)' syntax
-                        //! it might mess with the CFG structure
-                        AddStmt(new EnvStatement
+                        AddStmt(new PushEnvStatement
                         {
-                            Operator     = ins->Code() == OpCode.PushEnv ? EnvStackOperator.PushEnv : EnvStackOperator.PopEnv,
-                            Target = (AnyInstruction*)((byte*)ins + pbr->Offset),
-                            TargetOffset = (byte*)ins + pbr->Offset - (byte*)firstI
+                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
+                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI,
+                            Parent       = stack.Pop()
+                        });
+                        break;
+                    case OpCode.PopEnv :
+                        AddStmt(new PopEnvStatement
+                        {
+                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
+                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
                         });
                         break;
                     #endregion
@@ -333,8 +338,8 @@ namespace Altar
                         {
                             Type         = pbr->Type(),
                             Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
-                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset),
-                            TargetOffset = (byte*)ins + pbr->Offset - (byte*)firstI
+                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
+                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
                         });
                         break;
                     #endregion
@@ -377,14 +382,27 @@ namespace Altar
                             case ExpressionType.Variable:
                                 var vt = ((Reference*)&pps->ValueRest)->Type;
 
-                                stack.Push(new VariableExpression
+                                if (vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal)
                                 {
-                                    ReturnType   = ps.Type,
-                                    Type         = vt,
-                                    Owner        = (InstanceType)ps.Value,
-                                    Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                    ArrayIndex   = TryGetIndex(vt)
-                                });
+                                    stack.Push(new MemberExpression
+                                    {
+                                        Owner      = stack.Pop(),
+                                        ReturnType = ps.Type,
+                                        Type       = vt,
+                                        OwnerType  = (InstanceType)ps.Value,
+                                        Variable   = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                                        ArrayIndex = TryGetIndex(vt)
+                                    });
+                                }
+                                else
+                                    stack.Push(new VariableExpression
+                                    {
+                                        ReturnType   = ps.Type,
+                                        Type         = vt,
+                                        OwnerType    = (InstanceType)ps.Value,
+                                        Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                                        ArrayIndex   = TryGetIndex(vt)
+                                    });
                                 break;
                             #endregion
                             #region literal
@@ -487,6 +505,7 @@ namespace Altar
             var indent = "    ";
 
             //TODO: CFG kind recognition stuff (if, if/else, for, while, etc)
+            var i = 0;
             foreach (var g in graph)
             {
                 var stmts = ParseStatements(content, rdata, code, g.Instructions, stack);
@@ -497,6 +516,8 @@ namespace Altar
 
                 foreach (var s in stmts)
                     sb.Append(indent).AppendLine(s.ToString());
+
+                i++;
             }
 
             return sb.ToString();

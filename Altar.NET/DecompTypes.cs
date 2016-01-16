@@ -159,7 +159,7 @@ namespace Altar
     {
         public ReferenceDef Variable;
         public VariableType Type;
-        public InstanceType Owner;
+        public InstanceType OwnerType;
         /// <summary>
         /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
         /// </summary>
@@ -167,12 +167,26 @@ namespace Altar
 
         public override string ToString()
         {
-            var a = Owner.ToPrettyString() + DOT + Variable.Name;
+            var a = OwnerType.ToPrettyString() + DOT + Variable.Name;
 
             if (ArrayIndex != null && Type == VariableType.Array)
                 return a + O_BRACKET + ArrayIndex + C_BRACKET;
 
             return a + Type.ToPrettyString();
+        }
+    }
+    public class MemberExpression : VariableExpression
+    {
+        public Expression Owner;
+
+        public override string ToString()
+        {
+            var a = Owner + COLON + Variable.Name;
+
+            if (ArrayIndex != null && Type == VariableType.Array)
+                return a + O_BRACKET + ArrayIndex + C_BRACKET;
+
+            return a;
         }
     }
     public class UnaryOperatorExpression : Expression
@@ -296,13 +310,20 @@ namespace Altar
 
         public override string ToString() => RET_S + ReturnType.ToPrettyString() + (RetValue != null ? SPACE_S + RetValue : String.Empty);
     }
-    public unsafe class EnvStatement : Statement
+    public unsafe class PushEnvStatement : Statement
     {
-        public EnvStackOperator Operator;
+        public AnyInstruction* Target;
+        public long TargetOffset;
+        public Expression Parent;
+
+        public override string ToString() => PUSHE + SPACE_S + Parent + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
+    }
+    public unsafe class PopEnvStatement : Statement
+    {
         public AnyInstruction* Target;
         public long TargetOffset;
 
-        public override string ToString() => Operator.ToPrettyString() + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
+        public override string ToString() => POPE + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
     }
 
     // temp..?

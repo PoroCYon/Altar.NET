@@ -36,40 +36,7 @@ namespace Altar
 
                 ret.Add((IntPtr)instr);
 
-                uint blocks = 0;
-
-                switch (instr->Kind())
-                {
-                    case InstructionKind.SingleType:
-                    case InstructionKind.DoubleType:
-                    case InstructionKind.Goto:
-                    case InstructionKind.Break:
-                    case InstructionKind.Environment:
-                        blocks = 1;
-                        break;
-                    case InstructionKind.Call:
-                    case InstructionKind.Set:
-                        blocks = 2;
-                        break;
-                    case InstructionKind.Push:
-                        var pInstr = (PushInstruction*)instr;
-
-                        switch (pInstr->Type)
-                        {
-                            case DataType.Int16:
-                                blocks = 1;
-                                break;
-                            case DataType.Variable:
-                                blocks = 2;
-                                break;
-                            default:
-                                blocks = pInstr->Type.Size() / sizeof(uint) + 1;
-                                break;
-                        }
-                        break;
-                }
-
-                i += blocks;
+                i += DisasmExt.Size(instr);
             }
 
             return new CodeInfo
@@ -113,12 +80,12 @@ namespace Altar
 
             var sb = new StringBuilder();
 
-            var firstInstr = code.Instructions[0];
+            var firstI = code.Instructions[0];
 
             for (int i = 0; i < instrs.Length; i++)
             {
                 var iptr = instrs[i];
-                var relInstr = (long)iptr - (long)firstInstr;
+                var relInstr = (long)iptr - (long)firstI;
 
                 sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM6))
                     .Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
@@ -138,7 +105,7 @@ namespace Altar
                     case InstructionKind.Goto:
                         var g = iptr->Goto;
 
-                        sb.Append(HEX_PRE).Append((relInstr + g.Offset).ToString(HEX_FM6));
+                        sb.Append(HEX_PRE).Append((relInstr + g.Offset * 4L).ToString(HEX_FM6));
                         break;
 
                     #region set
