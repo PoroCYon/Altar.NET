@@ -14,6 +14,7 @@ namespace Altar
     {
         byte _byte0, _byte1, _byte2;
 
+        //? split into Int24 and UInt24?
         public uint UValue
         {
             get
@@ -36,20 +37,12 @@ namespace Altar
             {
                 var v = UValue;
 
-                int r = 0;
-
-                r = (int)(v & 0x007FFFFF);
+                uint r = v & 0x007FFFFF;
 
                 if ((v & 0x00800000) != 0)
-                    r *= -1;
+                    r |= 0xFF800000;
 
-                return r;
-            }
-            set
-            {
-                var i = (uint)Math.Abs(value);
-
-                UValue = (i & 0x007FFFFFF) | (value < 0 ? (uint)0x00800000 : 0);
+                return unchecked((int)r);
             }
         }
 
@@ -86,7 +79,7 @@ namespace Altar
             _byte1 = 0;
             _byte2 = 0;
 
-            Value = value;
+            UValue = unchecked((uint)value);
         }
 
         [DebuggerStepThrough]

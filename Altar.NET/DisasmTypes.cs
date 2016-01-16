@@ -138,21 +138,8 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct GotoInstruction
     {
-        uint val;
-
-        public OpCode OpCode => (OpCode)((val & 0xFF000000) >> 24);
-        public uint   Offset
-        {
-            get
-            {
-                var v = val & 0x00FFFFFF;
-
-                return ((v & 0x00800000) == 0 ? v : (v - 0x01000000)) * 4;
-            }
-        }
-
-        //public Int24 Offset;
-        //public OpCode OpCode;
+        public Int24 Offset ;
+        public OpCode OpCode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SetInstruction
@@ -332,5 +319,36 @@ namespace Altar
         }
         [DebuggerHidden]
         public static string ToPrettyString(this OpCode       type) => type.ToString().ToLowerInvariant();
+
+        public unsafe static uint Size(AnyInstruction* pInstr)
+        {
+            switch (pInstr->Kind())
+            {
+                case InstructionKind.SingleType:
+                case InstructionKind.DoubleType:
+                case InstructionKind.Goto:
+                case InstructionKind.Break:
+                case InstructionKind.Environment:
+                    return 1;
+                case InstructionKind.Call:
+                case InstructionKind.Set:
+                    return 2;
+                case InstructionKind.Push:
+                    var pui = (PushInstruction*)pInstr;
+
+                    switch (pui->Type)
+                    {
+                        case DataType.Int16:
+                            return 1;
+                        case DataType.Variable:
+                            return 2;
+                        default:
+                            return pui->Type.Size() / sizeof(uint) + 1;
+                    }
+
+                default:
+                    return 0;
+            }
+        }
     }
 }
