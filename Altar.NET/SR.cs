@@ -97,7 +97,7 @@ namespace Altar
             POP   = "pop"    ,
             DUP   = "dup"    ,
             BREAK = "break " ,
-            RET   = "ret "   ,
+            RET_S = "ret "   ,
 
             ERR_NO_FORM   = "No 'FORM' header.",
             ERR_FILE_NF_1 = "File \""          ,

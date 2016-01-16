@@ -44,8 +44,7 @@ namespace Altar
                     case InstructionKind.DoubleType:
                     case InstructionKind.Goto:
                     case InstructionKind.Break:
-                    case InstructionKind.PopEnv:
-                    case InstructionKind.PushEnv:
+                    case InstructionKind.Environment:
                         blocks = 1;
                         break;
                     case InstructionKind.Call:
@@ -121,7 +120,7 @@ namespace Altar
                 var iptr = instrs[i];
                 var relInstr = (long)iptr - (long)firstInstr;
 
-                sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM8))
+                sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM6))
                     .Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
 
                 switch (iptr->Kind())
@@ -140,13 +139,6 @@ namespace Altar
                         var g = iptr->Goto;
 
                         sb.Append(HEX_PRE).Append((relInstr + g.Offset).ToString(HEX_FM6));
-                        break;
-
-                    case InstructionKind.PushEnv:
-                        sb.Append(PUSHE);
-                        break;
-                    case InstructionKind.PopEnv:
-                        sb.Append(POPE);
                         break;
 
                     #region set

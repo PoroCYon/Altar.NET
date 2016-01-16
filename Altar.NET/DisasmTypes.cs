@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -95,8 +96,7 @@ namespace Altar
         Push          ,
         Call          ,
         Break         ,
-        PushEnv       ,
-        PopEnv
+        Environment
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -224,6 +224,7 @@ namespace Altar
 
     public static class DisasmExt
     {
+        [DebuggerHidden]
         public static InstructionKind Kind(this OpCode code)
         {
             switch (code)
@@ -268,17 +269,15 @@ namespace Altar
                 case OpCode.Br:
                 case OpCode.Brt:
                 case OpCode.Brf:
-                    return InstructionKind.Goto;
-
                 case OpCode.PushEnv:
-                    return InstructionKind.PushEnv;
                 case OpCode.PopEnv:
-                    return InstructionKind.PopEnv;
+                    return InstructionKind.Goto;
             }
 
             throw new ArgumentOutOfRangeException(nameof(code));
         }
 
+        [DebuggerHidden]
         public static uint Size(this DataType type)
         {
             switch (type)
@@ -303,14 +302,20 @@ namespace Altar
             throw new ArgumentOutOfRangeException(nameof(type));
         }
 
+        [DebuggerHidden]
         public static OpCode          Code(this AnyInstruction instr) => (OpCode)((instr.InstrData & 0xFF000000) >> 24);
+        [DebuggerHidden]
         public static uint            Rest(this AnyInstruction instr) => instr.InstrData & 0x00FFFFFF;
+        [DebuggerHidden]
         public static InstructionKind Kind(this AnyInstruction instr) => instr.Code().Kind();
 
 #pragma warning disable 618
+        [DebuggerHidden]
         public static string ToPrettyString(this DataType     type) => type == DataType.Variable ? VAR : type == DataType.Instance ? INST : type == DataType.Boolean ? BOOL : type.ToString().ToLowerInvariant();
 #pragma warning restore 618
+        [DebuggerHidden]
         public static string ToPrettyString(this InstanceType type) => type == InstanceType.StackTopOrGlobal ? STOG : type.ToString().ToLowerInvariant();
+        [DebuggerHidden]
         public static string ToPrettyString(this VariableType type)
         {
             switch (type)
@@ -325,6 +330,7 @@ namespace Altar
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
+        [DebuggerHidden]
         public static string ToPrettyString(this OpCode       type) => type.ToString().ToLowerInvariant();
     }
 }
