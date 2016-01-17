@@ -171,7 +171,7 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct BreakInstruction
     {
-        public ushort Signal;
+        public short Signal;
         public DataType Type;
         public OpCode OpCode;
     }
