@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Altar
 {
@@ -45,6 +47,8 @@ namespace Altar
             foreach (var s in dirs)
                 if (!Directory.Exists(s))
                     Directory.CreateDirectory(s);
+
+            Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
@@ -100,9 +104,10 @@ namespace Altar
                         .Append("GameId="    ).Append(gi.GameId         ).AppendLine()
                         .Append("Version="   ).Append(gi.Version        ).AppendLine()
                         .Append("WindowSize=").Append(gi.WindowSize     ).AppendLine()
-                        .Append("Timestamp=" ).Append(gi.Timestamp      ).AppendLine()
 
-                        .Append("LicenseMD5=").Append(gi.LicenseMD5Hash).AppendLine()
+                        .Append("Timestamp=").AppendLine(gi.Timestamp.ToString(SHORT_L /* 's': sortable */))
+
+                        .Append("LicenseMD5=[").Append(String.Join(COMMA_S, gi.LicenseMD5Hash)).AppendLine(C_BRACKET)
                         .Append("LicenseCRC=").Append(HEX_PRE).AppendLine(gi.LicenceCRC32.ToString(HEX_FM8))
 
                         .Append("WeirdNums=[").Append(String.Join(COMMA_S, gi.WeirdNumbers)).AppendLine(C_BRACKET);
@@ -118,7 +123,7 @@ namespace Altar
 
                     var oi = SectionReader.GetOptionInfo(f);
 
-                    sb.Clear().Append("Constants=[");
+                    sb.Clear().AppendLine("Constants=[");
 
                     foreach (var kvp in oi.Constants)
                         sb.Append(INDENT2).Append(kvp.Key).Append(EQ_S)
@@ -228,7 +233,8 @@ namespace Altar
                             .Append("Compressed=").Append(si.IsCompressed).AppendLine()
                             .Append("AudioId="   ).Append(si.AudioId     ).AppendLine()
                             .Append("Volume="    ).Append(si.VolumeMod   ).AppendLine()
-                            .Append("Pitch="     ).Append(si.PitchMod    ).AppendLine();
+                            .Append("Pitch="     ).Append(si.PitchMod    ).AppendLine()
+                            .Append("Pan="       ).Append(si.PanMod      ).AppendLine();
 
                         File.WriteAllText(DIR_SND + si.Name + EXT_TXT, sb.ToString());
                     }
@@ -277,7 +283,7 @@ namespace Altar
                             .Append("Depth="      ).Append(oi.Depth       ).AppendLine()
                             .Append("Persistent=" ).Append(oi.IsPersistent).AppendLine()
 
-                            .Append("ParentId =").AppendLine(oi.ParentId ?.ToString() ?? String.Empty)
+                            .Append("ParentId=" ).AppendLine(oi.ParentId ?.ToString() ?? String.Empty)
                             .Append("TexMaskId=").AppendLine(oi.TexMaskId?.ToString() ?? String.Empty)
 
                             .AppendLine("Physics={")
@@ -296,7 +302,7 @@ namespace Altar
                             .AppendLine("ShapePoints=[");
 
                         foreach (var p in oi.ShapePoints)
-                            sb.Append(INDENT2).AppendLine(p.ToString());
+                            sb.Append(INDENT2).Append(p.ToString()).AppendLine(COMMA_S);
                         sb.AppendLine(C_BRACKET);
 
                         File.WriteAllText(DIR_OBJ + oi.Name + EXT_TXT, sb.ToString());
@@ -520,7 +526,7 @@ namespace Altar
                         {
                             sb  .Append(INDENT2).AppendLine(O_BRACE)
                                 .Append(INDENT4).Append("Position=").Append(p.Position).AppendLine()
-                                .Append(INDENT4).Append("Speed=   ").Append(p.Speed   ).AppendLine()
+                                .Append(INDENT4).Append("Speed="   ).Append(p.Speed   ).AppendLine()
                                 .Append(INDENT2).Append(C_BRACE).AppendLine(COMMA_S);
                         }
 
