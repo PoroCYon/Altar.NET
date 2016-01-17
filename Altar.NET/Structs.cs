@@ -97,7 +97,8 @@ namespace Altar
         public string SystemName;
 
         public uint EmSize;
-        public bool IsBold, IsItalic;
+        public bool IsBold;
+        public bool IsItalic;
         public FontAntiAliasing AntiAliasing;
         public byte Charset;
         public uint TexPagId;
@@ -150,7 +151,9 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct TexturePageInfo
     {
-        public Point16 Position, Size, RenderOffset;
+        public Point16 Position;
+        public Point16 Size;
+        public Point16 RenderOffset;
         public Rectangle16 BoundingBox;
         public uint SpritesheetId;
     }
@@ -163,7 +166,8 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureInfo
     {
-        public uint Width, Height;
+        public uint Width;
+        public uint Height;
         public byte[] PngData;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -175,10 +179,12 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomBackground
     {
-        public bool IsEnabled, IsForeground;
+        public bool IsEnabled;
+        public bool IsForeground;
         public uint BgIndex;
         public Point Position;
-        public bool TileX, TileY;
+        public bool TileX;
+        public bool TileY;
         public Point Speed;
         public bool StretchSprite;
     }
@@ -186,8 +192,10 @@ namespace Altar
     public struct RoomView
     {
         public bool IsEnabled;
-        public Rectangle View, Port;
-        public Point Border, Speed;
+        public Rectangle View;
+        public Rectangle Port;
+        public Point Border;
+        public Point Speed;
         public uint? ObjectId;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -219,7 +227,7 @@ namespace Altar
     public struct FontCharacter
     {
         public char Character;
-        public Rectangle16 TexturePageFrame;
+        public Rectangle16 TPagFrame;
         public ushort Shift;
         public uint Offset;
     }

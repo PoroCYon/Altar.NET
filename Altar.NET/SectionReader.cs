@@ -343,7 +343,7 @@ namespace Altar
                 var c = new FontCharacter();
 
                 c.Character        = entry->Character  ;
-                c.TexturePageFrame = entry->TexPagFrame;
+                c.TPagFrame = entry->TexPagFrame;
                 c.Shift            = entry->Shift      ;
                 c.Offset           = entry->Offset     ;
 

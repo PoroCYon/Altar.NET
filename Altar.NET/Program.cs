@@ -71,19 +71,73 @@ namespace Altar
                 };
                 #endregion
 
-                //var d = Decompiler.DecompileCode(f, rdata, 1);
+                //var c__ = Disassembler.DisassembleCode(f, 0xE0E);
+                //var d = Decompiler.DecompileCode(f, rdata, c__);
+                ////var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
                 //System.Windows.Forms.Clipboard.SetText(d);
 
                 //if (f.Audio->Count >= 0)
                 //    return;
 
+                //TODO: use an actual serialization lib or something
+
+                #region general
+                {
+                    Console.Write("Reading header data... ");
+
+                    var gi = SectionReader.GetGeneralInfo(f);
+
+                    sb.Clear()
+
+                        .Append("Name="       ).AppendLine(gi.Name         )
+                        .Append("FileName="   ).AppendLine(gi.FileName     )
+                        .Append("Config="     ).AppendLine(gi.Configuration)
+                        .Append("DisplayName=").AppendLine(gi.DisplayName  )
+
+                        .Append("Debug="     ).Append(gi.IsDebug        ).AppendLine()
+                        .Append("BCVersion=" ).Append(gi.BytecodeVersion).AppendLine()
+                        .Append("GameId="    ).Append(gi.GameId         ).AppendLine()
+                        .Append("Version="   ).Append(gi.Version        ).AppendLine()
+                        .Append("WindowSize=").Append(gi.WindowSize     ).AppendLine()
+                        .Append("Timestamp=" ).Append(gi.Timestamp      ).AppendLine()
+
+                        .Append("LicenseMD5=").Append(gi.LicenseMD5Hash).AppendLine()
+                        .Append("LicenseCRC=").Append(HEX_PRE).AppendLine(gi.LicenceCRC32.ToString(HEX_FM8))
+
+                        .Append("WeirdNums=[").Append(String.Join(COMMA_S, gi.WeirdNumbers)).AppendLine(C_BRACKET);
+
+                    File.WriteAllText("general.txt", sb.ToString());
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+                #region options
+                {
+                    Console.Write("Reading option data... ");
+
+                    var oi = SectionReader.GetOptionInfo(f);
+
+                    sb.Clear().Append("Constants=[");
+
+                    foreach (var kvp in oi.Constants)
+                        sb.Append(INDENT2).Append(kvp.Key).Append(EQ_S)
+                            .Append(kvp.Value.Escape()).AppendLine(COMMA_S);
+
+                    sb.AppendLine(C_BRACKET);
+
+                    File.WriteAllText("option.txt", sb.ToString());
+
+                    Console.WriteLine(DONE);
+                }
+                #endregion
+
                 #region strings
                 if (f.Strings->Count > 0)
                 {
                     var sep = Environment.NewLine; //Environment.NewLine + new string('-', 80) + Environment.NewLine;
 
-                    Console.Write("Fetching strings... ");
+                    Console.Write("Reading strings... ");
 
                     var strings = new string[(int)f.Strings->Count];
 
@@ -99,7 +153,7 @@ namespace Altar
                 #region textures
                 if (f.Textures->Count > 0)
                 {
-                    Console.Write("Fetching textures... ");
+                    Console.Write("Reading textures... ");
 
                     for (uint i = 0; i < f.Textures->Count; i++)
                     {
@@ -114,7 +168,7 @@ namespace Altar
                 #region texture pages
                 if (f.TexturePages->Count > 0)
                 {
-                    Console.Write("Fetching texture pages... ");
+                    Console.Write("Reading texture pages (maps)... ");
 
                     for (uint i = 0; i < f.TexturePages->Count; i++)
                     {
@@ -124,6 +178,7 @@ namespace Altar
                             .Append("Position="    ).Append(tpi.Position     ).AppendLine()
                             .Append("Size="        ).Append(tpi.Size         ).AppendLine()
                             .Append("RenderOffset=").Append(tpi.RenderOffset ).AppendLine()
+                            .Append("BoundingBox=" ).Append(tpi.BoundingBox  ).AppendLine()
                             .Append("SheetId="     ).Append(tpi.SpritesheetId).AppendLine();
 
                         File.WriteAllText(DIR_TXP + i + EXT_TXT, sb.ToString());
@@ -135,14 +190,19 @@ namespace Altar
                 #region sprite
                 if (f.Sprites->Count > 0)
                 {
-                    Console.Write("Fetching sprites... ");
+                    Console.Write("Reading sprites... ");
 
                     for (uint i = 0; i < f.Sprites->Count; i++)
                     {
                         var si = SectionReader.GetSpriteInfo(f, i);
 
                         sb.Clear()
-                            .Append("Size="           ).Append(si.Size).AppendLine()
+                            .Append("Size="    ).Append(si.Size    ).AppendLine()
+                            .Append("Bounding=").Append(si.Bounding).AppendLine()
+                            .Append("BBoxMode=").Append(si.BBoxMode).AppendLine()
+                            .Append("SepMasks=").Append(si.SepMasks).AppendLine()
+                            .Append("Origin="  ).Append(si.Origin  ).AppendLine()
+
                             .Append("TextureIndices=[").Append(String.Join(COMMA_S, si.TextureIndices)).Append(']').AppendLine();
 
                         File.WriteAllText(DIR_SPR + si.Name + EXT_TXT, sb.ToString());
@@ -155,20 +215,20 @@ namespace Altar
                 #region sound
                 if (f.Sounds->Count > 0)
                 {
-                    Console.Write("Fetching sounds... ");
+                    Console.Write("Reading sounds... ");
 
                     for (uint i = 0; i < f.Sounds->Count; i++)
                     {
                         var si = SectionReader.GetSoundInfo(f, i);
 
                         sb.Clear()
-                            .Append("Name="    ).AppendLine(si.Name)
-                            .Append("Type="    ).AppendLine(si.Type)
-                            .Append("File="    ).AppendLine(si.File)
-                            .Append("Embedded=").Append(si.IsEmbedded).AppendLine()
-                            .Append("AudioId=" ).Append(si.AudioId   ).AppendLine()
-                            .Append("Volume="  ).Append(si.VolumeMod ).AppendLine()
-                            .Append("Pitch="   ).Append(si.PitchMod  ).AppendLine();
+                            .Append("Type="      ).AppendLine(si.Type)
+                            .Append("File="      ).AppendLine(si.File)
+                            .Append("Embedded="  ).Append(si.IsEmbedded  ).AppendLine()
+                            .Append("Compressed=").Append(si.IsCompressed).AppendLine()
+                            .Append("AudioId="   ).Append(si.AudioId     ).AppendLine()
+                            .Append("Volume="    ).Append(si.VolumeMod   ).AppendLine()
+                            .Append("Pitch="     ).Append(si.PitchMod    ).AppendLine();
 
                         File.WriteAllText(DIR_SND + si.Name + EXT_TXT, sb.ToString());
                     }
@@ -179,7 +239,7 @@ namespace Altar
                 #region audio
                 if (f.Audio->Count > 0)
                 {
-                    Console.Write("Fetching audio... ");
+                    Console.Write("Reading audio... ");
 
                     var sounds = Enumerable.Range(0, (int)f.Sounds->Count)
                                     .Select(i => SectionReader.GetSoundInfo(f, (uint)i));
@@ -204,15 +264,42 @@ namespace Altar
                 #region objects
                 if (f.Objects->Count > 0)
                 {
-                    Console.Write("Fetching objects... ");
+                    Console.Write("Reading objects... ");
 
                     for (uint i = 0; i < f.Objects->Count; i++)
                     {
                         var oi = SectionReader.GetObjectInfo(f, i);
 
-                        var text = sb.Clear().Append("SpriteIndex=").Append(oi.SpriteIndex).AppendLine().ToString();
+                        sb.Clear()
+                            .Append("SpriteIndex=").Append(oi.SpriteIndex ).AppendLine()
+                            .Append("Visible="    ).Append(oi.IsVisible   ).AppendLine()
+                            .Append("Solid="      ).Append(oi.IsSolid     ).AppendLine()
+                            .Append("Depth="      ).Append(oi.Depth       ).AppendLine()
+                            .Append("Persistent=" ).Append(oi.IsPersistent).AppendLine()
 
-                        File.WriteAllText(DIR_OBJ + oi.Name + EXT_TXT, text);
+                            .Append("ParentId =").AppendLine(oi.ParentId ?.ToString() ?? String.Empty)
+                            .Append("TexMaskId=").AppendLine(oi.TexMaskId?.ToString() ?? String.Empty)
+
+                            .AppendLine("Physics={")
+                            .Append(INDENT2).Append("Density="       ).Append(oi.Physics.Density       ).AppendLine()
+                            .Append(INDENT2).Append("Restitution="   ).Append(oi.Physics.Restitution   ).AppendLine()
+                            .Append(INDENT2).Append("Group="         ).Append(oi.Physics.Group         ).AppendLine()
+                            .Append(INDENT2).Append("LinearDamping=" ).Append(oi.Physics.LinearDamping ).AppendLine()
+                            .Append(INDENT2).Append("AngularDamping=").Append(oi.Physics.AngularDamping).AppendLine()
+                            .Append(INDENT2).Append("Unknown0="      ).Append(oi.Physics.Unknown0      ).AppendLine()
+                            .Append(INDENT2).Append("Friction="      ).Append(oi.Physics.Friction      ).AppendLine()
+                            .Append(INDENT2).Append("Unknown1="      ).Append(oi.Physics.Unknown1      ).AppendLine()
+                            .Append(INDENT2).Append("Kinematic="     ).Append(oi.Physics.Kinematic     ).AppendLine()
+                            .AppendLine(C_BRACE)
+
+                            .Append("OtherFloats=[").Append(String.Join(COMMA_S, oi.OtherFloats)).AppendLine(C_BRACKET)
+                            .AppendLine("ShapePoints=[");
+
+                        foreach (var p in oi.ShapePoints)
+                            sb.Append(INDENT2).AppendLine(p.ToString());
+                        sb.AppendLine(C_BRACKET);
+
+                        File.WriteAllText(DIR_OBJ + oi.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);
@@ -221,13 +308,13 @@ namespace Altar
                 #region backgrounds
                 if (f.Backgrounds->Count > 0)
                 {
-                    Console.Write("Fetching backgrounds... ");
+                    Console.Write("Reading backgrounds... ");
 
                     for (uint i = 0; i < f.Backgrounds->Count; i++)
                     {
                         var bi = SectionReader.GetBgInfo(f, i);
 
-                        File.WriteAllText(DIR_BG + bi.Name + EXT_TXT, "TexPageIndex=" + bi.TexPageIndex);
+                        File.WriteAllText(DIR_BG + bi.Name + EXT_TXT, "TPagIndex=" + bi.TexPageIndex);
                     }
 
                     Console.WriteLine(DONE);
@@ -236,7 +323,7 @@ namespace Altar
                 #region rooms
                 if (f.Rooms->Count > 0)
                 {
-                    Console.Write("Fetching rooms... ");
+                    Console.Write("Reading rooms... ");
 
                     for (uint i = 0; i < f.Rooms->Count; i++)
                     {
@@ -244,8 +331,23 @@ namespace Altar
 
                         var t = "Size=" + ri.Size + Environment.NewLine + "Colour=" + ri.Colour.ToHexString() + "\0";
 
-                        //TODO: serialize
-                        //File.WriteAllBytes(DIR_ROOM + ri.Name + EXT_BIN, Encoding.ASCII.GetBytes(t).Concat(ri.Data).ToArray());
+                        sb.Clear()
+                            .Append("Caption=").AppendLine(ri.Caption)
+
+                            .Append("Size="       ).Append(ri.Size        ).AppendLine()
+                            .Append("Speed="      ).Append(ri.Speed       ).AppendLine()
+                            .Append("Persist="    ).Append(ri.IsPersistent).AppendLine()
+                            .Append("Colour="     ).Append(ri.Colour      ).AppendLine()
+                            .Append("EnableViews=").Append(ri.EnableViews ).AppendLine()
+                            .Append("ShowColour=" ).Append(ri.ShowColour  ).AppendLine()
+
+                            .Append("World="         ).Append(ri.World         ).AppendLine()
+                            .Append("Bounding="      ).Append(ri.Bounding      ).AppendLine()
+                            .Append("Gravity="       ).Append(ri.Gravity       ).AppendLine()
+                            .Append("MetresPerPixel=").Append(ri.MetresPerPixel).AppendLine();
+
+                        //TODO: serialize arrays
+                        File.WriteAllText(DIR_ROOM + ri.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);
@@ -255,7 +357,7 @@ namespace Altar
                 #region variables
                 if (vars.Length > 0)
                 {
-                    Console.Write("Fetching variables... ");
+                    Console.Write("Reading variables... ");
 
                     sb.Clear();
 
@@ -274,7 +376,7 @@ namespace Altar
                 #region functions
                 if (fns.Length > 0)
                 {
-                    Console.Write("Fetching functions... ");
+                    Console.Write("Reading functions... ");
 
                     sb.Clear();
 
@@ -294,7 +396,7 @@ namespace Altar
                 #region script
                 if (f.Scripts->Count > 0)
                 {
-                    Console.Write("Fetching scripts... ");
+                    Console.Write("Reading scripts... ");
 
                     for (uint i = 0; i < f.Scripts->Count; i++)
                     {
@@ -312,20 +414,17 @@ namespace Altar
                 if (f.Code->Count > 0)
                 {
                     if (!gen8.CanDisassembleCode)
-                        Console.WriteLine("Cannot disassemble bytecode with version >0xE, skipping...");
+                        Console.WriteLine("Cannot decompile bytecode with version >0xE, skipping...");
                     else
                     {
-                        Console.Write("Fetching code... ");
-
-                        //File.WriteAllText("vars.txt", String.Join(Environment.NewLine, varAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" + vars[kvp.Value].Name)));
-                        //File.WriteAllText("funs.txt", String.Join(Environment.NewLine,  fnAccs.OrderBy(kvp => (long)kvp.Key).Select(kvp => ((ulong)kvp.Key - (ulong)f.RawData.IPtr).ToString("X8") + "->" +  fns[kvp.Value].Name)));
+                        Console.Write("Reading code... ");
 
                         for (uint i = 0; i < f.Code->Count; i++)
                         {
                             var ci = Disassembler.DisassembleCode(f, i);
-                            var s  = Disassembler.DisplayInstructions(f, rdata, ci);
+                            var s  = Decompiler.DecompileCode(f, rdata, ci);
 
-                            File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
+                            File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_LSP, s);
                         }
 
                         Console.WriteLine(DONE);
@@ -336,7 +435,7 @@ namespace Altar
                 #region fonts
                 if (f.Fonts->Count > 0)
                 {
-                    Console.Write("Fetching fonts... ");
+                    Console.Write("Reading fonts... ");
 
                     for (uint i = 0; i < f.Fonts->Count; i++)
                     {
@@ -344,23 +443,55 @@ namespace Altar
 
                         sb.Clear()
                             .Append("SysName=").AppendLine(fi.SystemName)
-                            .Append("TexPage=").Append(fi.TexPagId).AppendLine()
-                            .Append("Scale="  ).Append(fi.Scale).AppendLine()
+                            .Append("EmSize=" ).Append(fi.EmSize  ).AppendLine()
+                            .Append("Bold="   ).Append(fi.IsBold  ).AppendLine()
+                            .Append("Italic=" ).Append(fi.IsItalic).AppendLine()
+
+                            .Append("AntiAlias=").Append(fi.AntiAliasing).AppendLine()
+                            .Append("Charset="  ).Append(fi.Charset     ).AppendLine()
+
+                            .Append("TexPagId=").Append(fi.TexPagId).AppendLine()
+                            .Append("Scale="   ).Append(fi.Scale   ).AppendLine()
+
                             .Append("Charset=").AppendLine(O_BRACKET);
 
                         foreach (var c in fi.Characters)
                         {
-                            sb.Append(SPACE_S).AppendLine(O_BRACE);
+                            sb.Append(INDENT2).AppendLine(O_BRACE);
 
-                            sb.Append(SPACE_S).Append(SPACE_S).Append("Char='");
-                            if (c.Character == 0x7F) // faster than ?:
-                                sb.Append(DEL_CHAR);
-                            else
-                                sb.Append(c.Character);
-                            sb.Append('\'').AppendLine().Append(SPACE_S).Append(SPACE_S)
-                                .Append("Frame=").Append(c.TexturePageFrame).AppendLine();
+                            sb.Append(INDENT4).Append("Char='");
 
-                            sb.Append(SPACE_S).Append(C_BRACE).AppendLine(COMMA_S);
+                            switch (c.Character)
+                            {
+                                case (char)0x7F:
+                                    sb.Append(DEL_CHAR);
+                                    break;
+                                case '\n':
+                                    sb.Append(LF_CHAR);
+                                    break;
+                                case '\r':
+                                    sb.Append(CR_CHAR);
+                                    break;
+                                case '\t':
+                                    sb.Append(TAB_CHAR);
+                                    break;
+                                case '\b':
+                                    sb.Append(BELL_CHAR);
+                                    break;
+                                case '\0':
+                                    sb.Append(NUL_CHAR);
+                                    break;
+                                default:
+                                    sb.Append(c.Character);
+                                    break;
+                            }
+
+                            sb.Append('\'').AppendLine()
+                                .Append(INDENT4).Append("Frame=" ).Append(c.TPagFrame).AppendLine()
+                                .Append(INDENT4).Append("Shift=" ).Append(c.Shift    ).AppendLine()
+                                .Append(INDENT4).Append("Offset=").Append(c.Offset   ).AppendLine();
+
+                            sb.Append(INDENT2).Append(C_BRACE).AppendLine(COMMA_S);
                         }
                         sb.AppendLine(C_BRACKET);
 
@@ -373,13 +504,29 @@ namespace Altar
                 #region paths
                 if (f.Paths->Count > 0)
                 {
-                    Console.Write("Fetching paths... ");
+                    Console.Write("Reading paths... ");
 
                     for (uint i = 0; i < f.Paths->Count; i++)
                     {
                         var pi = SectionReader.GetPathInfo(f, i);
 
-                        File.WriteAllText(DIR_PATH + pi.Name + EXT_TXT, String.Join(COMMA_S, pi.Points.Select(v => v.ToString())));
+                        sb.Clear()
+                            .Append("Smooth="   ).Append(pi.IsSmooth ).AppendLine()
+                            .Append("Closed="   ).Append(pi.IsClosed ).AppendLine()
+                            .Append("Precision=").Append(pi.Precision).AppendLine()
+                            .AppendLine("Points=[");
+
+                        foreach (var p in pi.Points)
+                        {
+                            sb  .Append(INDENT2).AppendLine(O_BRACE)
+                                .Append(INDENT4).Append("Position=").Append(p.Position).AppendLine()
+                                .Append(INDENT4).Append("Speed=   ").Append(p.Speed   ).AppendLine()
+                                .Append(INDENT2).Append(C_BRACE).AppendLine(COMMA_S);
+                        }
+
+                        sb.AppendLine(C_BRACKET);
+
+                        File.WriteAllText(DIR_PATH + pi.Name + EXT_TXT, sb.ToString());
                     }
 
                     Console.WriteLine(DONE);

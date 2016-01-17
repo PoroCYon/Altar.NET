@@ -18,6 +18,8 @@ namespace Altar
         readonly static GraphVertex[] EmptyGVArray   = { };
         readonly static Statement  [] EmptyStmtArray = { };
 
+        readonly static ExitStatement FinalRet = new ExitStatement();
+
         static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
         {
             var blocks = new List<CodeBlock>();
@@ -191,12 +193,20 @@ namespace Altar
 
             var firstI = code.Instructions[0];
 
-            //TODO: use locals
-            Action<Statement> AddStmt = s =>
+            Func<Expression> Pop = () => stack.Count == 0 ? new PopExpression() : stack.Pop();
+            Func<int, IEnumerable<Expression>> PopMany = i =>
+            {
+                var ret = new List<Expression>();
+
+                for (int j = 0; j < i; j++)
+                    ret.Add(Pop());
+
+                return ret;
+            };
+            Action FlushStack = () =>
             {
                 var readd = new Stack<Expression>();
 
-                // flush stack
                 //? not sure if this is a good idea (random 'push'es in the wild) (see TODO)
                 stmts.AddRange(stack.PopAll().Where(e =>
                 {
@@ -206,13 +216,18 @@ namespace Altar
                         return false;
                     }
 
-                    return true;
+                    return !(e is PopExpression);
                 }).Reverse().Select(e =>
                     e is UnaryOperatorExpression &&
                             ((UnaryOperatorExpression)e).Operator == UnaryOperator.Duplicate
                         ? (Statement)new DupStatement() : new PushStatement { Expr = e }));
 
                 stack.PushRange(readd);
+            };
+            //TODO: use locals
+            Action<Statement> AddStmt = s =>
+            {
+                FlushStack();
 
                 stmts.Add(s);
             };
@@ -222,9 +237,9 @@ namespace Altar
 
                 if (vt == VariableType.Array)
                 {
-                    ind = stack.Pop();
+                    ind = Pop();
 
-                    var m5 = stack.Pop();
+                    var m5 = Pop();
                     if (!(m5 is LiteralExpression) || !(((LiteralExpression)m5).Value is short) || (short)((LiteralExpression)m5).Value != -5)
                     {
                         stack.Push(m5 );
@@ -337,7 +352,7 @@ namespace Altar
                         AddStmt(new BranchStatement
                         {
                             Type         = pbr->Type(),
-                            Conditional  = pbr->Type() == BranchType.Unconditional ? null : stack.Pop(),
+                            Conditional  = pbr->Type() == BranchType.Unconditional ? null : Pop(),
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
                             TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
                         });
@@ -352,12 +367,14 @@ namespace Altar
                         });
                         break;
                     case OpCode.Ret:
-                    case OpCode.Exit: // ?
                         AddStmt(new ReturnStatement
                         {
                             ReturnType = pst->Type,
-                            RetValue   = stack.Pop()
+                            RetValue   = Pop()
                         });
+                        break;
+                    case OpCode.Exit:
+                        AddStmt(new ExitStatement());
                         break;
                     #endregion
                     #region set
@@ -370,7 +387,7 @@ namespace Altar
                             Type         = se.DestVar.Type,
                             Owner        = se.Instance,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                            Value        = stack.Pop(),
+                            Value        = Pop(),
                             ArrayIndex   = ind ?? TryGetIndex(se.DestVar.Type)
                         });
                         break;
@@ -386,7 +403,7 @@ namespace Altar
                                 {
                                     stack.Push(new MemberExpression
                                     {
-                                        Owner      = stack.Pop(),
+                                        Owner      = Pop(),
                                         ReturnType = ps.Type,
                                         Type       = vt,
                                         OwnerType  = (InstanceType)ps.Value,
@@ -451,7 +468,7 @@ namespace Altar
                                     ReturnType = cl.ReturnType,
                                     Type       = cl.Function.Type,
                                     Function   = rdata.Functions[rdata.FuncAccessors[(IntPtr)ins]],
-                                    Arguments  = stack.PopMany(cl.Arguments).Reverse().ToArray()
+                                    Arguments  = PopMany(cl.Arguments).Reverse().ToArray()
                                 });
                                 break;
                             #endregion
@@ -461,8 +478,8 @@ namespace Altar
                                 {
                                     OriginalType = t1,
                                     ReturnType   = t2,
-                                    Arg1         = stack.Pop(),
-                                    Arg2         = stack.Pop(),
+                                    Arg1         = Pop(),
+                                    Arg2         = Pop(),
                                     Operator     = ins->BinaryOp()
                                 });
                                 break;
@@ -473,7 +490,7 @@ namespace Altar
                                 {
                                     OriginalType = t1,
                                     ReturnType   = t2,
-                                    Input        = stack.Pop(),
+                                    Input        = Pop(),
                                     Operator     = ins->UnaryOp()
                                 });
                                 break;
@@ -483,26 +500,24 @@ namespace Altar
                 }
             }
 
+            FlushStack();
+
             return stmts.ToArray();
         }
 
-        public static string DecompileCode(GMFileContent content, RefData rdata, uint id)
+        public static string DecompileCode(GMFileContent content, RefData rdata, CodeInfo code)
         {
+            if (code.Instructions.Length == 0)
+                return String.Empty;
+
             var sb = new StringBuilder();
 
             var stack = new Stack<Expression>();
             var dupts = new List <Expression>();
 
-            var code  = Disassembler.DisassembleCode(content, id);
-
-            if (code.Instructions.Length == 0)
-                return String.Empty;
-
             var firstI = (long)code.Instructions[0];
 
             var graph = BuildCFGraph(content, code);
-
-            var indent = "    ";
 
             //TODO: CFG kind recognition stuff (if, if/else, for, while, etc)
             var i = 0;
@@ -515,10 +530,12 @@ namespace Altar
                     .AppendLine(SR.COLON);
 
                 foreach (var s in stmts)
-                    sb.Append(indent).AppendLine(s.ToString());
+                    sb.Append(SR.INDENT4).AppendLine(s.ToString());
 
                 i++;
             }
+
+            sb.Append(SR.INDENT4).AppendLine(FinalRet.ToString());
 
             return sb.ToString();
         }

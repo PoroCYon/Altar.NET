@@ -124,29 +124,23 @@ namespace Altar
                     break;
                 case DataType.Int16:
                     if (Value is short)
-                        return ((short)Value).ToString(CultureInfo.InvariantCulture) + SHORT_L;
+                        return ((short )Value).ToString(CultureInfo.InvariantCulture) + SHORT_L;
                     break;
                 case DataType.Int32:
                     if (Value is int)
-                        return ((int)Value).ToString(CultureInfo.InvariantCulture);
+                        return ((int   )Value).ToString(CultureInfo.InvariantCulture);
                     break;
                 case DataType.Int64:
                     if (Value is long)
-                        return ((long)Value).ToString(CultureInfo.InvariantCulture);
+                        return ((long  )Value).ToString(CultureInfo.InvariantCulture) + LONG_L;
                     break;
                 case DataType.Single:
                     if (Value is float)
-                        return ((float)Value).ToString(CultureInfo.InvariantCulture) + SINGLE_L;
+                        return ((float )Value).ToString(CultureInfo.InvariantCulture) + SINGLE_L;
                     break;
                 case DataType.String:
                     if (Value is string)
-                        return "\"" + ((string)Value)
-                            .Replace("\\", "\\\\")
-                            .Replace("\n", "\\n")
-                            .Replace("\r", "\\r")
-                            .Replace("\t", "\\t")
-                            .Replace("\b", "\\b")
-                            .Replace("\0", "\\0") + "\"";
+                        return ((string)Value).Escape();
                     break;
                 default:
                     return O_PAREN + ReturnType.ToPrettyString() + SPACE_S + Value + C_PAREN;
@@ -219,6 +213,15 @@ namespace Altar
         public ReferenceDef Function;
 
         public override string ToString() => O_PAREN + Function.Name + Type.ToPrettyString() + COLON + ReturnType.ToPrettyString() + SPACE_S + String.Join(SPACE_S, Arguments.Select(o => o.ToString())) + C_PAREN;
+    }
+    public class PopExpression : Expression
+    {
+        public PopExpression()
+        {
+            ReturnType = (DataType)0xFF;
+        }
+
+        public override string ToString() => POP;
     }
 
     // ---
@@ -296,19 +299,20 @@ namespace Altar
     public class BreakStatement : Statement
     {
         public DataType Type;
-        public uint Signal;
+        public short Signal;
 
         public override string ToString() => BREAK + Type.ToPrettyString() + SPACE_S + Signal;
     }
     public class ReturnStatement : Statement
     {
         public DataType ReturnType;
-        /// <summary>
-        /// Null if it is an 'exit' instruction.
-        /// </summary>
         public Expression RetValue;
 
-        public override string ToString() => RET_S + ReturnType.ToPrettyString() + (RetValue != null ? SPACE_S + RetValue : String.Empty);
+        public override string ToString() => RET_S + ReturnType.ToPrettyString() + SPACE_S + RetValue;
+    }
+    public class ExitStatement : Statement
+    {
+        public override string ToString() => EXIT;
     }
     public unsafe class PushEnvStatement : Statement
     {
@@ -492,6 +496,17 @@ namespace Altar
         }
         [DebuggerHidden]
         public static string ToPrettyString(this EnvStackOperator op) => op.ToString().ToLowerInvariant();
+
+        [DebuggerHidden]
+        public static string Escape(this string s) =>
+            "\"" +
+                s.Replace("\\", "\\\\")
+                 .Replace("\n", "\\n" )
+                 .Replace("\r", "\\r" )
+                 .Replace("\t", "\\t" )
+                 .Replace("\b", "\\b" )
+                 .Replace("\0", "\\0" )
+                 .Replace("\"", "\\\"") + "\"";
 
         public static IEnumerable<T> WalkExprTree<T>(this Expression e, Func<Expression, IEnumerable<T>> fn)
         {

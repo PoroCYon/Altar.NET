@@ -177,7 +177,7 @@ namespace Altar
                                 sb.Append(((long*)&pp->ValueRest)->ToString(CultureInfo.InvariantCulture));
                                 break;
                             case DataType.String:
-                                sb.Append('"').Append(SectionReader.GetStringInfo(content, p.ValueRest)).Append('"');
+                                sb.Append(SectionReader.GetStringInfo(content, p.ValueRest).Escape());
                                 break;
                         }
                         break;

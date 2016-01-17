@@ -22,6 +22,11 @@ namespace Altar
             C_PAREN   = ")" ,
             O_PAREN   = "(" ,
             DEL_CHAR  = "^H",
+            LF_CHAR   = "\n",
+            CR_CHAR   = "\r",
+            TAB_CHAR  = "\t",
+            BELL_CHAR = "\b",
+            NUL_CHAR  = "\0",
             TILDE     = "~" ,
             DASH      = "-" ,
             PLUS      = "+" ,
@@ -39,6 +44,9 @@ namespace Altar
             LEFTSH    = "<<",
             XOR       = "^" ,
 
+            INDENT2 = "  ",
+            INDENT4 = "    ",
+
             EQ_S = " = ",
 
             BRACKETS = "[]",
@@ -49,6 +57,7 @@ namespace Altar
             DOUBLE_L = "d",
             SINGLE_L = "f",
             SHORT_L  = "s",
+            LONG_L   = "L",
 
             TRUE  = "true",
             FALSE = "false",
@@ -63,6 +72,7 @@ namespace Altar
             EXT_WAV     = ".wav",
             EXT_INI     = ".ini",
             EXT_GML_ASM = ".gml.asm",
+            EXT_GML_LSP = ".gml.lsp",
 
             FILE_STR = "strings.txt",
             FILE_VAR = "vars.txt"   ,
@@ -98,6 +108,7 @@ namespace Altar
             DUP   = "dup"    ,
             BREAK = "break " ,
             RET_S = "ret "   ,
+            EXIT  = "exit"   ,
 
             ERR_NO_FORM   = "No 'FORM' header.",
             ERR_FILE_NF_1 = "File \""          ,
