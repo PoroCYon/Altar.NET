@@ -75,7 +75,7 @@ namespace Altar
                 };
                 #endregion
 
-                //var c__ = Disassembler.DisassembleCode(f, 0xE0E);
+                //var c__ = Disassembler.DisassembleCode(f, 0xE0D);
                 //var d = Decompiler.DecompileCode(f, rdata, c__);
                 ////var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
