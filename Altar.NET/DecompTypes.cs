@@ -155,6 +155,7 @@ namespace Altar
         public ReferenceDef Variable;
         public VariableType Type;
         public InstanceType OwnerType;
+        public string OwnerName;
         /// <summary>
         /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
         /// </summary>
@@ -162,7 +163,8 @@ namespace Altar
 
         public override string ToString()
         {
-            var a = OwnerType.ToPrettyString() + DOT + Variable.Name;
+            var a = (OwnerName == null ? OwnerType.ToPrettyString() : O_BRACKET + OwnerName + C_BRACKET)
+                + DOT + Variable.Name;
 
             if (ArrayIndices != null && Type == VariableType.Array)
                 return a + O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET;
@@ -246,7 +248,8 @@ namespace Altar
     {
         public Expression Value;
         public VariableType Type;
-        public InstanceType Owner;
+        public InstanceType OwnerType;
+        public string OwnerName;
         public ReferenceDef Target;
         public DataType OriginalType;
         public DataType ReturnType;
@@ -256,7 +259,8 @@ namespace Altar
         public Expression[] ArrayIndices;
 
         public override string ToString() =>
-            Owner.ToPrettyString() + DOT + Target.Name +
+            (OwnerName == null ? OwnerType.ToPrettyString() : O_BRACKET + OwnerName + C_BRACKET)
+                + DOT + Target.Name +
                 (Type == VariableType.Array && ArrayIndices != null
                     ? O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET
                     : Type.ToPrettyString())

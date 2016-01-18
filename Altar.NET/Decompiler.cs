@@ -439,7 +439,8 @@ namespace Altar
                             OriginalType = se.Types.Type1,
                             ReturnType   = se.Types.Type2,
                             Type         = se.DestVar.Type,
-                            Owner        = se.Instance,
+                            OwnerType    = se.Instance,
+                            OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance).Name : null,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                             Value        = Pop(),
                             ArrayIndices = ind ?? TryGetIndices(se.DestVar.Type)
@@ -461,6 +462,7 @@ namespace Altar
                                         ReturnType   = ps.Type,
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
+                                        OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance).Name : null,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                                         ArrayIndices = TryGetIndices(vt)
                                     });
