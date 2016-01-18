@@ -86,6 +86,8 @@ namespace Altar
 
                 //TODO: use an actual serialization lib or something
 
+                //goto SKIP;
+
                 #region general
                 {
                     Console.Write("Reading header data... ");
@@ -398,6 +400,8 @@ namespace Altar
                     Console.WriteLine(DONE);
                 }
                 #endregion
+
+            //SKIP:
 
                 #region script
                 if (f.Scripts->Count > 0)
