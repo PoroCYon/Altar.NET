@@ -74,6 +74,7 @@ namespace Altar
         Subtraction       ,
         Multiplication    ,
         Division          ,
+        Remainder         ,
         Modulo            ,
         And               ,
         Or                ,
@@ -157,14 +158,14 @@ namespace Altar
         /// <summary>
         /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
         /// </summary>
-        public Expression ArrayIndex;
+        public Expression[] ArrayIndices;
 
         public override string ToString()
         {
             var a = OwnerType.ToPrettyString() + DOT + Variable.Name;
 
-            if (ArrayIndex != null && Type == VariableType.Array)
-                return a + O_BRACKET + ArrayIndex + C_BRACKET;
+            if (ArrayIndices != null && Type == VariableType.Array)
+                return a + O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET;
 
             return a + Type.ToPrettyString();
         }
@@ -177,8 +178,8 @@ namespace Altar
         {
             var a = Owner + COLON + Variable.Name;
 
-            if (ArrayIndex != null && Type == VariableType.Array)
-                return a + O_BRACKET + ArrayIndex + C_BRACKET;
+            if (ArrayIndices != null && Type == VariableType.Array)
+                return a + O_BRACKET + ArrayIndices + C_BRACKET;
 
             return a;
         }
@@ -223,6 +224,13 @@ namespace Altar
 
         public override string ToString() => POP;
     }
+    public class AssertExpression : Expression
+    {
+        public short ControlValue;
+        public Expression Expr;
+
+        public override string ToString() => O_PAREN + ASSERT + ReturnType.ToPrettyString() + SPACE_S + ControlValue + SPACE_S + Expr + C_PAREN;
+    }
 
     // ---
 
@@ -245,19 +253,14 @@ namespace Altar
         /// <summary>
         /// Null if <see cref="Type" /> != <see cref="VariableType.Array" />.
         /// </summary>
-        public Expression ArrayIndex;
+        public Expression[] ArrayIndices;
 
-        public override string ToString()
-        {
-            var a = O_PAREN + Owner.ToPrettyString() + DOT + Target.Name;
-
-            if (Type == VariableType.Array && ArrayIndex != null)
-                a += O_BRACKET + ArrayIndex + C_BRACKET;
-            else
-                a += Type.ToPrettyString();
-
-            return a + EQ_S + Value + C_PAREN;
-        }
+        public override string ToString() =>
+            Owner.ToPrettyString() + DOT + Target.Name +
+                (Type == VariableType.Array && ArrayIndices != null
+                    ? O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET
+                    : Type.ToPrettyString())
+                + EQ_S + Value;
     }
     public class CallStatement : Statement
     {
@@ -295,13 +298,6 @@ namespace Altar
 
             return s;
         }
-    }
-    public class BreakStatement : Statement
-    {
-        public DataType Type;
-        public short Signal;
-
-        public override string ToString() => BREAK + Type.ToPrettyString() + SPACE_S + Signal;
     }
     public class ReturnStatement : Statement
     {
@@ -384,6 +380,8 @@ namespace Altar
                     return BinaryOperator.Multiplication;
                 case OpCode.Div:
                     return BinaryOperator.Division;
+                case OpCode.Rem:
+                    return BinaryOperator.Remainder;
                 case OpCode.Mod:
                     return BinaryOperator.Modulo;
                 case OpCode.And:
@@ -484,6 +482,8 @@ namespace Altar
                     return ASTERISK;
                 case BinaryOperator.Or:
                     return VBAR;
+                case BinaryOperator.Remainder:
+                    return REMAIN;
                 case BinaryOperator.RightShift:
                     return RIGHTSH;
                 case BinaryOperator.Subtraction:

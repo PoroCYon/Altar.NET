@@ -17,8 +17,13 @@ namespace Altar
         readonly static GraphBranch[] EmptyGBArray   = { };
         readonly static GraphVertex[] EmptyGVArray   = { };
         readonly static Statement  [] EmptyStmtArray = { };
+        readonly static Expression [] EmptyExprArray = { };
+
+        readonly static Expression [] OneExprArray = new Expression[1];
+        readonly static Expression [] TwoExprArray = new Expression[2];
 
         readonly static ExitStatement FinalRet = new ExitStatement();
+        readonly static PopExpression PopExpr  = new PopExpression();
 
         static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
         {
@@ -182,6 +187,8 @@ namespace Altar
 
         public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null, List<Expression> dupTars = null)
         {
+            //! here be dragons
+
             stack   = stack   ?? new Stack<Expression>();
             dupTars = dupTars ?? new List <Expression>();
             instr   = instr   ?? code.Instructions;
@@ -193,7 +200,10 @@ namespace Altar
 
             var firstI = code.Instructions[0];
 
-            Func<Expression> Pop = () => stack.Count == 0 ? new PopExpression() : stack.Pop();
+            //TODO: use locals
+
+            Func<Expression> Pop  = () => stack.Count == 0 ? PopExpr : stack.Pop ();
+          //Func<Expression> Peek = () => stack.Count == 0 ? PopExpr : stack.Peek();
             Func<int, IEnumerable<Expression>> PopMany = i =>
             {
                 var ret = new List<Expression>();
@@ -203,6 +213,7 @@ namespace Altar
 
                 return ret;
             };
+            #region Action FlushStack = () => { };
             Action FlushStack = () =>
             {
                 var readd = new Stack<Expression>();
@@ -216,7 +227,7 @@ namespace Altar
                         return false;
                     }
 
-                    return !(e is PopExpression);
+                    return !(e is PopExpression); // 'push pop' is obviously stupid to emit
                 }).Reverse().Select(e =>
                     e is UnaryOperatorExpression &&
                             ((UnaryOperatorExpression)e).Operator == UnaryOperator.Duplicate
@@ -224,31 +235,82 @@ namespace Altar
 
                 stack.PushRange(readd);
             };
-            //TODO: use locals
+            #endregion
             Action<Statement> AddStmt = s =>
             {
                 FlushStack();
 
                 stmts.Add(s);
             };
-            Func<VariableType, Expression> TryGetIndex = vt =>
+            Func<VariableType, Expression[]> TryGetIndices = vt =>
             {
-                Expression ind = null;
+                Expression index = null;
 
+                var dimentions = 0;
                 if (vt == VariableType.Array)
                 {
-                    ind = Pop();
+                    index = Pop();
 
-                    var m5 = Pop();
-                    if (!(m5 is LiteralExpression) || !(((LiteralExpression)m5).Value is short) || (short)((LiteralExpression)m5).Value != -5)
+                    var arrInd = Pop();
+
+                    if ((arrInd is LiteralExpression) && ((LiteralExpression)arrInd).Value is short)
                     {
-                        stack.Push(m5 );
-                        stack.Push(ind);
-                        ind = null;
+                        var s = (short)((LiteralExpression)arrInd).Value;
+
+                        switch (s)
+                        {
+                            case -1:
+                                dimentions = 2;
+                                break;
+                            case -5:
+                                dimentions = 1;
+                                break;
+                        }
+                    }
+
+                    if (dimentions == 0)
+                    {
+                        stack.Push(arrInd);
+                        stack.Push(index);
+
+                        index = null;
                     }
                 }
 
-                return ind;
+                if (index == null)
+                    return null;
+
+                // analyse index for specified dimention
+                switch (dimentions)
+                {
+                    case 2:
+                        if (index is BinaryOperatorExpression && ((BinaryOperatorExpression)index).Operator == BinaryOperator.Addition)
+                        {
+                            var boe = (BinaryOperatorExpression)index;
+
+                            var a = boe.Arg1;
+                            var b = boe.Arg2;
+
+                            if (a is BinaryOperatorExpression && ((BinaryOperatorExpression)a).Operator == BinaryOperator.Multiplication)
+                            {
+                                var a_ = (BinaryOperatorExpression)a;
+                                var c = a_.Arg2;
+
+                                if (c is LiteralExpression && ((LiteralExpression)c).ReturnType == DataType.Int32
+                                        && (int /* should be */)((LiteralExpression)c).Value == 32000)
+                                {
+                                    TwoExprArray[0] = a_.Arg1;
+                                    TwoExprArray[1] = b;
+
+                                    return TwoExprArray;
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                OneExprArray[0] = index;
+                return OneExprArray;
             };
 
             for (int i = 0; i < instr.Length; i++)
@@ -360,10 +422,11 @@ namespace Altar
                     #endregion
                     #region break, ret, exit
                     case OpCode.Break:
-                        AddStmt(new BreakStatement
+                        stack.Push(new AssertExpression
                         {
-                            Signal = pbk->Signal,
-                            Type   = pbk->Type
+                            ControlValue = pbk->Signal,
+                            ReturnType   = pbk->Type,
+                            Expr         = Pop()
                         });
                         break;
                     case OpCode.Ret:
@@ -379,7 +442,7 @@ namespace Altar
                     #endregion
                     #region set
                     case OpCode.Set:
-                        var ind = TryGetIndex(se.DestVar.Type); // call before Value's pop
+                        var ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
                         AddStmt(new SetStatement
                         {
                             OriginalType = se.Types.Type1,
@@ -388,7 +451,7 @@ namespace Altar
                             Owner        = se.Instance,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                             Value        = Pop(),
-                            ArrayIndex   = ind ?? TryGetIndex(se.DestVar.Type)
+                            ArrayIndices = ind ?? TryGetIndices(se.DestVar.Type)
                         });
                         break;
                     #endregion
@@ -403,12 +466,12 @@ namespace Altar
                                 {
                                     stack.Push(new MemberExpression
                                     {
-                                        Owner      = Pop(),
-                                        ReturnType = ps.Type,
-                                        Type       = vt,
-                                        OwnerType  = (InstanceType)ps.Value,
-                                        Variable   = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndex = TryGetIndex(vt)
+                                        Owner        = Pop(),
+                                        ReturnType   = ps.Type,
+                                        Type         = vt,
+                                        OwnerType    = (InstanceType)ps.Value,
+                                        Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
+                                        ArrayIndices = TryGetIndices(vt)
                                     });
                                 }
                                 else
@@ -418,7 +481,7 @@ namespace Altar
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndex   = TryGetIndex(vt)
+                                        ArrayIndices = TryGetIndices(vt)
                                     });
                                 break;
                             #endregion
@@ -474,12 +537,15 @@ namespace Altar
                             #endregion
                             #region binaryop
                             case ExpressionType.BinaryOp:
+                                var a1 = Pop();
+                                var a2 = Pop();
+
                                 stack.Push(new BinaryOperatorExpression
                                 {
                                     OriginalType = t1,
                                     ReturnType   = t2,
-                                    Arg1         = Pop(),
-                                    Arg2         = Pop(),
+                                    Arg1         = a2,
+                                    Arg2         = a1,
                                     Operator     = ins->BinaryOp()
                                 });
                                 break;

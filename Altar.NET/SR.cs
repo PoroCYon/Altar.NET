@@ -59,7 +59,7 @@ namespace Altar
             SHORT_L  = "s",
             LONG_L   = "L",
 
-            TRUE  = "true",
+            TRUE  = "true" ,
             FALSE = "false",
 
             DATA_WIN = "data.win",
@@ -109,6 +109,9 @@ namespace Altar
             BREAK = "break " ,
             RET_S = "ret "   ,
             EXIT  = "exit"   ,
+
+            REMAIN = "rem"        ,
+            ASSERT = "assert_neq:",
 
             ERR_NO_FORM   = "No 'FORM' header.",
             ERR_FILE_NF_1 = "File \""          ,
