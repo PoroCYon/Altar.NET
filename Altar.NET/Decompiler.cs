@@ -19,9 +19,6 @@ namespace Altar
         readonly static Statement  [] EmptyStmtArray = { };
         readonly static Expression [] EmptyExprArray = { };
 
-        readonly static Expression [] OneExprArray = new Expression[1];
-        readonly static Expression [] TwoExprArray = new Expression[2];
-
         readonly static ExitStatement FinalRet = new ExitStatement();
         readonly static PopExpression PopExpr  = new PopExpression();
 
@@ -298,19 +295,13 @@ namespace Altar
 
                                 if (c is LiteralExpression && ((LiteralExpression)c).ReturnType == DataType.Int32
                                         && (int /* should be */)((LiteralExpression)c).Value == 32000)
-                                {
-                                    TwoExprArray[0] = a_.Arg1;
-                                    TwoExprArray[1] = b;
-
-                                    return TwoExprArray;
-                                }
+                                    return new[] { a_.Arg1, b };
                             }
                         }
                         break;
                 }
 
-                OneExprArray[0] = index;
-                return OneExprArray;
+                return new[] { index };
             };
 
             for (int i = 0; i < instr.Length; i++)
