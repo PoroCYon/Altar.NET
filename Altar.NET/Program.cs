@@ -428,12 +428,10 @@ namespace Altar
 
                     for (uint i = 0; i < f.Code->Count; i++)
                     {
-                        Console.WriteLine(i + "/" + f.Code->Count);
-
                         var ci = Disassembler.DisassembleCode(f, i);
                         var s  = Decompiler.DecompileCode(f, rdata, ci);
 
-                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
+                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_LSP, s);
                     }
 
                     Console.WriteLine(DONE);
