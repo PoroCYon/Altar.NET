@@ -107,7 +107,7 @@ namespace Altar
                     case InstructionKind.DoubleType:
                         var dt = iptr->DoubleType;
 
-                        if (bcv > 0xE && iptr->OpCode.VersionF == FOpCode.Comp)
+                        if (bcv > 0xE && iptr->OpCode.VersionF == FOpCode.Cmp)
                             sb.Append(dt.ComparisonType.ToPrettyString()).Append(' ');
 
                         sb.Append(dt.Types);
