@@ -118,7 +118,7 @@ namespace Altar
         Not     = 0x12,
         Shl     = 0x13,
         Shr     = 0x14,
-        Comp    = 0x15,
+        Cmp     = 0x15,
         Set     = 0x45,
         Dup     = 0x86,
         Ret     = 0x9C,
@@ -158,7 +158,7 @@ namespace Altar
         Not     = 0x0E,
         Shl     = 0x0F,
         Shr     = 0x10,
-        Comp    = 0x15,
+        Cmp     = 0x15,
         Set     = 0x41,
         Dup     = 0x82,
         Ret     = 0x9D,
@@ -340,7 +340,7 @@ namespace Altar
                     case FOpCode.Not:
                     case FOpCode.Shl:
                     case FOpCode.Shr:
-                    case FOpCode.Comp:
+                    case FOpCode.Cmp:
                         return InstructionKind.DoubleType;
 
                     case FOpCode.Dup:
@@ -551,8 +551,8 @@ namespace Altar
                         return GeneralOpCode.Shl;
                     case FOpCode.Shr:
                         return GeneralOpCode.Shr;
-                    case FOpCode.Comp:
-                        return GeneralOpCode.Comp;
+                    case FOpCode.Cmp:
+                        return GeneralOpCode.Cmp;
                     case FOpCode.Set:
                         return GeneralOpCode.Set;
                     case FOpCode.Dup:
@@ -594,7 +594,7 @@ namespace Altar
                 case EOpCode.Cle:
                 case EOpCode.Clt:
                 case EOpCode.Cne:
-                    return GeneralOpCode.Comp;
+                    return GeneralOpCode.Cmp;
                 default:
                     return (GeneralOpCode)code.VersionE;
             }

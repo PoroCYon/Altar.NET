@@ -425,7 +425,7 @@ namespace Altar
                         return BinaryOperator.LeftShift;
                     case FOpCode.Shr:
                         return BinaryOperator.RightShift;
-                    case FOpCode.Comp:
+                    case FOpCode.Cmp:
                         switch (instr.DoubleType.ComparisonType)
                         {
                             case ComparisonType.Equality:

@@ -76,8 +76,8 @@ namespace Altar
                 };
                 #endregion
 
-                //var c__ = Disassembler.DisassembleCode(f, 1);
-                ////var d = Decompiler.DecompileCode(f, rdata, c__);
+                ////var c__ = Disassembler.DisassembleCode(f, 1);
+                //var d = Decompiler.DecompileCode(f, rdata, c__);
                 //var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
                 //System.Windows.Forms.Clipboard.SetText(d);
@@ -431,7 +431,7 @@ namespace Altar
                         Console.WriteLine(i + "/" + f.Code->Count);
 
                         var ci = Disassembler.DisassembleCode(f, i);
-                        var s  = Disassembler.DisplayInstructions/*Decompiler.DecompileCode*/(f, rdata, ci);
+                        var s  = Decompiler.DecompileCode(f, rdata, ci);
 
                         File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }
