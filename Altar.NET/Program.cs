@@ -76,15 +76,14 @@ namespace Altar
                 };
                 #endregion
 
-                //for (uint i = 0; i < 0x10; i++)
-                //    Disassembler.DisassembleCode(f, i);
-                //var d = Decompiler.DecompileCode(f, rdata, c__);
-                ////var d = Disassembler.DisplayInstructions(f, rdata, c__);
+                //var c__ = Disassembler.DisassembleCode(f, 0);
+                ////var d = Decompiler.DecompileCode(f, rdata, c__);
+                //var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
                 //System.Windows.Forms.Clipboard.SetText(d);
 
-                if (f.Audio->Count >= 0)
-                    return;
+                //if (f.Audio->Count >= 0)
+                //    return;
 
                 //TODO: use an actual serialization lib or something
 

@@ -22,7 +22,7 @@ namespace Altar
         readonly static ExitStatement FinalRet = new ExitStatement();
         readonly static PopExpression PopExpr  = new PopExpression();
 
-        static AnyInstruction*[] FindJumpOffsets(CodeInfo code)
+        static AnyInstruction*[] FindJumpOffsets(CodeInfo code, uint bcv)
         {
             var blocks = new List<CodeBlock>();
             var instr  = code.Instructions;
@@ -34,7 +34,7 @@ namespace Altar
             for (int i = 0; i < instr.Length; i++)
             {
                 var ins = instr[i];
-                if (ins->Kind() == InstructionKind.Goto)
+                if (ins->Kind(bcv) == InstructionKind.Goto)
                 {
                     IntPtr p;
                     // instructions after a 'goto'
@@ -63,12 +63,12 @@ namespace Altar
 
             return ret_;
         }
-        static CodeBlock[] SplitBlocks (CodeInfo code)
+        static CodeBlock[] SplitBlocks (CodeInfo code, uint bcv)
         {
             var blocks = new List<CodeBlock>();
             var instr = code.Instructions;
 
-            var jumpTo = FindJumpOffsets(code);
+            var jumpTo = FindJumpOffsets(code, bcv);
 
             for (int i = 0; i < jumpTo.Length; i++)
             {
@@ -107,8 +107,8 @@ namespace Altar
                     blocks.Add(new CodeBlock
                     {
                         Instructions = Utils.MPtrListToPtrArr(instrs),
-                        BranchTo     = lastI->Kind() == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset * 4L) : nextAddr /* can be null */,
-                        Type         = lastI->Kind() == InstructionKind.Goto ? lastI->Goto.Type() : BranchType.Unconditional
+                        BranchTo     = lastI->Kind(bcv) == InstructionKind.Goto ? (AnyInstruction*)((long)lastI + lastI->Goto.Offset * 4L) : nextAddr /* can be null */,
+                        Type         = lastI->Kind(bcv) == InstructionKind.Goto ? lastI->Goto.Type(bcv) : BranchType.Unconditional
                     });
                 }
             }
@@ -117,7 +117,7 @@ namespace Altar
         }
         static GraphVertex[] CreateVertices(GMFileContent content, CodeInfo code)
         {
-            var blocks = SplitBlocks(code);
+            var blocks = SplitBlocks(code, content.General->BytecodeVersion);
             var instr = code.Instructions;
             var firstI = (long)instr[0];
 
@@ -184,6 +184,8 @@ namespace Altar
 
         public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null, List<Expression> dupTars = null)
         {
+            var bcv = content.General->BytecodeVersion;
+
             //! here be dragons
 
             stack   = stack   ?? new Stack<Expression>();
@@ -323,18 +325,18 @@ namespace Altar
                 var ps = ins->Push      ;
                 var se = ins->Set       ;
 
-                var t1 = ins->Kind() == InstructionKind.SingleType ? st.Type
-                      : (ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type1 : 0);
-                var t2 = ins->Kind() == InstructionKind.DoubleType ? dt.Types.Type2
-                      : (ins->Kind() == InstructionKind.SingleType ? st.Type        : 0);
+                var t1 = ins->Kind(bcv) == InstructionKind.SingleType ? st.Type
+                      : (ins->Kind(bcv) == InstructionKind.DoubleType ? dt.Types.Type1 : 0);
+                var t2 = ins->Kind(bcv) == InstructionKind.DoubleType ? dt.Types.Type2
+                      : (ins->Kind(bcv) == InstructionKind.SingleType ? st.Type        : 0);
                 #endregion
 
-                switch (ins->Code())
+                switch (ins->OpCode.General(bcv))
                 {
                     #region dup, pop
-                    case OpCode.Dup:
+                    case GeneralOpCode.Dup:
                         var normal = true;
-                        if (i < instr.Length - 1 && instr[i + 1]->OpCode == OpCode.Push)
+                        if (i < instr.Length - 1 && instr[i + 1]->OpCode.General(bcv) == GeneralOpCode.Push)
                         {
                             var n = &instr[i + 1]->Push;
                             var t = ((Reference*)&n->ValueRest)->Type;
@@ -369,7 +371,7 @@ namespace Altar
                         else
                             stack.Push(stack.Peek());
                         break;
-                    case OpCode.Pop:
+                    case GeneralOpCode.Pop:
                         if (stack.Count > 0 && stack.Peek() is CallExpression)
                             AddStmt(new CallStatement
                             {
@@ -382,7 +384,7 @@ namespace Altar
                     #region env
                     //TODO: use actual '(with obj ...)' syntax
                     //! it might mess with the CFG structure
-                    case OpCode.PushEnv:
+                    case GeneralOpCode.PushEnv:
                         AddStmt(new PushEnvStatement
                         {
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
@@ -390,7 +392,7 @@ namespace Altar
                             Parent       = stack.Pop()
                         });
                         break;
-                    case OpCode.PopEnv :
+                    case GeneralOpCode.PopEnv :
                         AddStmt(new PopEnvStatement
                         {
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
@@ -399,20 +401,20 @@ namespace Altar
                         break;
                     #endregion
                     #region branch
-                    case OpCode.Brt:
-                    case OpCode.Brf:
-                    case OpCode.Br:
+                    case GeneralOpCode.Brt:
+                    case GeneralOpCode.Brf:
+                    case GeneralOpCode.Br:
                         AddStmt(new BranchStatement
                         {
-                            Type         = pbr->Type(),
-                            Conditional  = pbr->Type() == BranchType.Unconditional ? null : Pop(),
+                            Type         = pbr->Type(bcv),
+                            Conditional  = pbr->Type(bcv) == BranchType.Unconditional ? null : Pop(),
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
                             TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
                         });
                         break;
                     #endregion
                     #region break, ret, exit
-                    case OpCode.Break:
+                    case GeneralOpCode.Break:
                         stack.Push(new AssertExpression
                         {
                             ControlValue = pbk->Signal,
@@ -420,19 +422,19 @@ namespace Altar
                             Expr         = Pop()
                         });
                         break;
-                    case OpCode.Ret:
+                    case GeneralOpCode.Ret:
                         AddStmt(new ReturnStatement
                         {
                             ReturnType = pst->Type,
                             RetValue   = Pop()
                         });
                         break;
-                    case OpCode.Exit:
+                    case GeneralOpCode.Exit:
                         AddStmt(new ExitStatement());
                         break;
                     #endregion
                     #region set
-                    case OpCode.Set:
+                    case GeneralOpCode.Set:
                         var ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
                         AddStmt(new SetStatement
                         {
@@ -448,7 +450,7 @@ namespace Altar
                         break;
                     #endregion
                     default:
-                        switch (ins->ExprType())
+                        switch (ins->ExprType(bcv))
                         {
                             #region variable
                             case ExpressionType.Variable:
@@ -539,7 +541,7 @@ namespace Altar
                                     ReturnType   = t2,
                                     Arg1         = a2,
                                     Arg2         = a1,
-                                    Operator     = ins->BinaryOp()
+                                    Operator     = ins->BinaryOp(bcv)
                                 });
                                 break;
                             #endregion
@@ -550,7 +552,7 @@ namespace Altar
                                     OriginalType = t1,
                                     ReturnType   = t2,
                                     Input        = Pop(),
-                                    Operator     = ins->UnaryOp()
+                                    Operator     = ins->UnaryOp(bcv)
                                 });
                                 break;
                             #endregion

@@ -28,18 +28,27 @@ namespace Altar
 
     public static class BranchTypeExt
     {
-        public static BranchType Type  (this GotoInstruction instr)
+        public static BranchType Type  (this GotoInstruction instr, uint bcv)
         {
-            if (instr.OpCode.Kind() != InstructionKind.Goto)
+            if (instr.OpCode.Kind(bcv) != InstructionKind.Goto)
                 return BranchType.Unconditional;
 
-            switch (instr.OpCode)
-            {
-                case OpCode.Brt:
-                    return BranchType.IfTrue;
-                case OpCode.Brf:
-                    return BranchType.IfFalse;
-            }
+            if (bcv > 0xE)
+                switch (instr.OpCode.VersionF)
+                {
+                    case FOpCode.Brt:
+                        return BranchType.IfTrue;
+                    case FOpCode.Brf:
+                        return BranchType.IfFalse;
+                }
+            else
+                switch (instr.OpCode.VersionE)
+                {
+                    case EOpCode.Brt:
+                        return BranchType.IfTrue;
+                    case EOpCode.Brf:
+                        return BranchType.IfFalse;
+                }
 
             return BranchType.Unconditional;
         }
@@ -351,92 +360,150 @@ namespace Altar
     public static class DecompExt
     {
         [DebuggerHidden]
-        public static UnaryOperator  UnaryOp (this OpCode code)
+        public static UnaryOperator  UnaryOp (this AnyInstruction instr, uint bcv)
         {
-            switch (code)
-            {
-                case OpCode.Neg:
-                    return UnaryOperator.Negation;
-                case OpCode.Not:
-                    return UnaryOperator.Complement;
-                case OpCode.Ret:
-                    return UnaryOperator.Return;
-                case OpCode.Exit:
-                    return UnaryOperator.Exit;
-                case OpCode.Conv:
-                    return UnaryOperator.Convert;
-                case OpCode.Dup:
-                    return UnaryOperator.Duplicate;
-            }
+            if (bcv > 0xE)
+                switch (instr.OpCode.VersionF)
+                {
+                    case FOpCode.Neg:
+                        return UnaryOperator.Negation;
+                    case FOpCode.Not:
+                        return UnaryOperator.Complement;
+                    case FOpCode.Ret:
+                        return UnaryOperator.Return;
+                    case FOpCode.Exit:
+                        return UnaryOperator.Exit;
+                    case FOpCode.Conv:
+                        return UnaryOperator.Convert;
+                    case FOpCode.Dup:
+                        return UnaryOperator.Duplicate;
+                }
+            else
+                switch (instr.OpCode.VersionE)
+                {
+                    case EOpCode.Neg:
+                        return UnaryOperator.Negation;
+                    case EOpCode.Not:
+                        return UnaryOperator.Complement;
+                    case EOpCode.Ret:
+                        return UnaryOperator.Return;
+                    case EOpCode.Exit:
+                        return UnaryOperator.Exit;
+                    case EOpCode.Conv:
+                        return UnaryOperator.Convert;
+                    case EOpCode.Dup:
+                        return UnaryOperator.Duplicate;
+                }
 
             return 0;
         }
         [DebuggerHidden]
-        public static BinaryOperator BinaryOp(this OpCode code)
+        public static BinaryOperator BinaryOp(this AnyInstruction instr, uint bcv)
         {
-            switch (code)
-            {
-                case OpCode.Add:
-                    return BinaryOperator.Addition;
-                case OpCode.Sub:
-                    return BinaryOperator.Subtraction;
-                case OpCode.Mul:
-                    return BinaryOperator.Multiplication;
-                case OpCode.Div:
-                    return BinaryOperator.Division;
-                case OpCode.Rem:
-                    return BinaryOperator.Remainder;
-                case OpCode.Mod:
-                    return BinaryOperator.Modulo;
-                case OpCode.And:
-                    return BinaryOperator.And;
-                case OpCode.Or:
-                    return BinaryOperator.Or;
-                case OpCode.Xor:
-                    return BinaryOperator.Xor;
-                case OpCode.Shl:
-                    return BinaryOperator.LeftShift;
-                case OpCode.Shr:
-                    return BinaryOperator.RightShift;
-                case OpCode.Ceq:
-                    return BinaryOperator.Equality;
-                case OpCode.Cne:
-                    return BinaryOperator.Inequality;
-                case OpCode.Cgt:
-                    return BinaryOperator.GreaterThan;
-                case OpCode.Clt:
-                    return BinaryOperator.LowerThan;
-                case OpCode.Cge:
-                    return BinaryOperator.GTOrEqual;
-                case OpCode.Cle:
-                    return BinaryOperator.LTOrEqual;
-            }
+            if (bcv > 0xE)
+                switch (instr.OpCode.VersionF)
+                {
+                    case FOpCode.Add:
+                        return BinaryOperator.Addition;
+                    case FOpCode.Sub:
+                        return BinaryOperator.Subtraction;
+                    case FOpCode.Mul:
+                        return BinaryOperator.Multiplication;
+                    case FOpCode.Div:
+                        return BinaryOperator.Division;
+                    case FOpCode.Rem:
+                        return BinaryOperator.Remainder;
+                    case FOpCode.Mod:
+                        return BinaryOperator.Modulo;
+                    case FOpCode.And:
+                        return BinaryOperator.And;
+                    case FOpCode.Or:
+                        return BinaryOperator.Or;
+                    case FOpCode.Xor:
+                        return BinaryOperator.Xor;
+                    case FOpCode.Shl:
+                        return BinaryOperator.LeftShift;
+                    case FOpCode.Shr:
+                        return BinaryOperator.RightShift;
+                    case FOpCode.Comp:
+                        //switch (instr.DoubleType.ComparisonType)
+                        //{
+                        //    ?
+                        //}
+                        return BinaryOperator.Equality;
+                }
+            else
+                switch (instr.OpCode.VersionE)
+                {
+                    case EOpCode.Add:
+                        return BinaryOperator.Addition;
+                    case EOpCode.Sub:
+                        return BinaryOperator.Subtraction;
+                    case EOpCode.Mul:
+                        return BinaryOperator.Multiplication;
+                    case EOpCode.Div:
+                        return BinaryOperator.Division;
+                    case EOpCode.Rem:
+                        return BinaryOperator.Remainder;
+                    case EOpCode.Mod:
+                        return BinaryOperator.Modulo;
+                    case EOpCode.And:
+                        return BinaryOperator.And;
+                    case EOpCode.Or:
+                        return BinaryOperator.Or;
+                    case EOpCode.Xor:
+                        return BinaryOperator.Xor;
+                    case EOpCode.Shl:
+                        return BinaryOperator.LeftShift;
+                    case EOpCode.Shr:
+                        return BinaryOperator.RightShift;
+                    case EOpCode.Ceq:
+                        return BinaryOperator.Equality;
+                    case EOpCode.Cne:
+                        return BinaryOperator.Inequality;
+                    case EOpCode.Cgt:
+                        return BinaryOperator.GreaterThan;
+                    case EOpCode.Clt:
+                        return BinaryOperator.LowerThan;
+                    case EOpCode.Cge:
+                        return BinaryOperator.GTOrEqual;
+                    case EOpCode.Cle:
+                        return BinaryOperator.LTOrEqual;
+                }
 
             return 0;
         }
 
         [DebuggerHidden]
-        public static UnaryOperator  UnaryOp (this AnyInstruction instr) => instr.Code().UnaryOp ();
-        [DebuggerHidden]
-        public static BinaryOperator BinaryOp(this AnyInstruction instr) => instr.Code().BinaryOp();
-
-        [DebuggerHidden]
-        public static ExpressionType ExprType(this AnyInstruction instr)
+        public static ExpressionType ExprType(this AnyInstruction instr, uint bcv)
         {
-            var c = instr.Code();
-            switch (c)
-            {
-                case OpCode.Push:
-                    return instr.Push.Type == DataType.Variable ? ExpressionType.Variable : ExpressionType.Literal;
-                case OpCode.Set:
-                    return ExpressionType.Set;
-                case OpCode.Call:
-                    return ExpressionType.Call;
-            }
+            if (bcv > 0xE)
+                switch (instr.OpCode.VersionF)
+                {
+                    case FOpCode.Push:
+                    case FOpCode.Push2:
+                    case FOpCode.Push3:
+                    case FOpCode.Push4:
+                        return instr.Push.Type == DataType.Variable ? ExpressionType.Variable : ExpressionType.Literal;
+                    case FOpCode.Set:
+                        return ExpressionType.Set;
+                    case FOpCode.Call:
+                        return ExpressionType.Call;
+                }
+            else
+                switch (instr.OpCode.VersionE)
+                {
+                    case EOpCode.Push:
+                        return instr.Push.Type == DataType.Variable ? ExpressionType.Variable : ExpressionType.Literal;
+                    case EOpCode.Set:
+                        return ExpressionType.Set;
+                    case EOpCode.Call:
+                        return ExpressionType.Call;
+                }
 
-            if (c.UnaryOp () != 0)
+            if (instr.UnaryOp (bcv) != 0)
                 return ExpressionType.UnaryOp ;
-            if (c.BinaryOp() != 0)
+            if (instr.BinaryOp(bcv) != 0)
                 return ExpressionType.BinaryOp;
 
             return 0;
