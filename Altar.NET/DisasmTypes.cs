@@ -46,7 +46,12 @@ namespace Altar
     }
     public enum ComparisonType : byte
     {
-        //TODO discover enum values
+        LowerThan   = 1,
+        LTOrEqual   = 2,
+        Equality    = 3,
+        Inequality  = 4,
+        GTOrEqual   = 5,
+        GreaterThan = 6
     }
 
     public enum EOpCode : byte
@@ -124,10 +129,10 @@ namespace Altar
         Brf     = 0xB8,
         PushEnv = 0xBA,
         PopEnv  = 0xBB,
-        Push    = 0xC0,
-        Push2   = 0xC2,
-        Push3   = 0xC3,
-        Push4   = 0x84,
+        PushCst = 0xC0,
+        PushGlb = 0xC2,
+        PushVar = 0xC3,
+        PushI16 = 0x84,
         Call    = 0xD9,
         Break   = 0xFF
     }
@@ -198,6 +203,8 @@ namespace Altar
         public EOpCode VersionE;
         [FieldOffset(0)]
         public FOpCode VersionF;
+
+        public override string ToString() => VersionE + SLASH + VersionF;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -310,10 +317,10 @@ namespace Altar
                 {
                     case FOpCode.Set:
                         return InstructionKind.Set;
-                    case FOpCode.Push:
-                    case FOpCode.Push2:
-                    case FOpCode.Push3:
-                    case FOpCode.Push4:
+                    case FOpCode.PushCst:
+                    case FOpCode.PushGlb:
+                    case FOpCode.PushVar:
+                    case FOpCode.PushI16:
                         return InstructionKind.Push;
                     case FOpCode.Call:
                         return InstructionKind.Call;
@@ -453,7 +460,31 @@ namespace Altar
             }
         }
         [DebuggerHidden]
-        public static string ToPrettyString(this OpCodes     type) => type.ToString().ToLowerInvariant();
+        public static string ToPrettyString(this OpCodes     type, int bcv) =>
+            bcv > 0xE
+                ? type.VersionF.ToString().ToLowerInvariant()
+                : type.VersionE.ToString().ToLowerInvariant();
+        [DebuggerHidden]
+        public static string ToPrettyString(this ComparisonType type)
+        {
+            switch (type)
+            {
+                case ComparisonType.Equality:
+                    return EQUAL;
+                case ComparisonType.Inequality:
+                    return NEQUAL;
+                case ComparisonType.GreaterThan:
+                    return GT;
+                case ComparisonType.LowerThan:
+                    return LT;
+                case ComparisonType.GTOrEqual:
+                    return GTE;
+                case ComparisonType.LTOrEqual:
+                    return LTE;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(type));
+        }
 
         public unsafe static uint Size(AnyInstruction* pInstr, uint bcv)
         {
@@ -486,6 +517,7 @@ namespace Altar
             }
         }
 
+        [DebuggerHidden]
         public static GeneralOpCode General(this OpCodes code, uint bcv)
         {
             if (bcv > 0xE)
@@ -541,10 +573,10 @@ namespace Altar
                         return GeneralOpCode.PushEnv;
                     case FOpCode.PopEnv:
                         return GeneralOpCode.PopEnv;
-                    case FOpCode.Push:
-                    case FOpCode.Push2:
-                    case FOpCode.Push3:
-                    case FOpCode.Push4:
+                    case FOpCode.PushCst:
+                    case FOpCode.PushGlb:
+                    case FOpCode.PushVar:
+                    case FOpCode.PushI16:
                         return GeneralOpCode.Push;
                     case FOpCode.Call:
                         return GeneralOpCode.Call;

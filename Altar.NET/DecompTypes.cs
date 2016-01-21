@@ -426,11 +426,23 @@ namespace Altar
                     case FOpCode.Shr:
                         return BinaryOperator.RightShift;
                     case FOpCode.Comp:
-                        //switch (instr.DoubleType.ComparisonType)
-                        //{
-                        //    ?
-                        //}
-                        return BinaryOperator.Equality;
+                        switch (instr.DoubleType.ComparisonType)
+                        {
+                            case ComparisonType.Equality:
+                                return BinaryOperator.Equality;
+                            case ComparisonType.Inequality:
+                                return BinaryOperator.Inequality;
+                            case ComparisonType.GreaterThan:
+                                return BinaryOperator.GreaterThan;
+                            case ComparisonType.LowerThan:
+                                return BinaryOperator.LowerThan;
+                            case ComparisonType.GTOrEqual:
+                                return BinaryOperator.GTOrEqual;
+                            case ComparisonType.LTOrEqual:
+                                return BinaryOperator.LTOrEqual;
+                        }
+
+                        return 0; // ?
                 }
             else
                 switch (instr.OpCode.VersionE)
@@ -480,10 +492,10 @@ namespace Altar
             if (bcv > 0xE)
                 switch (instr.OpCode.VersionF)
                 {
-                    case FOpCode.Push:
-                    case FOpCode.Push2:
-                    case FOpCode.Push3:
-                    case FOpCode.Push4:
+                    case FOpCode.PushCst:
+                    case FOpCode.PushGlb:
+                    case FOpCode.PushVar:
+                    case FOpCode.PushI16:
                         return instr.Push.Type == DataType.Variable ? ExpressionType.Variable : ExpressionType.Literal;
                     case FOpCode.Set:
                         return ExpressionType.Set;
