@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -44,7 +43,7 @@ namespace Altar
 
                 ret.Add((IntPtr)instr);
 
-                i += DisasmExt.Size(instr); // breaks if content.General->BytecodeVersion > 0xE
+                i += DisasmExt.Size(instr, content.General->BytecodeVersion);
             }
 
             return new CodeInfo
@@ -96,9 +95,9 @@ namespace Altar
                 var relInstr = (long)iptr - (long)firstI;
 
                 sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM6))
-                    .Append(' ').Append(iptr->Code().ToPrettyString()).Append(' ');
+                    .Append(' ').Append(iptr->OpCode.ToPrettyString()).Append(' ');
 
-                switch (iptr->Kind())
+                switch (iptr->Kind(content.General->BytecodeVersion))
                 {
                     case InstructionKind.SingleType:
                         var st = iptr->SingleType;
