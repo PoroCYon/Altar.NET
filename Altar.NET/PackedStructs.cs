@@ -469,4 +469,14 @@ namespace Altar
         ulong _pad; // <0x89>PNG <uint length?>
         public PngIhdr IHDR;
     }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct CodeInfo_VersionF
+    {
+        public uint Name;
+        public uint Length;
+        uint Probably1;
+        public int BytecodeOffset;
+        uint Probably0;
+    }
 }

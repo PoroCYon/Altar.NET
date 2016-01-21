@@ -21,27 +21,35 @@ namespace Altar
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var re = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
-            var len = re->Length;
-            var bc = &re->Bytecode;
+            var ce = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
+
+            var len = ce->Length;
+            var bc = &ce->Bytecode;
+
+            if (content.General->BytecodeVersion > 0xE)
+            {
+                var ce_ = (CodeInfo_VersionF*)ce;
+
+                bc = (uint*)((byte*)&ce_->BytecodeOffset + ce_->BytecodeOffset); // ikr?
+            }
 
             var ret = new List<IntPtr>(); // doesn't like T* as type arg
 
-            var l = Utils.PadTo(len, 4);
+            len = Utils.PadTo(len, 4);
             AnyInstruction* instr;
 
-            for (uint i = 0; i * 4 < l; /* see loop end */)
+            for (uint i = 0; i * 4 < len; /* see loop end */)
             {
                 instr = (AnyInstruction*)(bc + i);
 
                 ret.Add((IntPtr)instr);
 
-                i += DisasmExt.Size(instr);
+                i += DisasmExt.Size(instr); // breaks if content.General->BytecodeVersion > 0xE
             }
 
             return new CodeInfo
             {
-                Name         = SectionReader.StringFromOffset(content, re->Name),
+                Name         = SectionReader.StringFromOffset(content, ce->Name),
                 Instructions = Utils.MPtrListToPtrArr(ret)
             };
         }
