@@ -48,7 +48,8 @@ namespace Altar
                 if (!Directory.Exists(s))
                     Directory.CreateDirectory(s);
 
-            Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
+                CultureInfo.InvariantCulture;
 
             using (var f = GMFile.GetFile(File.ReadAllBytes(file)))
             {
@@ -75,14 +76,15 @@ namespace Altar
                 };
                 #endregion
 
-                //var c__ = Disassembler.DisassembleCode(f, 0xE0D);
+                //for (uint i = 0; i < 0x10; i++)
+                //    Disassembler.DisassembleCode(f, i);
                 //var d = Decompiler.DecompileCode(f, rdata, c__);
                 ////var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
                 //System.Windows.Forms.Clipboard.SetText(d);
 
-                //if (f.Audio->Count >= 0)
-                //    return;
+                if (f.Audio->Count >= 0)
+                    return;
 
                 //TODO: use an actual serialization lib or something
 
