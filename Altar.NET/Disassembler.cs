@@ -15,8 +15,6 @@ namespace Altar
     {
         public static CodeInfo DisassembleCode(GMFileContent content, uint id)
         {
-            if (content.General->BytecodeVersion > 0xE)
-                throw new InvalidDataException("Cannot disassemble bytecode with version >0xE.");
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
@@ -80,6 +78,8 @@ namespace Altar
 
         public static string DisplayInstructions(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instructions = null)
         {
+            var bcv = content.General->BytecodeVersion;
+
             var instrs = instructions ?? code.Instructions;
 
             if (instrs.Length == 0)
@@ -95,7 +95,7 @@ namespace Altar
                 var relInstr = (long)iptr - (long)firstI;
 
                 sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM6))
-                    .Append(' ').Append(iptr->OpCode.ToPrettyString()).Append(' ');
+                    .Append(' ').Append(iptr->OpCode.ToPrettyString(bcv)).Append(' ');
 
                 switch (iptr->Kind(content.General->BytecodeVersion))
                 {
@@ -106,6 +106,9 @@ namespace Altar
                         break;
                     case InstructionKind.DoubleType:
                         var dt = iptr->DoubleType;
+
+                        if (bcv > 0xE && iptr->OpCode.VersionF == FOpCode.Comp)
+                            sb.Append(dt.ComparisonType.ToPrettyString()).Append(' ');
 
                         sb.Append(dt.Types);
                         break;

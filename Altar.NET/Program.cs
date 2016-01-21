@@ -60,8 +60,8 @@ namespace Altar
                 var gen8 = SectionReader.GetGeneralInfo(f);
                 var optn = SectionReader.GetOptionInfo(f);
 
-                var vars = gen8.CanDisassembleCode ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
-                var fns  = gen8.CanDisassembleCode ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
+                var vars = gen8.IsNewBCVersion ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
+                var fns  = gen8.IsNewBCVersion ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
 
                 var varAccs = Disassembler.GetReferenceTable(f, vars);
                 var  fnAccs = Disassembler.GetReferenceTable(f, fns );
@@ -76,7 +76,7 @@ namespace Altar
                 };
                 #endregion
 
-                //var c__ = Disassembler.DisassembleCode(f, 0);
+                //var c__ = Disassembler.DisassembleCode(f, 1);
                 ////var d = Decompiler.DecompileCode(f, rdata, c__);
                 //var d = Disassembler.DisplayInstructions(f, rdata, c__);
 
@@ -424,22 +424,19 @@ namespace Altar
                 #region code
                 if (f.Code->Count > 0)
                 {
-                    if (!gen8.CanDisassembleCode)
-                        Console.WriteLine("Cannot decompile bytecode with version >0xE, skipping...");
-                    else
+                    Console.Write("Reading code... ");
+
+                    for (uint i = 0; i < f.Code->Count; i++)
                     {
-                        Console.Write("Reading code... ");
+                        Console.WriteLine(i + "/" + f.Code->Count);
 
-                        for (uint i = 0; i < f.Code->Count; i++)
-                        {
-                            var ci = Disassembler.DisassembleCode(f, i);
-                            var s  = Decompiler.DecompileCode(f, rdata, ci);
+                        var ci = Disassembler.DisassembleCode(f, i);
+                        var s  = Disassembler.DisplayInstructions/*Decompiler.DecompileCode*/(f, rdata, ci);
 
-                            File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_LSP, s);
-                        }
-
-                        Console.WriteLine(DONE);
+                        File.WriteAllText(DIR_CODE + ci.Name + EXT_GML_ASM, s);
                     }
+
+                    Console.WriteLine(DONE);
                 }
                 #endregion
 

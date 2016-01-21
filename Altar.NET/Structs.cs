@@ -33,7 +33,7 @@ namespace Altar
 
         public uint[] WeirdNumbers;
 
-        public bool CanDisassembleCode => BytecodeVersion <= 0x0E;
+        public bool IsNewBCVersion => BytecodeVersion <= 0x0E;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct OptionInfo
