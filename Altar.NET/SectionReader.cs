@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -11,6 +10,7 @@ namespace Altar
     {
         // http://undertale.rawr.ws/unpacking
         // https://www.reddit.com/r/Underminers/comments/3teemm/wip_documenting_stringstxt/
+        // https://gist.github.com/PoroCYon/4045acfcad7728b87a0d
 
         static float[] EmptyFloatArr = { };
 
@@ -169,14 +169,14 @@ namespace Altar
             var ge = content.General;
 
             ret.IsDebug         = ge->Debug;
-            ret.FileName        = StringFromOffset(content, ge->FilenameOffset);
-            ret.Configuration   = StringFromOffset(content, ge->ConfigOffset);
-            ret.GameId          = ge->GameId;
-            ret.Name            = StringFromOffset(content, ge->NameOffset);
-            ret.Version         = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
-            ret.WindowSize      = ge->WindowSize;
+            ret.FileName        = StringFromOffset(content, ge->FilenameOffset   );
+            ret.Configuration   = StringFromOffset(content, ge->ConfigOffset     );
+            ret.Name            = StringFromOffset(content, ge->NameOffset       );
             ret.DisplayName     = StringFromOffset(content, ge->DisplayNameOffset);
+            ret.GameId          = ge->GameId;
+            ret.WindowSize      = ge->WindowSize;
             ret.BytecodeVersion = ge->BytecodeVersion;
+            ret.Version         = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
 
             ret.LicenseMD5Hash = new byte[0x10];
             Marshal.Copy((IntPtr)ge->MD5, ret.LicenseMD5Hash, 0, 0x10);
@@ -343,7 +343,7 @@ namespace Altar
                 var c = new FontCharacter();
 
                 c.Character        = entry->Character  ;
-                c.TPagFrame = entry->TexPagFrame;
+                c.TPagFrame        = entry->TexPagFrame;
                 c.Shift            = entry->Shift      ;
                 c.Offset           = entry->Offset     ;
 
@@ -373,7 +373,7 @@ namespace Altar
 
             ret.Physics = oe->Physics;
 
-            var hasMore = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
+            var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
 
             if (hasMore)

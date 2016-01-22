@@ -33,12 +33,12 @@ namespace Altar
 
         public uint[] WeirdNumbers;
 
-        public bool IsNewBCVersion => BytecodeVersion <= 0x0E;
+        public bool IsOldBCVersion => BytecodeVersion <= 0x0E;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct OptionInfo
     {
-        public Dictionary<string, string> Constants;
+        public IDictionary<string, string> Constants;
     }
 
     [StructLayout(LayoutKind.Sequential)]

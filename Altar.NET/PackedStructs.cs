@@ -342,14 +342,14 @@ namespace Altar
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct CodeEntry
+    public unsafe struct CodeEntryE
     {
         public uint Name;
         public int Length;
         public uint Bytecode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct CodeInfo_VersionF
+    public struct CodeEntryF
     {
         public uint Name;
         public uint Length;
