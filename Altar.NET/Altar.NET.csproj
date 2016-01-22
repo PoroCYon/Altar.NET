@@ -53,10 +53,21 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PackedStructs.cs" />
     <Compile Include="SectionReader.cs" />
+    <Compile Include="Serialise.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="Structs.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="_LitJson\IJsonWrapper.cs" />
+    <Compile Include="_LitJson\JsonData.cs" />
+    <Compile Include="_LitJson\JsonException.cs" />
+    <Compile Include="_LitJson\JsonMapper.cs" />
+    <Compile Include="_LitJson\JsonMockWrapper.cs" />
+    <Compile Include="_LitJson\JsonReader.cs" />
+    <Compile Include="_LitJson\JsonWriter.cs" />
+    <Compile Include="_LitJson\Lexer.cs" />
+    <Compile Include="_LitJson\ParserToken.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

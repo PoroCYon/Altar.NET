@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -10,6 +9,7 @@ namespace Altar
     using static SR;
 
     // http://undertale.rawr.ws/decompilation
+    // https://gist.github.com/PoroCYon/45f947d576f715de3a4d
 
     public unsafe static class Disassembler
     {
@@ -18,16 +18,16 @@ namespace Altar
             if (id >= content.Code->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var ce = (CodeEntry*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
+            var cee = (CodeEntryE*)GMFile.PtrFromOffset(content, (&content.Code->Offsets)[id]);
 
-            var len = ce->Length;
-            var bc = &ce->Bytecode;
+            var len = cee->Length;
+            var bc = &cee->Bytecode;
 
             if (content.General->BytecodeVersion > 0xE)
             {
-                var ce_ = (CodeInfo_VersionF*)ce;
+                var cef = (CodeEntryF*)cee;
 
-                bc = (uint*)((byte*)&ce_->BytecodeOffset + ce_->BytecodeOffset); // ikr?
+                bc = (uint*)((byte*)&cef->BytecodeOffset + cef->BytecodeOffset); // ikr?
             }
 
             var ret = new List<IntPtr>(); // doesn't like T* as type arg
@@ -46,7 +46,7 @@ namespace Altar
 
             return new CodeInfo
             {
-                Name         = SectionReader.StringFromOffset(content, ce->Name),
+                Name         = SectionReader.StringFromOffset(content, cee->Name),
                 Instructions = Utils.MPtrListToPtrArr(ret)
             };
         }

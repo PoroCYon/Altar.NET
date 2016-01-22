@@ -304,7 +304,7 @@ namespace Altar
     public struct RefData
     {
         public ReferenceDef[] Variables, Functions;
-        public Dictionary<IntPtr, int> VarAccessors, FuncAccessors;
+        public IDictionary<IntPtr, int> VarAccessors, FuncAccessors;
     }
 
     public unsafe static class DisasmExt

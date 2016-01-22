@@ -42,6 +42,16 @@ namespace Altar
 
             return r;
         }
+
+        public static IEnumerable<uint> UintRange(uint start, uint length)
+        {
+            var end = start + length;
+
+            for (uint i = start; i < end; i++)
+                yield return i;
+
+            yield break;
+        }
     }
     public static class Extensions
     {
