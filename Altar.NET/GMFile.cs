@@ -276,6 +276,7 @@ namespace Altar
 
             return new GMFile(ret);
         }
+        public static GMFile GetFile(string path) => GetFile(File.ReadAllBytes(path));
 
         [DebuggerStepThrough]
         public static void* PtrFromOffset(GMFileContent file, long offset) => file.RawData.BPtr + offset;

@@ -182,7 +182,7 @@ namespace Altar
             return CreateVertices(content, code);
         }
 
-        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null, List<Expression> dupTars = null)
+        public static Statement[] ParseStatements(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instr = null, Stack<Expression> stack = null, List<Expression> dupTars = null, bool absolute = false)
         {
             var bcv = content.General->BytecodeVersion;
 
@@ -409,7 +409,7 @@ namespace Altar
                             Type         = pbr->Type(bcv),
                             Conditional  = pbr->Type(bcv) == BranchType.Unconditional ? null : Pop(),
                             Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
-                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
+                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (absolute ? content.RawData.BPtr : (byte*)firstI)
                         });
                         break;
                     #endregion
@@ -566,7 +566,7 @@ namespace Altar
             return stmts.ToArray();
         }
 
-        public static string DecompileCode(GMFileContent content, RefData rdata, CodeInfo code)
+        public static string DecompileCode(GMFileContent content, RefData rdata, CodeInfo code, bool absolute = false)
         {
             if (code.Instructions.Length == 0)
                 return String.Empty;
@@ -584,7 +584,7 @@ namespace Altar
             var i = 0;
             foreach (var g in graph)
             {
-                var stmts = ParseStatements(content, rdata, code, g.Instructions, stack);
+                var stmts = ParseStatements(content, rdata, code, g.Instructions, stack, absolute: absolute);
 
                 sb  .Append(SR.HEX_PRE)
                     .Append(((long)g.Instructions[0] - firstI).ToString(SR.HEX_FM6))
@@ -600,5 +600,6 @@ namespace Altar
 
             return sb.ToString();
         }
+        public static string DecompileCode(GMFile file, int id, bool absolute = false) => DecompileCode(file.Content, file.RefData, file.Code[id], absolute);
     }
 }

@@ -393,43 +393,48 @@ namespace LitJson
 
         public JsonData(object obj)
         {
-            if (obj is Boolean)
+            if (obj is bool)
             {
                 type = JsonType.Boolean;
                 inst_boolean = (bool)obj;
                 return;
             }
 
-            if (obj is Double)
+            if (obj is float)
+            {
+                type = JsonType.Double;
+                inst_double = Math.Round((float)obj, 8);
+                return;
+            }
+            if (obj is double)
             {
                 type = JsonType.Double;
                 inst_double = (double)obj;
                 return;
             }
 
-            if (obj is Int32)
+            if (obj is int || obj is ushort || obj is short || obj is byte || obj is sbyte)
             {
                 type = JsonType.Int;
-                inst_int = (int)obj;
+                inst_int = Convert.ToInt32(obj);
                 return;
             }
 
-            if (obj is Int64)
+            if (obj is long || obj is uint)
             {
                 type = JsonType.Long;
-                inst_long = (long)obj;
+                inst_long = Convert.ToInt64(obj);
                 return;
             }
 
-            if (obj is String)
+            if (obj is string)
             {
                 type = JsonType.String;
-                inst_string = (string)obj;
+                inst_string = obj.ToString();
                 return;
             }
 
-            throw new ArgumentException(
-                "Unable to wrap the given object with JsonData");
+            throw new ArgumentException("Unable to wrap the given object with JsonData");
         }
 
         public JsonData(string str)

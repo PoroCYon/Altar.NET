@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using LitJson;
 
@@ -118,6 +119,18 @@ namespace Altar
             return r;
         }
 
+        static JsonData SerialiseFontChar(FontCharacter c)
+        {
+            var e = CreateObj();
+
+            e["char"  ] = c.Character;
+            e["frame" ] = SerialiseRect(c.TPagFrame);
+            e["shift" ] = c.Shift;
+            e["offset"] = c.Offset;
+
+            return e;
+        }
+
         static JsonData SerialiseObjPhysics(ObjectPhysics p)
         {
             var r = CreateObj();
@@ -195,18 +208,17 @@ namespace Altar
             var r = CreateObj();
             var gen8 = f.General;
 
-            r["debug"     ] = gen8.IsDebug;
-            r["bc-version"] = gen8.BytecodeVersion;
-            r["filename"  ] = gen8.FileName;
-            r["config"    ] = gen8.Configuration;
-            r["game-id"   ] = gen8.GameId;
-            r["version"   ] = gen8.Version.ToString();
+            r["debug"    ] = gen8.IsDebug;
+            r["file-name"] = gen8.FileName;
+            r["config"   ] = gen8.Configuration;
+            r["game-id"  ] = gen8.GameId;
+            r["version"  ] = gen8.Version.ToString();
 
             r["window-size"] = SerialiseSize(gen8.WindowSize);
 
             r["license-md5"] = CreateArr();
             for (int i = 0; i < gen8.LicenseMD5Hash.Length; i++)
-                r["license-md5"][i] = gen8.LicenseMD5Hash[i];
+                r["license-md5"].Add(gen8.LicenseMD5Hash[i]);
 
             r["license-crc32"] = gen8.LicenceCRC32;
             r["display-name" ] = gen8.DisplayName;
@@ -219,6 +231,7 @@ namespace Altar
             var r = CreateObj();
             var optn = f.Options;
 
+            r["constants"] = CreateObj();
             foreach (var kvp in optn.Constants)
                 r["constants"][kvp.Key] = kvp.Value;
 
@@ -253,7 +266,7 @@ namespace Altar
 
             r["textures"] = CreateArr();
             for (int i = 0; i < sprt.TextureIndices.Length; i++)
-                r["textures"][i] = sprt.TextureIndices[i];
+                r["textures"].Add(sprt.TextureIndices[i]);
 
             return r;
         }
@@ -277,7 +290,7 @@ namespace Altar
 
             r["points"] = CreateArr();
             for (int i = 0; i < path.Points.Length; i++)
-                r["points"][i] = SerialisePoint(path.Points[i]);
+                r["points"].Add(SerialisePoint(path.Points[i]));
 
             return r;
         }
@@ -286,7 +299,7 @@ namespace Altar
             var r = CreateObj();
             var scpt = f.Scripts[id];
 
-            r["code"] = f.Code[scpt.CodeId].Name;
+            r["code"] = scpt.CodeId == UInt32.MaxValue ? String.Empty : f.Code[scpt.CodeId].Name;
 
             return r;
         }
@@ -295,7 +308,6 @@ namespace Altar
             var r = CreateObj();
             var font = f.Fonts[id];
 
-            r["code-name" ] = font.CodeName;
             r["sys-name"  ] = font.SystemName;
             r["bold"      ] = font.IsBold;
             r["italic"    ] = font.IsItalic;
@@ -306,21 +318,17 @@ namespace Altar
 
             r["chars"] = CreateArr();
             for (int i = 0; i < font.Characters.Length; i++)
-            {
-                r["chars"]["char"  ] = font.Characters[i].Character;
-                r["chars"]["framle"] = SerialiseRect(font.Characters[i].TPagFrame);
-                r["chars"]["shift" ] = font.Characters[i].Shift;
-                r["chars"]["offset"] = font.Characters[i].Offset;
-            }
+                r["chars"].Add(SerialiseFontChar(font.Characters[i]));
 
             return r;
         }
+
         public static JsonData SerialiseObj   (GMFile f, int id)
         {
             var r = CreateObj();
             var objt = f.Objects[id];
 
-            r["sprite" ] = f.Sprites[objt.SpriteIndex].Name;
+            r["sprite" ] = objt.SpriteIndex == UInt32.MaxValue ? String.Empty : f.Sprites[objt.SpriteIndex].Name;
             r["visible"] = objt.IsVisible;
             r["solid"  ] = objt.IsSolid;
             r["depth"  ] = objt.Depth;
@@ -333,11 +341,11 @@ namespace Altar
 
             r["data"] = CreateArr();
             for (int i = 0; i < objt.OtherFloats.Length; i++)
-                r["data"][i] = objt.OtherFloats[i];
+                r["data"].Add(objt.OtherFloats[i]);
 
             r["points"] = CreateArr();
             for (int i = 0; i < objt.ShapePoints.Length; i++)
-                r["points"][i] = SerialisePoint(objt.ShapePoints[i]);
+                r["points"].Add(SerialisePoint(objt.ShapePoints[i]));
 
             return r;
         }
@@ -360,16 +368,16 @@ namespace Altar
 
             r["bgs"] = CreateArr();
             for (int i = 0; i < room.Backgrounds.Length; i++)
-                r["bgs"][i] = SerialiseRoomBg(room.Backgrounds[i]);
+                r["bgs"].Add(SerialiseRoomBg(room.Backgrounds[i]));
             r["views"] = CreateArr();
             for (int i = 0; i < room.Views.Length; i++)
-                r["views"][i] = SerialiseRoomView(f, room.Views[i]);
+                r["views"].Add(SerialiseRoomView(f, room.Views[i]));
             r["objs"] = CreateArr();
             for (int i = 0; i < room.Objects.Length; i++)
-                r["objs"][i] = SerialiseRoomObj(f, room.Objects[i]);
+                r["objs"].Add(SerialiseRoomObj(f, room.Objects[i]));
             r["tiles"] = CreateArr();
             for (int i = 0; i < room.Tiles.Length; i++)
-                r["tiles"][i] = SerialiseRoomTile(f, room.Tiles[i]);
+                r["tiles"].Add(SerialiseRoomTile(f, room.Tiles[i]));
 
             return r;
         }
@@ -391,36 +399,96 @@ namespace Altar
         {
             var r = CreateArr();
 
-            var strg = f.Strings;
-            for (int i = 0; i < strg.Length; i++)
-                r[i] = strg[i];
+            foreach (var s in f.Strings)
+                r.Add(s);
 
             return r;
         }
-
-        public static JsonData SerialiseVariables(GMFile f)
+        public static JsonData SerialiseVars   (GMFile f)
         {
             var r = CreateArr();
 
-            var rdata = f.RefData;
-
-            for (int i = 0; i < rdata.Variables.Length; i++)
-                r[i] = rdata.Variables[i].Name;
+            foreach (var s in f.RefData.Variables)
+                r.Add(s.Name);
 
             return r;
         }
-        public static JsonData SerialiseFunctions(GMFile f)
+        public static JsonData SerialiseFuncs  (GMFile f)
         {
             var r = CreateArr();
 
-            var rdata = f.RefData;
-
-            for (int i = 0; i < rdata.Functions.Length; i++)
-                r[i] = rdata.Functions[i].Name;
+            foreach (var s in f.RefData.Functions)
+                r.Add(s.Name);
 
             return r;
         }
 
-        //TODO: serialise project build file
+        public static JsonData SerialiseProject(GMFile f)
+        {
+            var r = CreateObj();
+
+            r["general"] = "general.json";
+            r["options"] = "options.json";
+
+            // ---
+
+            r["textures"] = CreateArr();
+            for (int i = 0; i < f.Textures.Length; i++)
+                r["textures"].Add(SR.DIR_TEX + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_PNG);
+
+            var infoTable = new Dictionary<int, SoundInfo>();
+
+            foreach (var s in f.Sound)
+                if ((s.IsEmbedded || s.IsCompressed) && s.AudioId != -1)
+                    infoTable[s.AudioId] = s;
+
+            r["audio"] = CreateArr();
+            for (int i = 0; i < f.Audio.Length; i++)
+                r["audio"].Add(SR.DIR_WAV + infoTable[i].Name + SR.EXT_WAV);
+
+            r["code"] = CreateArr();
+            for (int i = 0; i < f.Code.Length; i++)
+                r["code"].Add(SR.DIR_CODE + f.Code[i].Name + SR.EXT_GML_LSP);
+
+            // ---
+
+            r["sounds"] = CreateArr();
+            foreach (var s in f.Sound)
+                r["sounds"].Add(SR.DIR_SND + s.Name + SR.EXT_JSON);
+
+            r["sprites"] = CreateArr();
+            foreach (var s in f.Sprites)
+                r["sprites"].Add(SR.DIR_SPR + s.Name + SR.EXT_JSON);
+
+            r["bg"] = CreateArr();
+            foreach (var b in f.Backgrounds)
+                r["bg"].Add(SR.DIR_BG + b.Name + SR.EXT_JSON);
+
+            r["paths"] = CreateArr();
+            foreach (var p in f.Paths)
+                r["paths"].Add(SR.DIR_PATH + p.Name + SR.EXT_JSON);
+
+            r["scripts"] = CreateArr();
+            foreach (var s in f.Scripts)
+                r["scripts"].Add(SR.DIR_SCR + s.Name + SR.EXT_JSON);
+
+            r["fonts"] = CreateArr();
+            foreach (var fn in f.Fonts)
+                r["fonts"].Add(SR.DIR_FNT + fn.CodeName + SR.EXT_JSON);
+
+            r["objs"] = CreateArr();
+            foreach (var o in f.Objects)
+                r["objs"].Add(SR.DIR_OBJ + o.Name + SR.EXT_JSON);
+
+            r["rooms"] = CreateArr();
+            foreach (var ro in f.Rooms)
+                r["rooms"].Add(SR.DIR_ROOM + ro.Name + SR.EXT_JSON);
+
+            r["tpags"] = CreateArr();
+            for (int i = 0; i < f.TexturePages.Length; i++)
+                r["tpags"].Add(SR.DIR_TXP + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_JSON);
+
+            return r;
+        }
     }
 }
