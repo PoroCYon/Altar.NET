@@ -76,7 +76,7 @@ namespace Altar
             return ret;
         }
 
-        public static string DisplayInstructions(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instructions = null)
+        public static string DisplayInstructions(GMFileContent content, RefData rdata, CodeInfo code, AnyInstruction*[] instructions = null, bool absolute = false)
         {
             var bcv = content.General->BytecodeVersion;
 
@@ -92,10 +92,10 @@ namespace Altar
             for (int i = 0; i < instrs.Length; i++)
             {
                 var iptr = instrs[i];
-                var relInstr = (long)iptr - (long)firstI;
+                var relInstr = (long)iptr - (absolute ? (long)content.RawData.BPtr : (long)firstI);
 
                 sb  .Append(HEX_PRE).Append(relInstr.ToString(HEX_FM6))
-                    .Append(' ').Append(iptr->OpCode.ToPrettyString(bcv)).Append(' ');
+                    .Append(COLON_S).Append(iptr->OpCode.ToPrettyString(bcv)).Append(' ');
 
                 switch (iptr->Kind(content.General->BytecodeVersion))
                 {
@@ -216,5 +216,6 @@ namespace Altar
 
             return sb.ToString();
         }
+        public static string DisplayInstructions(GMFile file, int id, bool absolute = false) => DisplayInstructions(file.Content, file.RefData, file.Code[id], absolute: absolute);
     }
 }

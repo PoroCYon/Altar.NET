@@ -106,7 +106,7 @@ namespace Altar
         public SectionHeader Header;
 
         public bool Debug; // ?
-        public Int24 BytecodeVersion; // probably (could also be build, but it only works with HIGHER builds): // >0x00000E -> DisassembleCode breaks
+        public Int24 BytecodeVersion; // probably
         public uint FilenameOffset;
         public uint ConfigOffset;
         public uint LastObj;
@@ -162,7 +162,18 @@ namespace Altar
             uint creation_event_order;?
         */
 
-        fixed uint _pad[0xF]; // unknown: 0x80000000, 2, 0x00CC7A1#, 0, *, 0, 0, 0, 0, *, 0, 0, 0, 0, 0x000000FF
+        fixed uint _pad0[2];
+        public uint IconOffset;
+        // 0x80000000
+        // 2
+        // 0xCC7A1#
+        // 0
+        // *
+        // 0 0 0 0
+        // *
+        // 0 0 0 0
+        // 0xFF
+        fixed uint _pad1[0xC];
         public CountOffsetsPair ConstMap;
     }
 

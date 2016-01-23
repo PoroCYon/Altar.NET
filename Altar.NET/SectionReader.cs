@@ -196,6 +196,8 @@ namespace Altar
 
             var oe = content.Options;
 
+            var h = GMFile.ChunkOf(content, oe->IconOffset);
+
             ret.Constants = new Dictionary<string, string>((int)oe->ConstMap.Count);
             for (uint i = 0; i < oe->ConstMap.Count; i++)
                 ret.Constants.Add(StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2]), StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2 + 1]));
