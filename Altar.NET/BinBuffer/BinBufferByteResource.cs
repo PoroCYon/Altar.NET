@@ -114,7 +114,7 @@ namespace Altar
             if (pos + size > this.size)
                 throw new EndOfStreamException();
 
-            Union u = new Union();
+            var u = new Union();
             var up = &u;
 
             for (uint i = 0; i < size; i++)

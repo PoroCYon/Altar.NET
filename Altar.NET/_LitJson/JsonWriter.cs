@@ -69,9 +69,7 @@ namespace LitJson
             set { pretty_print = value; }
         }
 
-        public TextWriter TextWriter {
-            get { return writer; }
-        }
+        public TextWriter TextWriter => writer;
 
         public bool Validate {
             get { return validate; }
@@ -102,7 +100,7 @@ namespace LitJson
         public JsonWriter (TextWriter writer)
         {
             if (writer == null)
-                throw new ArgumentNullException ("writer");
+                throw new ArgumentNullException (nameof(writer));
 
             this.writer = writer;
 

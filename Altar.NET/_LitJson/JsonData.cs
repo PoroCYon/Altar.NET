@@ -38,91 +38,37 @@ namespace LitJson
         #endregion
 
         #region Properties
-        public int Count
-        {
-            get { return EnsureCollection().Count; }
-        }
+        public int Count => EnsureCollection().Count;
 
-        public bool IsArray
-        {
-            get { return type == JsonType.Array; }
-        }
+        public bool IsArray => type == JsonType.Array;
 
-        public bool IsBoolean
-        {
-            get { return type == JsonType.Boolean; }
-        }
+        public bool IsBoolean => type == JsonType.Boolean;
 
-        public bool IsDouble
-        {
-            get { return type == JsonType.Double; }
-        }
+        public bool IsDouble => type == JsonType.Double;
 
-        public bool IsInt
-        {
-            get { return type == JsonType.Int; }
-        }
+        public bool IsInt => type == JsonType.Int;
 
-        public bool IsLong
-        {
-            get { return type == JsonType.Long; }
-        }
+        public bool IsLong => type == JsonType.Long;
 
-        public bool IsObject
-        {
-            get { return type == JsonType.Object; }
-        }
+        public bool IsObject => type == JsonType.Object;
 
-        public bool IsString
-        {
-            get { return type == JsonType.String; }
-        }
-#endregion
+        public bool IsString => type == JsonType.String;
+        #endregion
 
 
         #region ICollection Properties
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
+        int ICollection.Count => Count;
 
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return EnsureCollection().IsSynchronized;
-            }
-        }
+        bool ICollection.IsSynchronized => EnsureCollection().IsSynchronized;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return EnsureCollection().SyncRoot;
-            }
-        }
+        object ICollection.SyncRoot => EnsureCollection().SyncRoot;
         #endregion
 
 
         #region IDictionary Properties
-        bool IDictionary.IsFixedSize
-        {
-            get
-            {
-                return EnsureDictionary().IsFixedSize;
-            }
-        }
+        bool IDictionary.IsFixedSize => EnsureDictionary().IsFixedSize;
 
-        bool IDictionary.IsReadOnly
-        {
-            get
-            {
-                return EnsureDictionary().IsReadOnly;
-            }
-        }
+        bool IDictionary.IsReadOnly => EnsureDictionary().IsReadOnly;
 
         ICollection IDictionary.Keys
         {
@@ -162,59 +108,26 @@ namespace LitJson
 
 
         #region IJsonWrapper Properties
-        bool IJsonWrapper.IsArray
-        {
-            get { return IsArray; }
-        }
+        bool IJsonWrapper.IsArray => IsArray;
 
-        bool IJsonWrapper.IsBoolean
-        {
-            get { return IsBoolean; }
-        }
+        bool IJsonWrapper.IsBoolean => IsBoolean;
 
-        bool IJsonWrapper.IsDouble
-        {
-            get { return IsDouble; }
-        }
+        bool IJsonWrapper.IsDouble => IsDouble;
 
-        bool IJsonWrapper.IsInt
-        {
-            get { return IsInt; }
-        }
+        bool IJsonWrapper.IsInt => IsInt;
 
-        bool IJsonWrapper.IsLong
-        {
-            get { return IsLong; }
-        }
+        bool IJsonWrapper.IsLong => IsLong;
 
-        bool IJsonWrapper.IsObject
-        {
-            get { return IsObject; }
-        }
+        bool IJsonWrapper.IsObject => IsObject;
 
-        bool IJsonWrapper.IsString
-        {
-            get { return IsString; }
-        }
+        bool IJsonWrapper.IsString => IsString;
         #endregion
 
 
         #region IList Properties
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return EnsureList().IsFixedSize;
-            }
-        }
+        bool IList.IsFixedSize => EnsureList().IsFixedSize;
 
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return EnsureList().IsReadOnly;
-            }
-        }
+        bool IList.IsReadOnly => EnsureList().IsReadOnly;
         #endregion
 
 
@@ -446,35 +359,17 @@ namespace LitJson
 
 
         #region Implicit Conversions
-        public static implicit operator JsonData(Boolean data)
-        {
-            return new JsonData(data);
-        }
+        public static implicit operator JsonData(Boolean data) => new JsonData(data);
 
-        public static implicit operator JsonData(Double data)
-        {
-            return new JsonData(data);
-        }
+        public static implicit operator JsonData(Double data) => new JsonData(data);
 
-        public static implicit operator JsonData(Single data)
-        {
-            return new JsonData((double)data);
-        }
+        public static implicit operator JsonData(Single data) => new JsonData((double)data);
 
-        public static implicit operator JsonData(Int32 data)
-        {
-            return new JsonData(data);
-        }
+        public static implicit operator JsonData(Int32 data) => new JsonData(data);
 
-        public static implicit operator JsonData(Int64 data)
-        {
-            return new JsonData(data);
-        }
+        public static implicit operator JsonData(Int64 data) => new JsonData(data);
 
-        public static implicit operator JsonData(String data)
-        {
-            return new JsonData(data);
-        }
+        public static implicit operator JsonData(String data) => new JsonData(data);
         #endregion
 
 
@@ -486,10 +381,7 @@ namespace LitJson
             return data.inst_boolean;
         }
 
-        public static explicit operator Single(JsonData data)
-        {
-            return (float)(double)data;
-        }
+        public static explicit operator Single(JsonData data) => (float)(double)data;
 
         public static explicit operator Double(JsonData data)
         {
@@ -550,15 +442,9 @@ namespace LitJson
             json = null;
         }
 
-        bool IDictionary.Contains(object key)
-        {
-            return EnsureDictionary().Contains(key);
-        }
+        bool IDictionary.Contains(object key) => EnsureDictionary().Contains(key);
 
-        IDictionaryEnumerator IDictionary.GetEnumerator()
-        {
-            return ((IOrderedDictionary)this).GetEnumerator();
-        }
+        IDictionaryEnumerator IDictionary.GetEnumerator() => ((IOrderedDictionary)this).GetEnumerator();
 
         void IDictionary.Remove(object key)
         {
@@ -579,10 +465,7 @@ namespace LitJson
 
 
         #region IEnumerable Methods
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return EnsureCollection().GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => EnsureCollection().GetEnumerator();
         #endregion
 
 
@@ -667,10 +550,7 @@ namespace LitJson
             json = null;
         }
 
-        string IJsonWrapper.ToJson()
-        {
-            return ToJson();
-        }
+        string IJsonWrapper.ToJson() => ToJson();
 
         void IJsonWrapper.ToJson(JsonWriter writer)
         {
@@ -680,10 +560,7 @@ namespace LitJson
 
 
         #region IList Methods
-        int IList.Add(object value)
-        {
-            return Add(value);
-        }
+        int IList.Add(object value) => Add(value);
 
         void IList.Clear()
         {
@@ -691,15 +568,9 @@ namespace LitJson
             json = null;
         }
 
-        bool IList.Contains(object value)
-        {
-            return EnsureList().Contains(value);
-        }
+        bool IList.Contains(object value) => EnsureList().Contains(value);
 
-        int IList.IndexOf(object value)
-        {
-            return EnsureList().IndexOf(value);
-        }
+        int IList.IndexOf(object value) => EnsureList().IndexOf(value);
 
         void IList.Insert(int index, object value)
         {
@@ -954,10 +825,7 @@ namespace LitJson
             return false;
         }
 
-        public JsonType GetJsonType()
-        {
-            return type;
-        }
+        public JsonType GetJsonType() => type;
 
         public void SetJsonType(JsonType type)
         {
@@ -1058,87 +926,39 @@ namespace LitJson
         }
 
         #region IConvertible Methods
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
+        TypeCode IConvertible.GetTypeCode() => TypeCode.Object;
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            return (bool)this;
-        }
+        bool IConvertible.ToBoolean(IFormatProvider provider) => (bool)this;
 
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            return ((string)this)[0];
-        }
+        char IConvertible.ToChar(IFormatProvider provider) => ((string)this)[0];
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            return (sbyte)(int)this;
-        }
+        sbyte IConvertible.ToSByte(IFormatProvider provider) => (sbyte)(int)this;
 
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            return (byte)(int)this;
-        }
+        byte IConvertible.ToByte(IFormatProvider provider) => (byte)(int)this;
 
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            return (short)(int)this;
-        }
+        short IConvertible.ToInt16(IFormatProvider provider) => (short)(int)this;
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            return (ushort)(int)this;
-        }
+        ushort IConvertible.ToUInt16(IFormatProvider provider) => (ushort)(int)this;
 
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            return (int)this;
-        }
+        int IConvertible.ToInt32(IFormatProvider provider) => (int)this;
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            return unchecked((uint)(ulong)this);
-        }
+        uint IConvertible.ToUInt32(IFormatProvider provider) => unchecked((uint)(ulong)this);
 
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            return (int)this;
-        }
+        long IConvertible.ToInt64(IFormatProvider provider) => (int)this;
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            return (ulong)this;
-        }
+        ulong IConvertible.ToUInt64(IFormatProvider provider) => (ulong)this;
 
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            return (float)this;
-        }
+        float IConvertible.ToSingle(IFormatProvider provider) => (float)this;
 
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            return (float)this;
-        }
+        double IConvertible.ToDouble(IFormatProvider provider) => (float)this;
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            return (decimal)(float)this;
-        }
+        decimal IConvertible.ToDecimal(IFormatProvider provider) => (decimal)(float)this;
 
         readonly static string DATETIME_FORMAT = "s";
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
-        {
-            // ISO 8601
-            return DateTime.ParseExact((string)this, DATETIME_FORMAT, CultureInfo.InvariantCulture);
-        }
+        // ISO 8601
+        DateTime IConvertible.ToDateTime(IFormatProvider provider) => DateTime.ParseExact((string)this, DATETIME_FORMAT, CultureInfo.InvariantCulture);
 
-        string IConvertible.ToString(IFormatProvider provider)
-        {
-            return (string)this;
-        }
+        string IConvertible.ToString(IFormatProvider provider) => (string)this;
 
         object IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
@@ -1153,10 +973,7 @@ namespace LitJson
         readonly IEnumerator<KeyValuePair<string, JsonData>> list_enumerator;
 
 
-        public object Current
-        {
-            get { return Entry; }
-        }
+        public object Current => Entry;
 
         public DictionaryEntry Entry
         {
@@ -1167,15 +984,9 @@ namespace LitJson
             }
         }
 
-        public object Key
-        {
-            get { return list_enumerator.Current.Key; }
-        }
+        public object Key => list_enumerator.Current.Key;
 
-        public object Value
-        {
-            get { return list_enumerator.Current.Value; }
-        }
+        public object Value => list_enumerator.Current.Value;
 
 
         public OrderedDictionaryEnumerator(
@@ -1185,10 +996,7 @@ namespace LitJson
         }
 
 
-        public bool MoveNext()
-        {
-            return list_enumerator.MoveNext();
-        }
+        public bool MoveNext() => list_enumerator.MoveNext();
 
         public void Reset()
         {

@@ -109,7 +109,7 @@ namespace LitJson
 
         static IDictionary<Type,
                 IDictionary<Type, ImporterFunc>> base_importers_table;
-        static IDictionary<Type,
+        static readonly IDictionary<Type,
                 IDictionary<Type, ImporterFunc>> custom_importers_table;
 
         static IDictionary<Type, ArrayMetadata> array_metadata;
@@ -934,11 +934,7 @@ namespace LitJson
             WriteValue (obj, writer, false, 0);
         }
 
-        public static JsonData ToObject (JsonReader reader)
-        {
-            return (JsonData) ToWrapper (
-                delegate { return new JsonData (); }, reader);
-        }
+        public static JsonData ToObject(JsonReader reader) => (JsonData)ToWrapper(() => new JsonData(), reader);
 
         public static JsonData ToObject (TextReader reader)
         {
@@ -958,10 +954,7 @@ namespace LitJson
                 delegate { return new JsonData (); }, json);
         }
 
-        public static T ToObject<T> (JsonReader reader)
-        {
-            return (T) ReadValue (typeof (T), reader);
-        }
+        public static T ToObject<T>(JsonReader reader) => (T)ReadValue(typeof(T), reader);
 
         public static T ToObject<T> (TextReader reader)
         {
@@ -977,11 +970,8 @@ namespace LitJson
             return (T) ReadValue (typeof (T), reader);
         }
 
-        public static IJsonWrapper ToWrapper (WrapperFactory factory,
-                                              JsonReader reader)
-        {
-            return ReadValue (factory, reader);
-        }
+        public static IJsonWrapper ToWrapper(WrapperFactory factory,
+                                  JsonReader reader) => ReadValue(factory, reader);
 
         public static IJsonWrapper ToWrapper (WrapperFactory factory,
                                               string json)

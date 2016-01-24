@@ -8,7 +8,7 @@ namespace Altar
 {
     public unsafe class BinBufferNativeResource : BinBufferResource
     {
-        IntPtr address;
+        readonly IntPtr address;
         int size = 0, maxSize = 0;
         int setMaxSize = -1;
         bool allocated = false;
