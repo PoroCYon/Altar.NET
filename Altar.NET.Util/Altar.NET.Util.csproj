@@ -69,21 +69,26 @@
     <GetFrameworkSdkPath>
       <Output TaskParameter="Path" PropertyName="FrameworkSdkPath" />
     </GetFrameworkSdkPath>
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(OS)' == 'Unix'">
+      <ILDasm>monodis</ILDasm>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(OS)' != 'Unix'">
       <ILDasm>"$(FrameworkSdkPath)bin\ildasm.exe" /nobar /linenum /output:"$(ILFile)" @(IntermediateAssembly->'"%(FullPath)"', ' ')</ILDasm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(FrameworkSdkPath)bin\NETFX 4.0 Tools\ildasm.exe' ) ">
+    <PropertyGroup Condition="'$(OS)' != 'Unix' and Exists ( '$(FrameworkSdkPath)bin\NETFX 4.0 Tools\ildasm.exe' ) ">
       <ILDasm>"$(FrameworkSdkPath)bin\NETFX 4.0 Tools\ildasm.exe" /nobar /linenum /output:"$(ILFile)" @(IntermediateAssembly->'"%(FullPath)"', ' ')</ILDasm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(FrameworkSdkPath)bin\NETFX 4.5.1 Tools\ildasm.exe' ) ">
+    <PropertyGroup Condition="$(OS)' != 'Unix' and Exists ( '$(FrameworkSdkPath)bin\NETFX 4.5.1 Tools\ildasm.exe' ) ">
       <ILDasm>"$(FrameworkSdkPath)bin\NETFX 4.5.1 Tools\ildasm.exe" /nobar /linenum /output:"$(ILFile)" @(IntermediateAssembly->'"%(FullPath)"', ' ')</ILDasm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(FrameworkSdkPath)bin\NETFX 4.6 Tools\ildasm.exe' ) ">
+    <PropertyGroup Condition="$(OS)' != 'Unix' and Exists ( '$(FrameworkSdkPath)bin\NETFX 4.6 Tools\ildasm.exe' ) ">
       <ILDasm>"$(FrameworkSdkPath)bin\NETFX 4.6 Tools\ildasm.exe" /nobar /linenum /output:"$(ILFile)" @(IntermediateAssembly->'"%(FullPath)"', ' ')</ILDasm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(FrameworkSdkPath)bin\NETFX 4.6.1 Tools\ildasm.exe' ) ">
+    <PropertyGroup Condition="$(OS)' != 'Unix' and Exists ( '$(FrameworkSdkPath)bin\NETFX 4.6.1 Tools\ildasm.exe' ) ">
       <ILDasm>"$(FrameworkSdkPath)bin\NETFX 4.6.1 Tools\ildasm.exe" /nobar /linenum /output:"$(ILFile)" @(IntermediateAssembly->'"%(FullPath)"', ' ')</ILDasm>
     </PropertyGroup>
+    <Error Condition="!Exists( '$(ILDasm)' )" Text="ildasm/monodis not found (path='$(ILDasm)')" />
     <Exec Command="$(ILDasm)" />
     <ItemGroup>
       <FileWrites Include="$(ILFile)" />
