@@ -60,17 +60,11 @@ namespace LitJson
             set { allow_single_quoted_strings = value; }
         }
 
-        public bool EndOfInput {
-            get { return end_of_input; }
-        }
+        public bool EndOfInput => end_of_input;
 
-        public int Token {
-            get { return token; }
-        }
+        public int Token => token;
 
-        public string StringValue {
-            get { return string_value; }
-        }
+        public string StringValue => string_value;
         #endregion
 
 
@@ -135,7 +129,7 @@ namespace LitJson
         {
             // See section A.1. of the manual for details of the finite
             // state machine.
-            fsm_handler_table = new StateHandler[28] {
+            fsm_handler_table = new StateHandler[] {
                 State1,
                 State2,
                 State3,
@@ -166,7 +160,7 @@ namespace LitJson
                 State28
             };
 
-            fsm_return_table = new int[28] {
+            fsm_return_table = new int[] {
                 (int) ParserToken.Char,
                 0,
                 (int) ParserToken.Number,

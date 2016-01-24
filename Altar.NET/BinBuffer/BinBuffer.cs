@@ -215,7 +215,7 @@ namespace Altar
             {
                 unchecked
                 {
-                    byte b = (byte)(v & SByte.MaxValue);
+                    var b = (byte)(v & SByte.MaxValue);
 
                     v >>= 7;
 
@@ -232,7 +232,7 @@ namespace Altar
             {
                 unchecked
                 {
-                    byte b = (byte)(v & SByte.MaxValue);
+                    var b = (byte)(v & SByte.MaxValue);
 
                     v >>= 7;
 
@@ -294,7 +294,7 @@ namespace Altar
         #endregion
 
         #region Read methods
-        public bool ReadBoolean() => ReadByte() == 0 ? false : true;
+        public bool ReadBoolean() => ReadByte() != 0;
 
         public sbyte  ReadSByte () => unchecked((sbyte)ReadByte());
         public ushort ReadUInt16() => ReadUnion(sizeof(ushort)).Short0;
