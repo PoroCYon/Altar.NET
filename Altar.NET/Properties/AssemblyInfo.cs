@@ -7,7 +7,7 @@ using CommandLine;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PoroCYon")]
 [assembly: AssemblyProduct("Altar.NET")]
-[assembly: AssemblyCopyright("Copyright © PoroCYon 2015")]
+[assembly: AssemblyCopyright("Copyright © PoroCYon 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
