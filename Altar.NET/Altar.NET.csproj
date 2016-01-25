@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BBTree.cs" />
     <Compile Include="BinBuffer\BinBuffer.cs" />
     <Compile Include="BinBuffer\BinBufferByteResource.cs" />
     <Compile Include="BinBuffer\BinBufferNativeResource.cs" />

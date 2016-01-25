@@ -3,6 +3,7 @@
 //!  /                                                    \
 //! | do NOT rename, the name is hardcoded in the .csproj |
 //! \ __________________________________________________ /
+//!
 
 .assembly extern mscorlib
 {
