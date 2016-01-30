@@ -6,17 +6,10 @@ namespace Altar
 {
     public abstract class BBNode
     {
-        public bool IsMerged;
-
-        public void Merge(List<BBPrimitive> parent)
-        {
-            MergeWith(parent);
-
-            IsMerged = true;
-        }
-        protected abstract void MergeWith(List<BBPrimitive> parent);
+        public abstract void AddToPrimitives(List<BBPrimitive> prev);
     }
 
+    // just for type restrictions in BBTree methods
     public abstract class BBSimple : BBNode { }
     public abstract class BBPrimitive : BBSimple { }
 
@@ -24,15 +17,12 @@ namespace Altar
     {
         public BinBuffer BinBuffer;
 
-        protected override void MergeWith(List<BBPrimitive> parent)
+        public override void AddToPrimitives(List<BBPrimitive> prev)
         {
-            if (BinBuffer == null)
-                return;
-
-            if (parent.Count == 0 || !(parent[parent.Count - 1] is BBValue))
-                parent.Add(new BBValue { BinBuffer = BinBuffer });
+            if (prev.Count == 0 || !(prev[prev.Count - 1] is BBValue))
+                prev.Add(this);
             else
-                ((BBValue)parent[parent.Count - 1]).BinBuffer.Write(BinBuffer);
+                ((BBValue)prev[prev.Count - 1]).BinBuffer.Write(BinBuffer);
         }
     }
     public sealed class BBOffset : BBPrimitive
@@ -42,19 +32,21 @@ namespace Altar
         /// </summary>
         public int Offset;
 
-        protected override void MergeWith(List<BBPrimitive> parent)
+        public override void AddToPrimitives(List<BBPrimitive> prev)
         {
-            parent.Add(new BBOffset { Offset = Offset + parent.Sum(BBTree.BBSSize) });
+            prev.Add(new BBOffset { Offset = Offset + prev.Sum(BBTree.BBNSize) });
         }
     }
+    //TODO: lazy offset?
+
     public sealed class BBData : BBSimple
     {
-        public List<BBPrimitive> Inner;
+        public List<BBSimple> Inner;
 
-        protected override void MergeWith(List<BBPrimitive> parent)
+        public override void AddToPrimitives(List<BBPrimitive> prev)
         {
-            foreach (var bbs in Inner)
-                bbs.Merge(parent);
+            foreach (var s in Inner)
+                s.AddToPrimitives(prev);
         }
     }
 
@@ -64,52 +56,42 @@ namespace Altar
 
         public BBNode Rest;
 
-        protected override void MergeWith(List<BBPrimitive> parent)
+        public override void AddToPrimitives(List<BBPrimitive> prev)
         {
-            if (parent.Count == 0)
-                parent.Add(new BBValue { BinBuffer = new BinBuffer() });
-            else if (parent[parent.Count - 1] is BBOffset)
-                parent.Add(new BBValue { BinBuffer = new BinBuffer() });
+            if (!(Rest is BBSimple))
+                throw new NotSupportedException();
 
-            var lbb = ((BBValue)parent[parent.Count - 1]).BinBuffer;
+            BBTree.LastOrAdd(prev).Write((uint)Header);
 
-            lbb.Write((uint)Header);
-
-            var li = new List<BBPrimitive>();
-
-            Rest.Merge(li);
-
-            var size = li.Sum(BBTree.BBSSize);
-
-            lbb.Write(size);
-
-            new BBData { Inner = li }.Merge(parent);
+            Rest.AddToPrimitives(prev);
         }
     }
     public sealed class BBList : BBNode
     {
         public List<BBNode> Elements;
 
-        protected override void MergeWith(List<BBPrimitive> parent)
+        public override void AddToPrimitives(List<BBPrimitive> prev)
         {
-            if (parent.Count == 0)
-                parent.Add(new BBValue { BinBuffer = new BinBuffer() });
-            else if (parent[parent.Count - 1] is BBOffset)
-                parent.Add(new BBValue { BinBuffer = new BinBuffer() });
+            var count = Elements.Count;
 
-            ((BBValue)parent[parent.Count - 1]).BinBuffer.Write(Elements.Count);
+            BBTree.LastOrAdd(prev).Write((uint)count);
 
-            var l = new List<BBPrimitive> { new BBValue { BinBuffer = new BinBuffer() } };
-
-            for (int i = 0; i < Elements.Count; i++)
+            var offAccum = 0;
+            var offsets = new int[count];
+            for (int i = 0; i < count; i++)
             {
-                Elements[i].Merge(l);
+                if (!(Elements[i] is BBSimple))
+                    throw new NotSupportedException();
 
-                parent.Add(new BBOffset { Offset = l.Sum(BBTree.BBSSize) });
+                offsets[i] = offAccum;
+
+                offAccum += BBTree.BBNSize(Elements[i]);
             }
 
-            var bbd = new BBData { Inner = l };
-            bbd.Merge(parent);
+            prev.AddRange(offsets.Select(o => new BBOffset { Offset = o }));
+
+            foreach (var e in Elements)
+                e.AddToPrimitives(prev);
         }
     }
 
@@ -117,25 +99,117 @@ namespace Altar
 
     public static class BBTree
     {
-        internal static int BBSSize(BBSimple bbs)
+        static BBNode[] EmptyNodeArr = { };
+
+        internal static BinBuffer LastOrAdd(List<BBPrimitive> prev, BinBuffer def = null)
         {
-            if (bbs is BBValue)
-                return ((BBValue)bbs).BinBuffer.Size;
-            if (bbs is BBOffset)
+            if (prev.Count == 0 || !(prev[prev.Count - 1] is BBValue))
+                prev.Add(new BBValue { BinBuffer = def ?? new BinBuffer() });
+
+            return ((BBValue)prev[prev.Count - 1]).BinBuffer;
+        }
+
+        internal static int BBNSize(BBNode bbn)
+        {
+            if (bbn is BBValue)
+                return ((BBValue)bbn).BinBuffer.Size;
+            if (bbn is BBOffset)
                 return sizeof(int);
-            if (bbs is BBData)
-                return ((BBData)bbs).Inner.Sum(BBSSize);
+            if (bbn is BBData)
+                return ((BBData)bbn).Inner.Sum(BBNSize);
+            if (bbn is BBChunk)
+                return sizeof(SectionHeaders) + sizeof(uint) + BBNSize(((BBChunk)bbn).Rest);
+            if (bbn is BBList)
+                return sizeof(uint) + sizeof(uint) * ((BBList)bbn).Elements.Count + ((BBList)bbn).Elements.Sum(BBNSize);
 
             return 0;
         }
 
+        static IEnumerable<Accessor<BBNode>> SubnodesOf(BBNode node)
+        {
+            if (node is BBSimple)
+                return null;
+            if (node is BBChunk)
+            {
+                var n = (BBChunk)node;
+
+                return new[] { new Accessor<BBNode>(() => n.Rest, v => n.Rest = v) };
+            }
+            if (node is BBList)
+            {
+                var l = (BBList)node;
+                var ll = l.Elements;
+
+                var accs = new Accessor<BBNode>[ll.Count];
+                for (int i = 0; i < ll.Count; i++)
+                {
+                    var ii = i;
+
+                    accs[i] = new Accessor<BBNode>(() => ll[ii], v => ll[ii] = v);
+                }
+
+                return accs;
+            }
+
+            return null;
+        }
+        static IEnumerable<Tuple<BBNode, Accessor<BBNode>>> LeavesOrCurrent(BBNode parent, Accessor<BBNode> node)
+        {
+            var nodes = SubnodesOf(node.Get());
+
+            if (nodes == null)
+                return new[] { Tuple.Create(parent, node) };
+
+            return nodes.SelectMany(n => LeavesOrCurrent(node.Get(), n));
+        }
+        static BBNode[] FlattenLeaves(BBNode[] nodes)
+        {
+            var leaves = new List<Tuple<BBNode, Accessor<BBNode>>>();
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                var ii = i;
+                var acc = new Accessor<BBNode>(() => nodes[ii], v => nodes[ii] = v);
+                leaves.AddRange(LeavesOrCurrent(null, acc));
+            }
+
+            foreach (var t in leaves)
+            {
+                var p = t.Item1;
+                var c = t.Item2;
+
+                if (p is BBSimple)
+                    throw new NotSupportedException();
+
+                //TODO: merge (get parent data -> AddToPrimitives)
+            }
+
+            throw new NotImplementedException(); //TODO: something
+        }
+
         public static BBPrimitive[] Flatten(IEnumerable<BBNode> nodes)
         {
-            throw new NotImplementedException(); // TODO
+            var e = nodes.ToArray();
+
+            while (!e.All(n => n is BBPrimitive))
+                e = FlattenLeaves(e);
+
+            return e.Select(p => (BBPrimitive)p).ToArray();
         }
         public static BinBuffer FlushOffsets(BBPrimitive[] primitives)
         {
-            throw new NotImplementedException(); // TODO
+            var bb = new BinBuffer(primitives.Sum(BBNSize));
+
+            foreach (var p in primitives)
+            {
+                if (p is BBValue)
+                    bb.Write(((BBValue )p).BinBuffer);
+                if (p is BBOffset)
+                    bb.Write(((BBOffset)p).Offset);
+            }
+
+            bb.Position = 0;
+            return bb;
         }
     }
 }

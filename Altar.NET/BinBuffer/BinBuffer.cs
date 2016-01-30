@@ -269,11 +269,14 @@ namespace Altar
 
         public void Write(BinBuffer bb)
         {
-            Write(bb, bb.BytesLeft);
+            Write(bb, 0, bb.Size);
         }
-        public void Write(BinBuffer bb, int count)
+        public void Write(BinBuffer bb, int startPos, int count)
         {
-            Write(bb.ReadBytes(count), 0, count);
+            var p = bb.Position;
+            bb.Position = 0;
+            Write(bb.ReadBytes(count), startPos, count);
+            bb.Position = p;
         }
 
         public unsafe void Write<T>(T value)
