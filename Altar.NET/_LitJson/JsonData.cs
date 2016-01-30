@@ -962,7 +962,9 @@ namespace LitJson
 
         object IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
+#pragma warning disable RECS0083
             throw new NotImplementedException(); // meh
+#pragma warning restore RECS0083
         }
         #endregion
     }

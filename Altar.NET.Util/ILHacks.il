@@ -42,7 +42,7 @@
 .subsystem      0x0003
 .corflags       0x00000001
 
-.class abstract sealed auto ansi Altar.ILHacks
+.class public abstract sealed auto ansi Altar.ILHacks
 {
     .method public static hidebysig
         int32 SizeOf<valuetype .ctor ([mscorlib]System.ValueType) T>()

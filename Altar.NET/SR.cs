@@ -51,8 +51,9 @@ namespace Altar
             SHORT_L  = "s",
             LONG_L   = "L",
 
-            TRUE  = "true" ,
-            FALSE = "false",
+            TRUE  = "true"  ,
+            FALSE = "false" ,
+            NULL  = "<null>",
 
             DATA_WIN = "data.win",
 

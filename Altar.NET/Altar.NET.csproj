@@ -58,10 +58,12 @@
     <Compile Include="GMFile.cs" />
     <Compile Include="GMFileContent.cs" />
     <Compile Include="Int24.cs" />
+    <Compile Include="Options.cs" />
     <Compile Include="Primitives.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PackedStructs.cs" />
+    <Compile Include="Ref.cs" />
     <Compile Include="SectionReader.cs" />
     <Compile Include="Serialise.cs" />
     <Compile Include="SR.cs" />

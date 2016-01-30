@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <Win32Resource>ILHacks.res</Win32Resource>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -38,18 +41,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties" />
-    <Compile Include="ILHacks.cs" /> <!-- to keep VS quiet -->
+    <Compile Include="ILHacks.cs" />
+    <!-- to keep VS quiet -->
   </ItemGroup>
   <ItemGroup>
     <None Include="ILHacks.il" />
     <None Include="ILHacks.res" />
   </ItemGroup>
-  <PropertyGroup>
-    <ILFile>$(ProjectDir)ILHacks.il</ILFile>
-    <ILResourceFile>$(ProjectDir)ILHacks.res</ILResourceFile>
-  </PropertyGroup>
-
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- hack to embed IL code -->
   <PropertyGroup>
@@ -61,11 +62,11 @@
   </PropertyGroup>
   <Target Name="HideILFromCompile">
     <ItemGroup>
-      <IL Include="@(None)" Condition="'%(Extension)'=='.il'" />
+      <ILSrc Include="@(None)" Condition="'%(Extension)'=='.il'" />
       <None Remove="@(None)" Condition="'%(Extension)'=='.il'" />
     </ItemGroup>
   </Target>
-  <Target Name="CoreCompileIL" Inputs="@(IL)" Outputs="@(IntermediateAssembly)" Condition="'@(IL)' != ''">
+  <Target Name="CoreCompileIL" Inputs="@(ILSrc)" Outputs="$(TargetPath)_IL" Condition="'@(ILSrc)' != ''">
     <GetFrameworkPath>
       <Output TaskParameter="Path" PropertyName="FrameworkPath" />
     </GetFrameworkPath>
@@ -78,7 +79,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <ILAsm>"$(ILAsm) /nologo /quiet /output:@(IntermediateAssembly->'"%(FullPath)"', ' ')</ILAsm>
+      <ILAsm>$(ILAsm) /nologo /quiet "/output:$(TargetPath)_IL"</ILAsm>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(FileAlignment)' != '' ">
       <ILAsm>$(ILAsm) /alignment=$(FileAlignment)</ILAsm>
@@ -107,23 +108,23 @@
     <PropertyGroup Condition=" '$(AssemblyOriginatorKeyFile)' != '' ">
       <ILAsm>$(ILAsm) /key:"$(AssemblyOriginatorKeyFile)"</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(ILResourceFile)' ) ">
-      <ILAsm>$(ILAsm) /resource:"$(ILResourceFile)"</ILAsm>
+    <PropertyGroup Condition=" Exists ( '$(Win32Resource)' ) ">
+      <ILAsm>$(ILAsm) /resource:"$(Win32Resource)"</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" Exists ( '$(ILFile)' ) ">
-      <ILAsm>$(ILAsm) "$(ILFile)"</ILAsm>
-    </PropertyGroup>
-    <Exec Command="$(ILAsm) @(IL->'&quot;%(FullPath)&quot;', ' ')" />
-    <ItemGroup>
+    <Exec Command="$(ILAsm) @(ILSrc->'&quot;%(FullPath)&quot;', ' ')" />
+    <!--<ItemGroup>
       <FileWrites Include="@(IntermediateAssembly->'%(RootDir)%(Directory)DesignTimeResolveAssemblyReferencesInput.cache', ' ')" />
-    </ItemGroup>
-    <Touch Files="$(ILFile)" />
+    </ItemGroup>-->
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+  <PropertyGroup>
+    <PostBuildEvent Condition="'$(OS)' == 'Unix'">
+      cp "$(TargetPath)_IL" "$(TargetPath)"
+      rm "$(TargetPath)_IL"
+    </PostBuildEvent>
+    <PostBuildEvent Condition="'$(OS)' != 'Unix'">
+      copy "$(TargetPath)_IL" "$(TargetPath)"
+      del "$(TargetPath)_IL"
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

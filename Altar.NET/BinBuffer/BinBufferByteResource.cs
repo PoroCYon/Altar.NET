@@ -70,7 +70,7 @@ namespace Altar
             if (pos > buffer.Length - size)
                 ResizeBuffer(buffer.Length + size);
             if (pos > this.size - size)
-                this.size++;
+                this.size += size - pos;
 
             ILHacks.Cpblk(ref v, buffer, pos, size);
 
