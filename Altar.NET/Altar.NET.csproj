@@ -44,7 +44,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BBTree.cs" />
     <Compile Include="BinBuffer\BinBuffer.cs" />
     <Compile Include="BinBuffer\BinBufferByteResource.cs" />
     <Compile Include="BinBuffer\BinBufferNativeResource.cs" />
@@ -63,8 +62,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PackedStructs.cs" />
-    <Compile Include="Ref.cs" />
     <Compile Include="SectionReader.cs" />
+    <Compile Include="SectionWriter.cs" />
     <Compile Include="Serialise.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="Structs.cs" />

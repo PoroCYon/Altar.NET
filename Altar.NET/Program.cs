@@ -370,37 +370,6 @@ namespace Altar
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
                 CultureInfo.InvariantCulture;
 
-            //BBNode[] data =
-            //{
-            //    new BBChunk
-            //    {
-            //        Header = SectionHeaders.Audio,
-            //        Rest   = new BBList
-            //        {
-            //            Elements = new List<BBNode>
-            //            {
-            //                new BBOffset { Offset    = 0xFFFF },
-            //                new BBValue  { BinBuffer = new BinBuffer(new byte[] { 0xAB, 0xCD, 0xEF, 0x00 }, false) }
-            //            }
-            //        }
-            //    },
-            //    new BBChunk
-            //    {
-            //        Header = SectionHeaders.AudioGroup,
-            //        Rest   = new BBList
-            //        {
-            //            Elements = new List<BBNode>
-            //            {
-            //                new BBValue  { BinBuffer = new BinBuffer(new byte[] { 0x10, 0x20, 0x40, 0x80 }, false) },
-            //                new BBOffset { Offset    = 0x2000 }
-            //            }
-            //        }
-            //    }
-            //};
-
-            //var flat = BBTree.Flatten(data);
-            //var blob = BBTree.FlushOffsets(flat);
-
             var o = new Options();
 
             Parser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>

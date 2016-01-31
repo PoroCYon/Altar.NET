@@ -65,12 +65,10 @@ namespace Altar
 
         public override void Write(Union v, int size)
         {
-            var up = &v;
-
             if (pos > buffer.Length - size)
                 ResizeBuffer(buffer.Length + size);
             if (pos > this.size - size)
-                this.size += size - pos;
+                this.size += size;
 
             ILHacks.Cpblk(ref v, buffer, pos, size);
 
