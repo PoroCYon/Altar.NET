@@ -107,12 +107,13 @@ namespace Altar
 
             b.IsEnabled     = entry->IsEnabled.IsTrue()   ;
             b.IsForeground  = entry->IsForeground.IsTrue();
-            b.BgIndex       = entry->DefIndex             ;
             b.Position      = entry->Position             ;
             b.TileX         = entry->TileX.IsTrue()       ;
             b.TileY         = entry->TileY.IsTrue()       ;
             b.Speed         = entry->Speed                ;
             b.StretchSprite = entry->Stretch.IsTrue()     ;
+
+            b.BgIndex = entry->DefIndex == 0xFFFFFFFF ? null : (uint?)entry->DefIndex;
 
             return b;
         }
@@ -128,7 +129,7 @@ namespace Altar
             v.Border    = entry->Border;
             v.Speed     = entry->Speed ;
 
-            v.ObjectId = entry->ObjectId < 0 ? null : (uint?)entry->ObjectId;
+            v.ObjectId = entry->ObjectId == 0xFFFFFFFF ? null : (uint?)entry->ObjectId;
 
             return v;
         }

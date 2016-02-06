@@ -55,6 +55,15 @@ namespace Altar
             G = g;
             B = b;
         }
+        public Colour(uint argb)
+        {
+            A = 0;
+            R = 0;
+            G = 0;
+            B = 0;
+
+            data = argb;
+        }
 
         public override bool Equals(object obj)
         {

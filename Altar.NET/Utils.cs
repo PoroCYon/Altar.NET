@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -52,6 +53,8 @@ namespace Altar
 
             yield break;
         }
+
+        public static T Identity<T>(T t) => t;
     }
     public static class Extensions
     {
@@ -109,6 +112,56 @@ namespace Altar
 
             foreach (var e in toEnq)
                 queue.Enqueue(e);
+        }
+
+        public static IEnumerable<T> ToGeneric<T>(this IEnumerable coll, Func<object, IEnumerable<T>> cast = null)
+        {
+            if (cast == null)
+                cast = o => typeof(T) == typeof(string)
+                    ? new[] { (T)(object)o.ToString() }
+                    : (o is T ? new[] { (T)o } : new T[0]);
+
+            foreach (var o in coll)
+                foreach (var t in cast(o))
+                    yield return t;
+
+            yield break;
+        }
+        public static IEnumerable<T> ToGeneric<T>(this IEnumerable coll, Func<object, T> cast) =>
+            coll.ToGeneric(cast == null ? null : (Func<object, IEnumerable<T>>)(o => new[] { cast(o) }));
+
+        static Type RemoveGParams(Type t) => t.IsGenericType && !t.IsGenericTypeDefinition ? t.GetGenericTypeDefinition() : t;
+        public static bool Is(this Type child, Type parent, bool stripGeneric = false)
+        {
+            var RGP = stripGeneric ? (Func<Type, Type>)RemoveGParams : Utils.Identity;
+
+            child  = RGP(child );
+            parent = RGP(parent);
+
+            if (parent == typeof(object) || parent == child)
+                return true;
+            if (child.IsValueType && parent == typeof(ValueType))
+                return true;
+            if (child.IsEnum && (parent == typeof(Enum) || child.GetEnumUnderlyingType() == parent))
+                return true;
+            if (child.IsArray && parent == typeof(Array))
+                return true;
+            if (child.IsPointer)
+                return parent == typeof(void*);
+            if (child.IsInterface && parent.GetInterfaces().Any(t => RGP(t) == RGP(child)))
+                return true;
+
+            var bt = RGP(parent.BaseType);
+
+            do
+            {
+                if (bt == child)
+                    return true;
+
+                bt = RGP(bt.BaseType);
+            } while (bt != typeof(object));
+
+            return false;
         }
     }
 }

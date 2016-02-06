@@ -84,5 +84,10 @@ namespace Altar
 
             Write(bb, inner);
         }
+
+        public static void WriteIffWad(BBData data, IDictionary<SectionHeaders, BBData> chunks)
+        {
+            foreach (var kvp in chunks) WriteChunk(data, kvp.Key, kvp.Value);
+        }
     }
 }

@@ -596,6 +596,7 @@ namespace Altar
                 i++;
             }
 
+            sb.Append(SR.HEX_PRE).Append(code.Size.ToString(SR.HEX_FM6));
             sb.Append(SR.INDENT4).AppendLine(FinalRet.ToString());
 
             return sb.ToString();

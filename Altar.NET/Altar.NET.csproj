@@ -52,8 +52,10 @@
     <Compile Include="BinBuffer\Union.cs" />
     <Compile Include="Decompiler.cs" />
     <Compile Include="DecompTypes.cs" />
+    <Compile Include="Deserialize.cs" />
     <Compile Include="DisasmTypes.cs" />
     <Compile Include="Disassembler.cs" />
+    <Compile Include="DynamicJson.cs" />
     <Compile Include="GMFile.cs" />
     <Compile Include="GMFileContent.cs" />
     <Compile Include="Int24.cs" />
@@ -64,7 +66,7 @@
     <Compile Include="PackedStructs.cs" />
     <Compile Include="SectionReader.cs" />
     <Compile Include="SectionWriter.cs" />
-    <Compile Include="Serialise.cs" />
+    <Compile Include="Serialize.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="Structs.cs" />
     <Compile Include="Utils.cs" />
