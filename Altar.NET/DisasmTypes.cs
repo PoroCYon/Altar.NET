@@ -460,10 +460,21 @@ namespace Altar
             }
         }
         [DebuggerHidden]
-        public static string ToPrettyString(this OpCodes     type, int bcv) =>
-            bcv > 0xE
-                ? type.VersionF.ToString().ToLowerInvariant()
-                : type.VersionE.ToString().ToLowerInvariant();
+        public static string ToPrettyString(this FOpCode type)
+        {
+            if (type == FOpCode.PushCst)
+                return "push.cst";
+            if (type == FOpCode.PushGlb)
+                return "push.glb";
+            if (type == FOpCode.PushI16)
+                return "push.i16";
+            if (type == FOpCode.PushVar)
+                return "push.var";
+
+            return type.ToString().ToLowerInvariant();
+        }
+        [DebuggerHidden]
+        public static string ToPrettyString(this OpCodes     type, int bcv) => bcv > 0xE ? type.VersionF.ToPrettyString() : type.VersionE.ToString().ToLowerInvariant();
         [DebuggerHidden]
         public static string ToPrettyString(this ComparisonType type)
         {

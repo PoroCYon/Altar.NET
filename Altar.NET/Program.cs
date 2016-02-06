@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using CommandLine;
-using CommandLine.Text;
 using LitJson;
 
 namespace Altar
@@ -63,7 +62,7 @@ namespace Altar
                 {
                     Console.WriteLine("Exporting manifest file...");
 
-                    File.WriteAllText(od + "general.json", JsonMapper.ToJson(Serialise.SerialiseGeneral(f)));
+                    File.WriteAllText(od + "general.json", JsonMapper.ToJson(Serialize.SerializeGeneral(f.General)));
                 }
                 #endregion
                 #region OPTN
@@ -71,7 +70,7 @@ namespace Altar
                 {
                     Console.WriteLine("Exporting options...");
 
-                    File.WriteAllText(od + "options.json", JsonMapper.ToJson(Serialise.SerialiseOptions(f)));
+                    File.WriteAllText(od + "options.json", JsonMapper.ToJson(Serialize.SerializeOptions(f.Options)));
                 }
                 #endregion
 
@@ -80,7 +79,7 @@ namespace Altar
                 {
                     Console.WriteLine("Dumping strings...");
 
-                    File.WriteAllText(od + "strings.json", JsonMapper.ToJson(Serialise.SerialiseStrings(f)));
+                    File.WriteAllText(od + "strings.json", JsonMapper.ToJson(Serialize.SerializeStrings(f)));
                 }
                 #endregion
                 #region VARI
@@ -88,7 +87,7 @@ namespace Altar
                 {
                     Console.WriteLine("Dumping variables...");
 
-                    File.WriteAllText(od + "variables.json", JsonMapper.ToJson(Serialise.SerialiseVars(f)));
+                    File.WriteAllText(od + "variables.json", JsonMapper.ToJson(Serialize.SerializeVars(f)));
                 }
                 #endregion
                 #region FUNC
@@ -96,7 +95,7 @@ namespace Altar
                 {
                     Console.WriteLine("Dumping functions...");
 
-                    File.WriteAllText(od + "functions.json", JsonMapper.ToJson(Serialise.SerialiseFuncs(f)));
+                    File.WriteAllText(od + "functions.json", JsonMapper.ToJson(Serialize.SerializeFuncs(f)));
                 }
                 #endregion
 
@@ -196,7 +195,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Scripts.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_SCR + f.Scripts[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseScript(f, i)));
+                        File.WriteAllText(od + DIR_SCR + f.Scripts[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeScript(f.Scripts[i], f.Code)));
                     }
                 }
                 #endregion
@@ -215,7 +214,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.TexturePages.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseTPag(f, i)));
+                        File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeTPag(f.TexturePages[i])));
                     }
                 }
                 #endregion
@@ -234,7 +233,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Sprites.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseSprite(f, i)));
+                        File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSprite(f.Sprites[i])));
                     }
                 }
                 #endregion
@@ -253,7 +252,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Sound.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_SND + f.Sound[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseSound(f, i)));
+                        File.WriteAllText(od + DIR_SND + f.Sound[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSound(f.Sound[i])));
                     }
                 }
                 #endregion
@@ -273,7 +272,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Objects.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_OBJ + f.Objects[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseObj(f, i)));
+                        File.WriteAllText(od + DIR_OBJ + f.Objects[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeObj(f.Objects[i], f.Sprites, f.Objects)));
                     }
                 }
                 #endregion
@@ -292,7 +291,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Backgrounds.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_BG + f.Backgrounds[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseBg(f, i)));
+                        File.WriteAllText(od + DIR_BG + f.Backgrounds[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeBg(f.Backgrounds[i])));
                     }
                 }
                 #endregion
@@ -311,7 +310,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Rooms.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_ROOM + f.Rooms[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseRoom(f, i)));
+                        File.WriteAllText(od + DIR_ROOM + f.Rooms[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeRoom(f.Rooms[i], f.Backgrounds, f.Objects)));
                     }
                 }
                 #endregion
@@ -331,7 +330,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Fonts.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_FNT + f.Fonts[i].CodeName + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseFonts(f, i)));
+                        File.WriteAllText(od + DIR_FNT + f.Fonts[i].CodeName + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeFont(f.Fonts[i])));
                     }
                 }
                 #endregion
@@ -350,7 +349,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Paths.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_PATH + f.Paths[i].Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialisePath(f, i)));
+                        File.WriteAllText(od + DIR_PATH + f.Paths[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializePath(f.Paths[i])));
                     }
                 }
                 #endregion
@@ -359,7 +358,7 @@ namespace Altar
                 {
                     Console.WriteLine("Emitting project file...");
 
-                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialise.SerialiseProject(f)));
+                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f)));
                 }
             }
         }

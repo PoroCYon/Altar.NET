@@ -786,31 +786,31 @@ namespace LitJson
                 return;
             }
 
-            if (obj is String)
+            if (obj is string)
             {
                 writer.Write((string)obj);
                 return;
             }
 
-            if (obj is Double)
+            if (obj is double)
             {
                 writer.Write((double)obj);
                 return;
             }
 
-            if (obj is Int32)
+            if (obj is int)
             {
                 writer.Write((int)obj);
                 return;
             }
 
-            if (obj is Boolean)
+            if (obj is bool)
             {
                 writer.Write((bool)obj);
                 return;
             }
 
-            if (obj is Int64)
+            if (obj is long)
             {
                 writer.Write((long)obj);
                 return;

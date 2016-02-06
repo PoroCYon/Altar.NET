@@ -429,7 +429,7 @@ namespace Altar
         public Rectangle View, Port;
         public Point Border, Speed;
 
-        public int ObjectId; // can be -1
+        public uint ObjectId; // can be -1
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct RoomObjEntry

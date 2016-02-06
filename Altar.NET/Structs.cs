@@ -162,6 +162,7 @@ namespace Altar
     {
         public string Name;
         public AnyInstruction*[] Instructions;
+        public int Size;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureInfo
@@ -181,7 +182,7 @@ namespace Altar
     {
         public bool IsEnabled;
         public bool IsForeground;
-        public uint BgIndex;
+        public uint? BgIndex;
         public Point Position;
         public bool TileX;
         public bool TileY;

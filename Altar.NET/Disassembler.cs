@@ -47,7 +47,8 @@ namespace Altar
             return new CodeInfo
             {
                 Name         = SectionReader.StringFromOffset(content, cee->Name),
-                Instructions = Utils.MPtrListToPtrArr(ret)
+                Instructions = Utils.MPtrListToPtrArr(ret),
+                Size         = cee->Length
             };
         }
 

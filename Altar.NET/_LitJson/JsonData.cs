@@ -9,14 +9,13 @@
  **/
 #endregion
 
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
-
+using System.Linq;
 
 namespace LitJson
 {
@@ -53,8 +52,9 @@ namespace LitJson
         public bool IsObject => type == JsonType.Object;
 
         public bool IsString => type == JsonType.String;
-        #endregion
 
+        public JsonType JsonType => type;
+        #endregion
 
         #region ICollection Properties
         int ICollection.Count => Count;
@@ -63,8 +63,6 @@ namespace LitJson
 
         object ICollection.SyncRoot => EnsureCollection().SyncRoot;
         #endregion
-
-
         #region IDictionary Properties
         bool IDictionary.IsFixedSize => EnsureDictionary().IsFixedSize;
 
@@ -104,9 +102,6 @@ namespace LitJson
             }
         }
         #endregion
-
-
-
         #region IJsonWrapper Properties
         bool IJsonWrapper.IsArray => IsArray;
 
@@ -122,14 +117,11 @@ namespace LitJson
 
         bool IJsonWrapper.IsString => IsString;
         #endregion
-
-
         #region IList Properties
         bool IList.IsFixedSize => EnsureList().IsFixedSize;
 
         bool IList.IsReadOnly => EnsureList().IsReadOnly;
         #endregion
-
 
         #region IDictionary Indexer
         object IDictionary.this[object key]
@@ -139,12 +131,10 @@ namespace LitJson
                 IDictionary dictionary = EnsureDictionary();
                 return dictionary.Contains(key) ? dictionary[key] : null;
             }
-
             set
             {
-                if (!(key is String))
-                    throw new ArgumentException(
-                        "The key has to be a string");
+                if (!(key is string))
+                    throw new ArgumentException("The key has to be a string");
 
                 JsonData data = ToJsonData(value);
 
@@ -152,8 +142,6 @@ namespace LitJson
             }
         }
         #endregion
-
-
         #region IOrderedDictionary Indexer
         object IOrderedDictionary.this[int idx]
         {
@@ -162,7 +150,6 @@ namespace LitJson
                 EnsureDictionary();
                 return object_list[idx].Value;
             }
-
             set
             {
                 EnsureDictionary();
@@ -179,8 +166,6 @@ namespace LitJson
             }
         }
         #endregion
-
-
         #region IList Indexer
         object IList.this[int index]
         {
@@ -188,7 +173,6 @@ namespace LitJson
             {
                 return EnsureList()[index];
             }
-
             set
             {
                 EnsureList();
@@ -199,7 +183,6 @@ namespace LitJson
         }
         #endregion
 
-
         #region Public Indexers
         public JsonData this[string prop_name]
         {
@@ -208,7 +191,6 @@ namespace LitJson
                 EnsureDictionary();
                 return inst_object.ContainsKey(prop_name) ? inst_object[prop_name] : null;
             }
-
             set
             {
                 EnsureDictionary();
@@ -247,7 +229,6 @@ namespace LitJson
 
                 return object_list[index].Value;
             }
-
             set
             {
                 EnsureCollection();
@@ -268,7 +249,6 @@ namespace LitJson
             }
         }
         #endregion
-
 
         #region Constructors
         public JsonData()
@@ -357,61 +337,69 @@ namespace LitJson
         }
         #endregion
 
-
         #region Implicit Conversions
-        public static implicit operator JsonData(Boolean data) => new JsonData(data);
+        public static implicit operator JsonData(bool   data) => new JsonData(data);
+        public static implicit operator JsonData(double data) => new JsonData(data);
+        public static implicit operator JsonData(float  data) => new JsonData(data);
+        public static implicit operator JsonData(int    data) => new JsonData(data);
+        public static implicit operator JsonData(long   data) => new JsonData(data);
+        public static implicit operator JsonData(string data) => new JsonData(data);
 
-        public static implicit operator JsonData(Double data) => new JsonData(data);
+        public static implicit operator JsonData(byte    data) => new JsonData(data);
+        public static implicit operator JsonData(sbyte   data) => new JsonData(data);
+        public static implicit operator JsonData(short   data) => new JsonData(data);
+        public static implicit operator JsonData(ushort  data) => new JsonData(data);
+        public static implicit operator JsonData(uint    data) => new JsonData(data);
+        public static implicit operator JsonData(ulong   data) => new JsonData(data);
+        public static implicit operator JsonData(decimal data) => new JsonData(data);
 
-        public static implicit operator JsonData(Single data) => new JsonData((double)data);
-
-        public static implicit operator JsonData(Int32 data) => new JsonData(data);
-
-        public static implicit operator JsonData(Int64 data) => new JsonData(data);
-
-        public static implicit operator JsonData(String data) => new JsonData(data);
+        public static implicit operator JsonData(char     data) => new JsonData(data.ToString());
+        public static implicit operator JsonData(DateTime data) => new JsonData(data.ToString(DATETIME_FORMAT));
         #endregion
-
-
         #region Explicit Conversions
-        public static explicit operator Boolean(JsonData data)
+        public static explicit operator bool  (JsonData   data)
         {
-            if (data == null) return default(Boolean);
+            if (data == null) return default(bool);
             if (data.type != JsonType.Boolean) throw new InvalidCastException("Instance of JsonData doesn't hold a bool");
             return data.inst_boolean;
         }
-
-        public static explicit operator Single(JsonData data) => (float)(double)data;
-
-        public static explicit operator Double(JsonData data)
+        public static explicit operator float (JsonData data) => (float)(double)data;
+        public static explicit operator double(JsonData data)
         {
-            if (data == null) return default(Double);
+            if (data == null) return default(double);
             if (data.type != JsonType.Double && data.type != JsonType.Int) throw new InvalidCastException("Instance of JsonData doesn't hold a double");
             return data.type == JsonType.Double ? data.inst_double : data.inst_int;
         }
-
-        public static explicit operator Int32(JsonData data)
+        public static explicit operator int   (JsonData data)
         {
-            if (data == null) return default(Int32);
+            if (data == null) return default(int);
             if (data.type != JsonType.Int) throw new InvalidCastException("Instance of JsonData doesn't hold an int");
             return data.inst_int;
         }
-
-        public static explicit operator Int64(JsonData data)
+        public static explicit operator long  (JsonData data)
         {
-            if (data == null) return default(Int64);
+            if (data == null) return default(long);
             if (data.type != JsonType.Long || data.type != JsonType.Int) throw new InvalidCastException("Instance of JsonData doesn't hold a long");
             return data.type == JsonType.Long ? data.inst_long : data.inst_int;
         }
-
-        public static explicit operator String(JsonData data)
+        public static explicit operator string(JsonData data)
         {
-            if (data == null) return default(String);
+            if (data == null) return default(string);
             if (data.type != JsonType.String) throw new InvalidCastException("Instance of JsonData doesn't hold a string");
             return data.inst_string;
         }
-        #endregion
 
+        public static explicit operator byte   (JsonData data) => unchecked((byte   )(int   )data);
+        public static explicit operator sbyte  (JsonData data) => unchecked((sbyte  )(int   )data);
+        public static explicit operator short  (JsonData data) => unchecked((short  )(int   )data);
+        public static explicit operator ushort (JsonData data) => unchecked((ushort )(int   )data);
+        public static explicit operator uint   (JsonData data) => unchecked((uint   )(long  )data);
+        public static explicit operator ulong  (JsonData data) => unchecked((ulong  )(long  )data);
+        public static explicit operator decimal(JsonData data) => unchecked((decimal)(double)data);
+
+        public static explicit operator char    (JsonData data) => ((string)data)[0];
+        public static explicit operator DateTime(JsonData data) => DateTime.Parse((string)data, CultureInfo.InvariantCulture);
+        #endregion
 
         #region ICollection Methods
         void ICollection.CopyTo(Array array, int index)
@@ -419,8 +407,6 @@ namespace LitJson
             EnsureCollection().CopyTo(array, index);
         }
         #endregion
-
-
         #region IDictionary Methods
         void IDictionary.Add(object key, object value)
         {
@@ -462,13 +448,9 @@ namespace LitJson
             json = null;
         }
         #endregion
-
-
         #region IEnumerable Methods
         IEnumerator IEnumerable.GetEnumerator() => EnsureCollection().GetEnumerator();
         #endregion
-
-
         #region IJsonWrapper Methods
         bool IJsonWrapper.GetBoolean()
         {
@@ -557,8 +539,6 @@ namespace LitJson
             ToJson(writer);
         }
         #endregion
-
-
         #region IList Methods
         int IList.Add(object value) => Add(value);
 
@@ -590,8 +570,6 @@ namespace LitJson
             json = null;
         }
         #endregion
-
-
         #region IOrderedDictionary Methods
         IDictionaryEnumerator IOrderedDictionary.GetEnumerator()
         {
@@ -623,7 +601,6 @@ namespace LitJson
         }
         #endregion
 
-
         #region Private Methods
         ICollection EnsureCollection()
         {
@@ -636,7 +613,6 @@ namespace LitJson
             throw new InvalidOperationException("This JsonData is not a collection -or- is not initialised.");
                 //"The JsonData instance has to be initialized first");
         }
-
         IDictionary EnsureDictionary()
         {
             if (type == JsonType.Object)
@@ -652,7 +628,6 @@ namespace LitJson
 
             return (IDictionary)inst_object;
         }
-
         IList EnsureList()
         {
             if (type == JsonType.Array)
@@ -742,7 +717,6 @@ namespace LitJson
             }
         }
         #endregion
-
 
         public int Add(object value)
         {
@@ -847,23 +821,23 @@ namespace LitJson
                     break;
 
                 case JsonType.String:
-                    inst_string = default(String);
+                    inst_string = default(string);
                     break;
 
                 case JsonType.Int:
-                    inst_int = default(Int32);
+                    inst_int = default(int);
                     break;
 
                 case JsonType.Long:
-                    inst_long = default(Int64);
+                    inst_long = default(long);
                     break;
 
                 case JsonType.Double:
-                    inst_double = default(Double);
+                    inst_double = default(double);
                     break;
 
                 case JsonType.Boolean:
-                    inst_boolean = default(Boolean);
+                    inst_boolean = default(bool);
                     break;
             }
 
@@ -928,47 +902,87 @@ namespace LitJson
         #region IConvertible Methods
         TypeCode IConvertible.GetTypeCode() => TypeCode.Object;
 
-        bool IConvertible.ToBoolean(IFormatProvider provider) => (bool)this;
-
-        char IConvertible.ToChar(IFormatProvider provider) => ((string)this)[0];
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider) => (sbyte)(int)this;
-
-        byte IConvertible.ToByte(IFormatProvider provider) => (byte)(int)this;
-
-        short IConvertible.ToInt16(IFormatProvider provider) => (short)(int)this;
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider) => (ushort)(int)this;
-
-        int IConvertible.ToInt32(IFormatProvider provider) => (int)this;
-
-        uint IConvertible.ToUInt32(IFormatProvider provider) => unchecked((uint)(ulong)this);
-
-        long IConvertible.ToInt64(IFormatProvider provider) => (int)this;
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider) => (ulong)this;
-
-        float IConvertible.ToSingle(IFormatProvider provider) => (float)this;
-
-        double IConvertible.ToDouble(IFormatProvider provider) => (float)this;
-
-        decimal IConvertible.ToDecimal(IFormatProvider provider) => (decimal)(float)this;
+        bool    IConvertible.ToBoolean(IFormatProvider provider) => (bool)this;
+        char    IConvertible.ToChar   (IFormatProvider provider) => ((string)this)[0];
+        sbyte   IConvertible.ToSByte  (IFormatProvider provider) => unchecked((sbyte )(int)this);
+        byte    IConvertible.ToByte   (IFormatProvider provider) => unchecked((byte  )(int)this);
+        short   IConvertible.ToInt16  (IFormatProvider provider) => unchecked((short )(int)this);
+        ushort  IConvertible.ToUInt16 (IFormatProvider provider) => unchecked((ushort)(int)this);
+        int     IConvertible.ToInt32  (IFormatProvider provider) => (int)this;
+        uint    IConvertible.ToUInt32 (IFormatProvider provider) => unchecked((uint)(ulong)this);
+        long    IConvertible.ToInt64  (IFormatProvider provider) => (long)this;
+        ulong   IConvertible.ToUInt64 (IFormatProvider provider) => unchecked((ulong)(long)this);
+        float   IConvertible.ToSingle (IFormatProvider provider) => (float)this;
+        double  IConvertible.ToDouble (IFormatProvider provider) => (double)this;
+        decimal IConvertible.ToDecimal(IFormatProvider provider) => (decimal)(double)this;
 
         readonly static string DATETIME_FORMAT = "s";
         // ISO 8601
-        DateTime IConvertible.ToDateTime(IFormatProvider provider) => DateTime.ParseExact((string)this, DATETIME_FORMAT, CultureInfo.InvariantCulture);
+        DateTime IConvertible.ToDateTime(IFormatProvider provider) => DateTime.Parse((string)this, CultureInfo.InvariantCulture);
 
         string IConvertible.ToString(IFormatProvider provider) => (string)this;
 
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
-#pragma warning disable RECS0083
-            throw new NotImplementedException(); // meh
-#pragma warning restore RECS0083
+            unchecked
+            {
+                if (type == typeof(bool))
+                    return (bool)this;
+                if (type == typeof(int))
+                    return (int)this;
+                if (type == typeof(long))
+                    return (long)this;
+                if (type == typeof(double))
+                    return (double)this;
+                if (type == typeof(string))
+                    return (string)this;
+
+                if (type == typeof(char))
+                    return ((string)this)[0];
+                if (type == typeof(sbyte))
+                    return (sbyte)(int)this;
+                if (type == typeof(byte))
+                    return (byte)(int)this;
+                if (type == typeof(short))
+                    return (short)(int)this;
+                if (type == typeof(ushort))
+                    return (ushort)(int)this;
+                if (type == typeof(uint))
+                    return (uint)(long)this;
+                if (type == typeof(ulong))
+                    return (ulong)this;
+                if (type == typeof(float))
+                    return (float)(double)this;
+                if (type == typeof(decimal))
+                    return (decimal)(double)this;
+
+                if (type == typeof(DateTime))
+                    return ((IConvertible)this).ToDateTime(provider);
+            }
+
+            throw new InvalidCastException();
         }
         #endregion
-    }
 
+        public JsonData[] ToArray()
+        {
+            EnsureList();
+
+            return inst_array.ToArray();
+        }
+        public IList<JsonData> ToList()
+        {
+            EnsureList();
+
+            return inst_array;
+        }
+        public IDictionary<string, JsonData> ToDictionary()
+        {
+            EnsureDictionary();
+
+            return inst_object;
+        }
+    }
 
     class OrderedDictionaryEnumerator : IDictionaryEnumerator
     {
