@@ -175,7 +175,7 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_CODE + i + EXT_GML_ASM, Disassembler.DisplayInstructions(f, i, eo.AbsoluteAddresses));
+                        File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_ASM, Disassembler.DisplayInstructions(f, i, eo.AbsoluteAddresses));
                     }
                 }
                 #endregion
