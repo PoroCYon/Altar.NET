@@ -55,6 +55,16 @@ namespace Altar
         }
 
         public static T Identity<T>(T t) => t;
+
+        public static string ToHexSignString(long v, string fmt)
+        {
+            if (v >= 0L)
+                return v.ToString(fmt);
+
+            v = Math.Abs(v);
+
+            return "-" + v.ToString(fmt);
+        }
     }
     public static class Extensions
     {

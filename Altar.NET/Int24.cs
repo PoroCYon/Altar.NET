@@ -12,6 +12,17 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 3), DebuggerDisplay("{DebugDisplay()}")]
     public struct Int24 : IEquatable<Int24>, IComparable<Int24>, IFormattable, IConvertible
     {
+        const  int I_MIN = -(1 << 23)    ;
+        const  int I_MAX =  (1 << 23) - 1;
+        const uint U_MIN = 0x000000;
+        const uint U_MAX = 0xFFFFFF;
+
+        public readonly static Int24
+            IMinValue = new Int24(I_MIN),
+            IMaxValue = new Int24(I_MAX),
+            UMinValue = new Int24(U_MIN),
+            UMaxValue = new Int24(U_MAX);
+
         byte _byte0, _byte1, _byte2;
 
         //? split into Int24 and UInt24?
@@ -79,7 +90,14 @@ namespace Altar
             _byte1 = 0;
             _byte2 = 0;
 
-            UValue = unchecked((uint)value);
+            var v = unchecked((uint)value);
+
+            var u = v & 0x007FFFFF;
+
+            if ((v & 0x00800000) != 0)
+                u |= 0xFF800000;
+
+            UValue = u;
         }
 
         [DebuggerStepThrough]

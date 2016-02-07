@@ -369,6 +369,10 @@ namespace Altar
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
                 CultureInfo.InvariantCulture;
 
+            //var a = Tokenizer.Tokenize(
+            //    File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_GAMESTART.gml.asm")
+            //    ).ToArray();
+
             var o = new Options();
 
             Parser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>

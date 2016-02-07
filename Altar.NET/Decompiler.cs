@@ -331,7 +331,8 @@ namespace Altar
                       : (ins->Kind(bcv) == InstructionKind.SingleType ? st.Type        : 0);
                 #endregion
 
-                switch (ins->OpCode.General(bcv))
+                GeneralOpCode opc;
+                switch (opc = ins->OpCode.General(bcv))
                 {
                     #region dup, pop
                     case GeneralOpCode.Dup:
@@ -385,32 +386,51 @@ namespace Altar
                     //TODO: use actual '(with obj ...)' syntax
                     //! it might mess with the CFG structure
                     case GeneralOpCode.PushEnv:
-                        AddStmt(new PushEnvStatement
-                        {
-                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
-                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI,
-                            Parent       = stack.Pop()
-                        });
-                        break;
                     case GeneralOpCode.PopEnv :
-                        AddStmt(new PopEnvStatement
+                    case GeneralOpCode.Brt    :
+                    case GeneralOpCode.Brf    :
+                    case GeneralOpCode.Br     :
                         {
-                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
-                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (byte*)firstI
-                        });
-                        break;
-                    #endregion
-                    #region branch
-                    case GeneralOpCode.Brt:
-                    case GeneralOpCode.Brf:
-                    case GeneralOpCode.Br:
-                        AddStmt(new BranchStatement
-                        {
-                            Type         = pbr->Type(bcv),
-                            Conditional  = pbr->Type(bcv) == BranchType.Unconditional ? null : Pop(),
-                            Target       = (AnyInstruction*)((byte*)ins + pbr->Offset * 4L),
-                            TargetOffset = (byte*)ins + pbr->Offset * 4L - (absolute ? content.RawData.BPtr : (byte*)firstI)
-                        });
+                            var a = pbr->Offset.UValue * 4;
+                            if ((a & 0xFF000000) != 0)
+                            {
+                                a &= 0x00FFFFFF;
+                                a -= 0x01000000;
+                            }
+
+                            var tar = (AnyInstruction*)((long)ins + unchecked((int)a));
+                            var off = (absolute ? (long)content.RawData.BPtr : (long)firstI) + unchecked((int)a);
+
+                            switch (opc)
+                            {
+                                case GeneralOpCode.PushEnv:
+                                    AddStmt(new PushEnvStatement
+                                    {
+                                        Target       = tar,
+                                        TargetOffset = off,
+                                        Parent       = stack.Pop()
+                                    });
+                                    break;
+                                case GeneralOpCode.PopEnv :
+                                    AddStmt(new PopEnvStatement
+                                    {
+                                        Target       = tar,
+                                        TargetOffset = off
+                                    });
+                                    break;
+                                case GeneralOpCode.Brt:
+                                case GeneralOpCode.Brf:
+                                case GeneralOpCode.Br :
+                                    AddStmt(new BranchStatement
+                                    {
+                                        Type         = pbr->Type(bcv),
+                                        Conditional  = pbr->Type(bcv) == BranchType.Unconditional ? null : Pop(),
+                                        Target       = tar,
+                                        TargetOffset = off
+                                    });
+                                    break;
+                                }
+                        }
                         break;
                     #endregion
                     #region break, ret, exit

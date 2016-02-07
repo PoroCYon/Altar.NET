@@ -116,7 +116,14 @@ namespace Altar
                     case InstructionKind.Goto:
                         var g = iptr->Goto;
 
-                        sb.Append(HEX_PRE).Append((relInstr + g.Offset * 4L).ToString(HEX_FM6));
+                        var a = g.Offset.UValue * 4;
+                        if ((a & 0xFF000000) != 0)
+                        {
+                            a &= 0x00FFFFFF;
+                            a -= 0x01000000;
+                        }
+
+                        sb.Append(HEX_PRE).Append(Utils.ToHexSignString(relInstr + unchecked((int)a), HEX_FM6));
                         break;
 
                     #region set
