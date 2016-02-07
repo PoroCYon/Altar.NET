@@ -69,6 +69,7 @@
     <Compile Include="Serialize.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="Structs.cs" />
+    <Compile Include="Tokenizer.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="_LitJson\IJsonWrapper.cs" />
     <Compile Include="_LitJson\JsonData.cs" />
