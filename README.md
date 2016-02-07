@@ -15,7 +15,8 @@ altar [--version|-v]
 altar <verb> <options...>
 ```
 
-(NOTE: use `mono altar <args...>` on mono (should be obvious).)
+(NOTE: use `./altar` if it is not added to your `%PATH%` yet, but resides in the current dir. Not applicable to `CMD`(but you shouldn't be using that).)
+(NOTE: use `mono altar.exe <args...>` on mono (should be obvious).)
 
 Verbs:
 * `export`: export parts from a `data.win` file. Options: `-[gonsbpiformtacduwh]* --absolute --project --file --out`

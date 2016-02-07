@@ -307,7 +307,7 @@ namespace Altar
 
             s += GOTO;
 
-            s += HEX_PRE + TargetOffset.ToString(HEX_FM6);
+            s += HEX_PRE + Utils.ToHexSignString(TargetOffset, HEX_FM6);
 
             return s;
         }
@@ -329,14 +329,14 @@ namespace Altar
         public long TargetOffset;
         public Expression Parent;
 
-        public override string ToString() => PUSHE + SPACE_S + Parent + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
+        public override string ToString() => PUSHE + SPACE_S + Parent + SPACE_S + HEX_PRE + Utils.ToHexSignString(TargetOffset, HEX_FM6);
     }
     public unsafe class PopEnvStatement : Statement
     {
         public AnyInstruction* Target;
         public long TargetOffset;
 
-        public override string ToString() => POPE + SPACE_S + HEX_PRE + TargetOffset.ToString(HEX_FM6);
+        public override string ToString() => POPE + SPACE_S + HEX_PRE + Utils.ToHexSignString(TargetOffset, HEX_FM6);
     }
 
     // temp..?

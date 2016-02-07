@@ -77,10 +77,20 @@ namespace Altar
         GE,
         GT
     }
+    public enum TokenKind
+    {
+        Other         ,
+        OpCode        ,
+        DataType      ,
+        InstanceType  ,
+        VariableType  ,
+        ComparisonType
+    }
 
     public abstract class Token { }
     public class NormalToken : Token
     {
+        public TokenKind Kind;
         public TokenType Type;
     }
     public class IntToken : Token
@@ -102,7 +112,8 @@ namespace Altar
 
     public static class Tokenizer
     {
-        readonly static char[] WordSep = " :\r\n\t".ToCharArray();
+        readonly static char[] WordSep = " \r\n\t".ToCharArray();
+        readonly static string[] SpecialWords = { ":", "[]", "*" };
 
         static string Unescape(string s) =>
             s.Replace("\\\\", "\\").Replace("\\\"", "\"")
@@ -131,14 +142,42 @@ namespace Altar
                     if (p == -1)
                         break;
 
+                    var si = Array.FindIndex(SpecialWords, s => s[0] == p);
+                    if (si > -1) // one of the special things (':', '*' or '[]')
+                    {
+                        // end now -> in next word
+                        if (_rwB.Length != 0)
+                            break;
+
+                        var opos = pos;
+
+                        ReadChar(); // next
+
+                        for (int i = 1; i < SpecialWords[si].Length; i++)
+                            if (SpecialWords[si][i] != PeekChar())
+                                goto IGNORE;
+
+                        // matches
+                        pos = opos;
+
+                        // write word to output
+                        for (int i = 0; i < SpecialWords[si].Length; i++)
+                            _rwB.Append((char)ReadChar());
+
+                        break; // returns
+
+                    IGNORE:
+                        pos = opos;
+                    }
+
                     if (p == '"' && !inEsc) inString = !inString;
 
                     var r = ReadChar();
-                    _rwB.Append(r == '\r' ? '\n' : r); // normalise to \n
+                    _rwB.Append(r == '\r' ? '\n' : (char)r); // normalise to \n
 
                     if (p == '\r' && PeekChar() == '\n') ReadChar(); // merge CRLF
 
-                    inEsc = p == '\\' ? inEsc = !inEsc : false;
+                    inEsc = p == '\\' ? !inEsc : false;
 
                     var op = p;
                     p = PeekChar();
@@ -151,7 +190,7 @@ namespace Altar
                         p = ReadChar();
                     }
 
-                    if (p == -1 || (IsWordSep((char)p) && !inString))
+                    if (p == -1 || ((IsWordSep((char)p) || IsWordSep((char)op)) && !inString))
                         break;
                 }
 
@@ -167,200 +206,206 @@ namespace Altar
 
                 switch (w)
                 {
+                    #region OpCode
                     case "conv":
-                        yield return new NormalToken { Type = TokenType.Conv };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Conv };
                         break;
                     case "mul":
-                        yield return new NormalToken { Type = TokenType.Mul };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Mul };
                         break;
                     case "div":
-                        yield return new NormalToken { Type = TokenType.Div };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Div };
                         break;
                     case "rem":
-                        yield return new NormalToken { Type = TokenType.Rem };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Rem };
                         break;
                     case "mod":
-                        yield return new NormalToken { Type = TokenType.Mod };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Mod };
                         break;
                     case "add":
-                        yield return new NormalToken { Type = TokenType.Add };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Add };
                         break;
                     case "sub":
-                        yield return new NormalToken { Type = TokenType.Sub };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Sub };
                         break;
                     case "and":
-                        yield return new NormalToken { Type = TokenType.And };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.And };
                         break;
                     case "or":
-                        yield return new NormalToken { Type = TokenType.Or };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Or };
                         break;
                     case "xor":
-                        yield return new NormalToken { Type = TokenType.Xor };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Xor };
                         break;
                     case "neg":
-                        yield return new NormalToken { Type = TokenType.Neg };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Neg };
                         break;
                     case "not":
-                        yield return new NormalToken { Type = TokenType.Not };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Not };
                         break;
                     case "shl":
-                        yield return new NormalToken { Type = TokenType.Shl };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Shl };
                         break;
                     case "shr":
-                        yield return new NormalToken { Type = TokenType.Shr };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Shr };
                         break;
                     case "clt":
-                        yield return new NormalToken { Type = TokenType.Clt };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Clt };
                         break;
                     case "cle":
-                        yield return new NormalToken { Type = TokenType.Cle };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Cle };
                         break;
                     case "ceq":
-                        yield return new NormalToken { Type = TokenType.Ceq };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Ceq };
                         break;
                     case "cge":
-                        yield return new NormalToken { Type = TokenType.Cge };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Cge };
                         break;
                     case "cgt":
-                        yield return new NormalToken { Type = TokenType.Cgt };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Cgt };
                         break;
                     case "set":
-                        yield return new NormalToken { Type = TokenType.Set };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Set };
                         break;
                     case "dup":
-                        yield return new NormalToken { Type = TokenType.Dup };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Dup };
                         break;
                     case "ret":
-                        yield return new NormalToken { Type = TokenType.Ret };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Ret };
                         break;
                     case "exit":
-                        yield return new NormalToken { Type = TokenType.Exit };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Exit };
                         break;
                     case "pop":
-                        yield return new NormalToken { Type = TokenType.Pop };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Pop };
                         break;
                     case "br":
-                        yield return new NormalToken { Type = TokenType.Br };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Br };
                         break;
                     case "brt":
-                        yield return new NormalToken { Type = TokenType.Brt };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Brt };
                         break;
                     case "brf":
-                        yield return new NormalToken { Type = TokenType.Brf };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Brf };
                         break;
                     case "pushenv":
-                        yield return new NormalToken { Type = TokenType.PushEnv };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PushEnv };
                         break;
                     case "popenv":
-                        yield return new NormalToken { Type = TokenType.PopEnv };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PopEnv };
                         break;
                     case "push":
-                        yield return new NormalToken { Type = TokenType.Push };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Push };
                         break;
                     case "call":
-                        yield return new NormalToken { Type = TokenType.Call };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Call };
                         break;
                     case "break":
-                        yield return new NormalToken { Type = TokenType.Break };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Break };
                         break;
                     case "cmp":
-                        yield return new NormalToken { Type = TokenType.Cmp };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.Cmp };
                         break;
                     case "push.cst":
-                        yield return new NormalToken { Type = TokenType.PushCst };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PushCst };
                         break;
                     case "push.glb":
-                        yield return new NormalToken { Type = TokenType.PushGlb };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PushGlb };
                         break;
                     case "push.var":
-                        yield return new NormalToken { Type = TokenType.PushVar };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PushVar };
                         break;
                     case "push.i16":
-                        yield return new NormalToken { Type = TokenType.PushI16 };
+                        yield return new NormalToken { Kind = TokenKind.OpCode, Type = TokenType.PushI16 };
                         break;
-
+                    #endregion
+                    #region DataType
                     case "double":
-                        yield return new NormalToken { Type = TokenType.Double };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Double };
                         break;
                     case "single":
-                        yield return new NormalToken { Type = TokenType.Single };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Single };
                         break;
                     case "int16":
-                        yield return new NormalToken { Type = TokenType.Int16 };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Int16 };
                         break;
                     case "int32":
-                        yield return new NormalToken { Type = TokenType.Int32 };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Int32 };
                         break;
                     case "int64":
-                        yield return new NormalToken { Type = TokenType.Int64 };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Int64 };
                         break;
                     case "bool":
-                        yield return new NormalToken { Type = TokenType.Bool };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Bool };
                         break;
                     case "var":
-                        yield return new NormalToken { Type = TokenType.Var };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Var };
                         break;
                     case "string":
-                        yield return new NormalToken { Type = TokenType.String };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.String };
                         break;
                     case "inst":
-                        yield return new NormalToken { Type = TokenType.Inst };
+                        yield return new NormalToken { Kind = TokenKind.DataType, Type = TokenType.Inst };
                         break;
-
+                    #endregion
+                    #region InstanceType
                     case "stog":
-                        yield return new NormalToken { Type = TokenType.Stog };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.Stog };
                         break;
                     case "self":
-                        yield return new NormalToken { Type = TokenType.Self };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.Self };
                         break;
                     case "other":
-                        yield return new NormalToken { Type = TokenType.Other };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.Other };
                         break;
                     case "all":
-                        yield return new NormalToken { Type = TokenType.All };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.All };
                         break;
                     case "noone":
-                        yield return new NormalToken { Type = TokenType.Noone };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.Noone };
                         break;
                     case "global":
-                        yield return new NormalToken { Type = TokenType.Global };
+                        yield return new NormalToken { Kind = TokenKind.InstanceType, Type = TokenType.Global };
                         break;
 
                     case "[]":
-                        yield return new NormalToken { Type = TokenType.Array };
+                        yield return new NormalToken { Kind = TokenKind.VariableType, Type = TokenType.Array };
                         break;
                     case "*":
-                        yield return new NormalToken { Type = TokenType.StackTop };
+                        yield return new NormalToken { Kind = TokenKind.VariableType, Type = TokenType.StackTop };
                         break;
-
+                    #endregion
+                    #region ComparisonType
                     case "<":
-                        yield return new NormalToken { Type = TokenType.LT };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.LT };
                         break;
                     case "<=":
-                        yield return new NormalToken { Type = TokenType.LE };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.LE };
                         break;
                     case "==":
-                        yield return new NormalToken { Type = TokenType.EQ };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.EQ };
                         break;
                     case "!=":
-                        yield return new NormalToken { Type = TokenType.NE };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.NE };
                         break;
                     case ">=":
-                        yield return new NormalToken { Type = TokenType.GE };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.GE };
                         break;
                     case ">":
-                        yield return new NormalToken { Type = TokenType.GT };
+                        yield return new NormalToken { Kind = TokenKind.ComparisonType, Type = TokenType.GT };
                         break;
+                    #endregion
+
                     default:
                         long lval;
                         double fval;
 
                         if (w == SR.COLON)
-                            yield return new NormalToken { Type = TokenType.Colon };
+                            yield return new NormalToken { Kind = TokenKind.Other, Type = TokenType.Colon };
                         else if (w == "\n")
-                            yield return new NormalToken { Type = TokenType.Newline };
+                            yield return new NormalToken { Kind = TokenKind.Other, Type = TokenType.Newline };
                         else if (String.IsNullOrWhiteSpace(w))
-                            yield return new NormalToken { Type = TokenType.Whitespace };
+                            yield return new NormalToken { Kind = TokenKind.Other, Type = TokenType.Whitespace };
                         else if (Int64.TryParse(w, NumberStyles.Integer, CultureInfo.InvariantCulture, out lval) || Int64.TryParse(w, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lval))
                             yield return new IntToken { Value = lval };
                         else if (Double.TryParse(w, NumberStyles.Float, CultureInfo.InvariantCulture, out fval))
