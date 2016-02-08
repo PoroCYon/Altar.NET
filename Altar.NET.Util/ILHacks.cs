@@ -8,6 +8,9 @@ namespace Altar
     public unsafe static class ILHacks
     {
         [MethodImpl(MethodImplOptions.ForwardRef)]
+        public static extern TEnum CombineEnums<TEnum>(TEnum a, TEnum b) where TEnum : struct, IConvertible;
+
+        [MethodImpl(MethodImplOptions.ForwardRef)]
         public static extern int SizeOf<T>() where T : struct;
 
         [MethodImpl(MethodImplOptions.ForwardRef)]

@@ -44,6 +44,26 @@
 
 .class public abstract sealed auto ansi Altar.ILHacks
 {
+    //! this method assumes that TEnum is an enum type...
+    .method public static hidebysig
+        !!TEnum CombineEnums<valuetype .ctor ([mscorlib]System.ValueType) TEnum>(
+            !!TEnum a,
+            !!TEnum b
+        ) cil managed
+    {
+        .maxstack 2
+
+        ldarg.0
+        ldarg.1
+
+        or // wow such 1337 h4xx0rz
+           // (a and b are both value types, not boxed)
+           // (and because a and b have the same type, their underlying type is the same, too)
+           // (-> no size mismatches causing overflows etc)
+
+        ret
+    }
+
     .method public static hidebysig
         int32 SizeOf<valuetype .ctor ([mscorlib]System.ValueType) T>()
             cil managed

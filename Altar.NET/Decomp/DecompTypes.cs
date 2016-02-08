@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 
-namespace Altar
+namespace Altar.Decomp
 {
     using static SR;
 
@@ -28,7 +28,7 @@ namespace Altar
 
     public static class BranchTypeExt
     {
-        public static BranchType Type  (this GotoInstruction instr, uint bcv)
+        public static BranchType Type  (this BranchInstruction instr, uint bcv)
         {
             if (instr.OpCode.Kind(bcv) != InstructionKind.Goto)
                 return BranchType.Unconditional;

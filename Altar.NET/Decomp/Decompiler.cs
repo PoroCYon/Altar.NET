@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Altar.Unpack;
 
-namespace Altar
+namespace Altar.Decomp
 {
     public unsafe static class Decompiler
     {
@@ -316,7 +317,7 @@ namespace Altar
                 var pcl = (CallInstruction      *)ins;
                 var pps = (PushInstruction      *)ins;
                 var pse = (SetInstruction       *)ins;
-                var pbr = (GotoInstruction      *)ins;
+                var pbr = (BranchInstruction      *)ins;
                 var pbk = (BreakInstruction     *)ins;
 
                 var st = ins->SingleType;

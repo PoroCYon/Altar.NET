@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Altar
+namespace Altar.Repack
 {
     public class BBData
     {

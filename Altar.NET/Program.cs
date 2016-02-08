@@ -6,12 +6,19 @@ using System.Linq;
 using System.Threading;
 using CommandLine;
 using LitJson;
+using Altar.Decomp;
+using Altar.Recomp;
+using Altar.Repack;
+using Altar.Unpack;
+
+using static Altar.SR;
 
 namespace Altar
 {
     // http://pastebin.com/9t783UNE
 
-    using static SR;
+    using AsmParser = Altar.Recomp.Parser;
+    using CLParser  = CommandLine.Parser;
 
     static class Program
     {
@@ -369,13 +376,15 @@ namespace Altar
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
                 CultureInfo.InvariantCulture;
 
-            //var a = Tokenizer.Tokenize(
-            //    File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_GAMESTART.gml.asm")
-            //    ).ToArray();
+            //var t =
+            //    Tokenizer.Tokenize(
+            //        File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_GAMESTART.gml.asm")
+            //    );
+            //var p = AsmParser.Parse(t).ToArray();
 
             var o = new Options();
 
-            Parser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>
+            CLParser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>
             {
                 if (vo == null)
                     return;

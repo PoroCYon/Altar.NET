@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Altar
+namespace Altar.Unpack
 {
     public unsafe static class SectionReader
     {

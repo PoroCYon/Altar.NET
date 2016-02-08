@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using LitJson;
 
-namespace Altar
+namespace Altar.Unpack
 {
     public static class Serialize
     {

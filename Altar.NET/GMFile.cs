@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Altar.Decomp;
+using Altar.Unpack;
+
+using static Altar.SR;
 
 namespace Altar
 {
-    using static SR;
-
     public unsafe class GMFile : IDisposable
     {
         public GMFileContent Content

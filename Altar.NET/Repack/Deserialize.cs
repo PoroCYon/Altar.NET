@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using LitJson;
 
-namespace Altar
+namespace Altar.Repack
 {
     public static class Deserialize
     {
