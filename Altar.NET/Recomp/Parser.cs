@@ -393,6 +393,17 @@ namespace Altar.Recomp
                 return Tuple.Create(insn, inst);
             };
             #endregion
+            #region Func<string> ReadIdentifier = () => { [...] };
+            Func<string> ReadIdentifier = () =>
+            {
+                var n = Dequeue();
+
+                if (!(n is WordToken) && !(n is NormalToken) /* can be an instruction or type name... */)
+                    throw new FormatException($"Identifier expected, but found '{n}', {Pos(n)}.");
+
+                return n is WordToken ? ((WordToken)n).Value : n.OrigString;
+            };
+            #endregion
 
             Token t;
             while (q.Count > 0)
@@ -403,9 +414,14 @@ namespace Altar.Recomp
 
                 if (!(t is NormalToken))
                 {
-                    labels.Add(LabelValue(t), instrs);
+                    var lv = LabelValue(t);
+
+                    labels.Add(lv, instrs);
                     Expect(TokenType.Colon);
                     SkipWhitespaceAndLines();
+
+                    yield return new Label { LabelValue = lv };
+
                     t = Dequeue();
                 }
 
@@ -509,14 +525,10 @@ namespace Altar.Recomp
                             Expect(TokenType.Colon);
                             SkipWhitespace();
 
-                            var n = Dequeue();
-
-                            if (!(n is WordToken))
-                                throw new FormatException($"Variable name must be a valid identifier, but is '{n}', {Pos(n)}.");
-
+                            var n = ReadIdentifier();
                             var t3 = TryReadVariableType();
 
-                            yield return new Set { OpCode  = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, InstanceType = instu.Item2, InstanceName = instu.Item1, TargetVariable = ((WordToken)n).Value, VariableType = t3 };
+                            yield return new Set { OpCode  = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, InstanceType = instu.Item2, InstanceName = instu.Item1, TargetVariable = n, VariableType = t3 };
                         }
                         break;
                     #endregion
@@ -538,14 +550,11 @@ namespace Altar.Recomp
                                     SkipWhitespace();
                                     Expect(TokenType.Colon);
                                     SkipWhitespace();
-                                    var n = Dequeue();
 
-                                    if (!(n is WordToken))
-                                        throw new FormatException($"Variable name must be a valid identifier, but is '{n}', {Pos(n)}.");
-
+                                    var n = ReadIdentifier();
                                     var t2 = TryReadVariableType();
 
-                                    yield return new PushVariable { OpCode = TokenToOpCodes(nt, 0, t1, instu.Item2), Type = t1, InstanceType = instu.Item2, InstanceName = instu.Item1, VariableName = ((WordToken)n).Value, VariableType = t2 };
+                                    yield return new PushVariable { OpCode = TokenToOpCodes(nt, 0, t1, instu.Item2), Type = t1, InstanceType = instu.Item2, InstanceName = instu.Item1, VariableName = n, VariableType = t2 };
                                     break;
                                 default:
                                     var v = InnerValue(Dequeue());
@@ -570,14 +579,10 @@ namespace Altar.Recomp
 
                             SkipWhitespace();
 
-                            var n = Dequeue();
-
-                            if (!(n is WordToken))
-                                throw new FormatException($"Call target must be a valid identifier, but is '{c}', {Pos(c)}.");
-
+                            var n = ReadIdentifier();
                             var t2 = TryReadVariableType();
 
-                            yield return new Call { OpCode = TokenToOpCodes(nt), ReturnType = t1, Arguments = ((IntToken)c).Value, FunctionName = ((WordToken)n).Value, FunctionType = t2 };
+                            yield return new Call { OpCode = TokenToOpCodes(nt), ReturnType = t1, Arguments = ((IntToken)c).Value, FunctionName = n, FunctionType = t2 };
                         }
                         break;
                     #endregion

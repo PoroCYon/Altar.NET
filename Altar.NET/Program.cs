@@ -378,9 +378,11 @@ namespace Altar
 
             //var t =
             //    Tokenizer.Tokenize(
-            //        File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_GAMESTART.gml.asm")
+            //        File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_TEXT.gml.asm")
             //    );
-            //var p = AsmParser.Parse(t).ToArray();
+            //var p = AsmParser.Parse(t);
+
+            //var recons = String.Join(Environment.NewLine, p.Select(i => i.ToString()));
 
             var o = new Options();
 
