@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Altar.Decomp;
 
 namespace Altar
 {
@@ -64,6 +65,139 @@ namespace Altar
             v = Math.Abs(v);
 
             return "-" + v.ToString(fmt);
+        }
+
+        readonly static char  [] SepChars   = { '|', ',' };
+        readonly static string[] SepStrings = { "|", "," };
+
+        /// <summary>
+        /// Because <see cref="Enum.TryParse{TEnum}(string, bool, out TEnum)" /> is total bogus.
+        /// </summary>
+        /// <typeparam name="TEnum"></typeparam>
+        /// <param name="toParse"></param>
+        /// <param name="ignoreCase"></param>
+        /// <param name="allowNumber"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool TryParseEnum<TEnum>(string toParse, bool ignoreCase, bool allowNumber, bool parseFlags, ref TEnum value)
+            where TEnum : struct, IConvertible
+        {
+            var t = typeof(TEnum);
+            if (!t.IsEnum)
+                throw new ArgumentException("TEnum is not an enum type.");
+            var u = Enum.GetUnderlyingType(t);
+
+            var ca = parseFlags ? t.GetCustomAttributes(typeof(FlagsAttribute), false) : null;
+            if (parseFlags && ca != null && ca.Length != 0 && toParse.IndexOfAny(SepChars) != -1) // is flags AND has multiple values in the string
+            {
+                var v = default(TEnum);
+
+                var split = toParse.Split(SepChars, StringSplitOptions.None).Select(s => s.Trim()).ToArray();
+
+                for (int i = 0; i < split.Length; i++)
+                {
+                    TEnum v_ = default(TEnum);
+                    if (TryParseEnum(split[i], ignoreCase, allowNumber, false, ref v_))
+                        v = ILHacks.CombineEnums(v, v_);
+                }
+            }
+            else
+            {
+                if (allowNumber)
+                    #region cast to right type, get value
+                    if (u == typeof(ulong))
+                    {
+                        ulong ul;
+                        if (UInt64.TryParse(toParse, out ul))
+                        {
+                            value = (TEnum)Enum.ToObject(t, ul);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(long))
+                    {
+                        long l;
+                        if (Int64.TryParse(toParse, out l))
+                        {
+                            value = (TEnum)Enum.ToObject(t, l);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(uint))
+                    {
+                        uint ui;
+                        if (UInt32.TryParse(toParse, out ui))
+                        {
+                            value = (TEnum)Enum.ToObject(t, ui);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(int))
+                    {
+                        int i;
+                        if (Int32.TryParse(toParse, out i))
+                        {
+                            value = (TEnum)Enum.ToObject(t, i);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(ushort))
+                    {
+                        ushort us;
+                        if (UInt16.TryParse(toParse, out us))
+                        {
+                            value = (TEnum)Enum.ToObject(t, us);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(short))
+                    {
+                        short s;
+                        if (Int16.TryParse(toParse, out s))
+                        {
+                            value = (TEnum)Enum.ToObject(t, s);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(byte))
+                    {
+                        byte b;
+                        if (Byte.TryParse(toParse, out b))
+                        {
+                            value = (TEnum)Enum.ToObject(t, b);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(sbyte))
+                    {
+                        sbyte sb;
+                        if (SByte.TryParse(toParse, out sb))
+                        {
+                            value = (TEnum)Enum.ToObject(t, sb);
+                            return true;
+                        }
+                    }
+                    else if (u == typeof(char) && toParse.Length == 1)
+                    {
+                        value = (TEnum)Enum.ToObject(t, toParse[0]);
+                        return true;
+                    }
+                #endregion
+
+                var names  = Enum.GetNames (t);
+                var values = Enum.GetValues(t);
+
+                var c = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+                for (int i = 0; i < names.Length; i++)
+                    if (toParse.Equals(names[i], c))
+                    {
+                        value = (TEnum)values.GetValue(i);
+                        return true;
+                    }
+            }
+
+            return false;
         }
     }
     public static class Extensions

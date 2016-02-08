@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Altar
+namespace Altar.Decomp
 {
     using static SR;
 
@@ -221,7 +221,7 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SingleTypeInstruction
     {
-        ushort _padding;
+        ushort _pad;
         public DataType Type;
         public OpCodes OpCode;
     }
@@ -234,7 +234,7 @@ namespace Altar
         public OpCodes OpCode;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct GotoInstruction
+    public struct BranchInstruction
     {
         public Int24 Offset ;
         public OpCodes OpCode;
@@ -290,7 +290,7 @@ namespace Altar
         [FieldOffset(0)]
         public DoubleTypeInstruction DoubleType;
         [FieldOffset(0)]
-        public GotoInstruction Goto;
+        public BranchInstruction Goto;
         [FieldOffset(0)]
         public SetInstruction Set;
         [FieldOffset(0)]

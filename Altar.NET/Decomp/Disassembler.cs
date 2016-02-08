@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Altar.Unpack;
 
-namespace Altar
+using static Altar.SR;
+
+namespace Altar.Decomp
 {
-    using static SR;
-
     // http://undertale.rawr.ws/decompilation
     // https://gist.github.com/PoroCYon/45f947d576f715de3a4d
 
