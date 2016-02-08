@@ -102,6 +102,8 @@ namespace Altar.Recomp
     {
         public int Line;
         public int Column;
+
+        public string OrigString;
     }
 
     public class NormalToken : Token

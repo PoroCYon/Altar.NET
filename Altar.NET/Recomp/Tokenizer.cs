@@ -75,7 +75,7 @@ namespace Altar.Recomp
                         break; // return
                     }
 
-                    var si = Array.FindIndex(SpecialWords, s => s[0] == p);
+                    var si = inString ? -1 : Array.FindIndex(SpecialWords, s => s[0] == p);
                     if (si > -1) // one of the special things (':', '*' or '[]')
                     {
                         // end now -> in next word
@@ -123,8 +123,8 @@ namespace Altar.Recomp
                     if (p == '"' && !inEsc)
                         inString = !inString;
 
-                    var r = ReadChar();
-                    _rwB.Append(r == '\r' ? '\n' : (char)r); // normalise to \n
+                    ReadChar();
+                    _rwB.Append(p == '\r' ? '\n' : (char)p); // normalise to \n
 
                     if (p == '\r' && PeekChar() == '\n') ReadChar(); // merge CRLF
 
@@ -134,7 +134,7 @@ namespace Altar.Recomp
                     p = PeekChar();
 
                     // merge whitespace continuations
-                    while (op == p /* op != -1 (see earlier break) -> will break if p == -1 */ && IsWordSep((char)p))
+                    while (!inString && op == p /* op != -1 (see earlier break) -> will break if p == -1 */ && IsWordSep((char)p))
                     {
                         // next char
                         op = p;
@@ -240,19 +240,19 @@ namespace Altar.Recomp
                             else if (Int64.TryParse(w, NumberStyles.Integer, CultureInfo.InvariantCulture, out lval)
                                     || (w.StartsWith(SR.HEX_PRE, StringComparison.OrdinalIgnoreCase)
                                         && Int64.TryParse(w, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lval)))
-                                yield return new IntToken { Value = lval, Line = line, Column = col };
+                                yield return new IntToken { OrigString = w, Value = lval, Line = line, Column = col };
                             else if (Double.TryParse(w, NumberStyles.Float, CultureInfo.InvariantCulture, out fval))
-                                yield return new FloatToken { Value = fval, Line = line, Column = col };
+                                yield return new FloatToken { OrigString = w, Value = fval, Line = line, Column = col };
                             else if (w.StartsWith("\"", StringComparison.Ordinal) && w.EndsWith("\"", StringComparison.Ordinal))
-                                yield return new StringToken { Value = Unescape(w.Substring(1, w.Length - 2)), Line = line, Column = col };
+                                yield return new StringToken { OrigString = w, Value = Unescape(w.Substring(1, w.Length - 2)), Line = line, Column = col };
                             else
-                                yield return new WordToken { Value = w, Line = line, Column = col };
+                                yield return new WordToken { OrigString = w, Value = w, Line = line, Column = col };
                         }
                         break;
                 }
 
                 if ((short)type != -1)
-                    yield return new NormalToken { Type = type, Line = line, Column = col };
+                    yield return new NormalToken { OrigString = w, Type = type, Line = line, Column = col };
             }
 
             yield break;
