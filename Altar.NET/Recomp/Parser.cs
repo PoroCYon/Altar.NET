@@ -233,16 +233,22 @@ namespace Altar.Recomp
 
             switch (((NormalToken)t).Type)
             {
+                case TokenType.Clt:
                 case TokenType.LT:
                     return ComparisonType.LowerThan;
+                case TokenType.Cle:
                 case TokenType.LE:
                     return ComparisonType.LTOrEqual;
+                case TokenType.Ceq:
                 case TokenType.EQ:
                     return ComparisonType.Equality;
+                case TokenType.Cne:
                 case TokenType.NE:
                     return ComparisonType.Inequality;
+                case TokenType.Cge:
                 case TokenType.GE:
                     return ComparisonType.GTOrEqual;
+                case TokenType.Cgt:
                 case TokenType.GT:
                     return ComparisonType.GreaterThan;
             }
@@ -309,6 +315,85 @@ namespace Altar.Recomp
                 return (NormalToken)tt;
             };
 
+            #region Func<VariableType> TryReadVariableType = () => { [...] };
+            Func<VariableType> TryReadVariableType = () =>
+            {
+                var vt = VariableType.Normal;
+                if (q.Count > 0)
+                {
+                    SkipWhitespace();
+
+                    var p = q.Peek();
+
+                    if (p is NormalToken && ((NormalToken)p).Kind == TokenKind.VariableType)
+                    {
+                        q.Dequeue();
+
+                        switch (((NormalToken)p).Type)
+                        {
+                            case TokenType.StackTop:
+                                vt = VariableType.StackTop;
+                                break;
+                            case TokenType.Array:
+                                vt = VariableType.Array;
+                                break;
+                            default:
+                                throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
+                        }
+                    }
+                }
+
+                return vt;
+            };
+            #endregion
+            #region Func<Tuple<string, InstanceType>> ReadInstanceType = () => { [...] };
+            Func<Tuple<string, InstanceType>> ReadInstanceType = () =>
+            {
+                var o = Dequeue();
+
+                if ((!(o is NormalToken) && !(o is WordToken))
+                        || (o is NormalToken && ((NormalToken)o).Kind != TokenKind.InstanceType)
+                        || (o is WordToken && !((WordToken)o).Value.StartsWith(SR.O_BRACKET, StringComparison.Ordinal)
+                                           && !((WordToken)o).Value.EndsWith  (SR.C_BRACKET, StringComparison.Ordinal)))
+                    throw new FormatException($"Variable owner must be an instance type or object name, but is '{o}', {Pos(o)}.");
+
+                var inst = (InstanceType)1;
+                string insn = null;
+
+                if (o is NormalToken)
+                    switch (((NormalToken)o).Type)
+                    {
+                        case TokenType.Stog:
+                            inst = InstanceType.StackTopOrGlobal;
+                            break;
+                        case TokenType.Self:
+                            inst = InstanceType.Self;
+                            break;
+                        case TokenType.Other:
+                            inst = InstanceType.Other;
+                            break;
+                        case TokenType.All:
+                            inst = InstanceType.All;
+                            break;
+                        case TokenType.Noone:
+                            inst = InstanceType.Noone;
+                            break;
+                        case TokenType.Global:
+                            inst = InstanceType.Global;
+                            break;
+                        default:
+                            throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
+                    }
+                else
+                {
+                    insn = ((WordToken)o).Value;
+                    insn = insn.Substring(1, insn.Length - 2);
+                }
+
+                return Tuple.Create(insn, inst);
+            };
+            #endregion
+
             Token t;
             while (q.Count > 0)
             {
@@ -332,9 +417,9 @@ namespace Altar.Recomp
 
                 SkipWhitespace();
 
-                //TODO: clean up code repetitions
                 switch (opc)
                 {
+                    #region doubletype
                     case TokenType.Conv:
                     case TokenType.Mul:
                     case TokenType.Div:
@@ -359,6 +444,7 @@ namespace Altar.Recomp
                             yield return new DoubleType { OpCode = TokenToOpCodes(nt), Type1 = t1, Type2 = t2 };
                         }
                         break;
+                    #endregion
                     #region cmp
                     case TokenType.Clt:
                     case TokenType.Cle:
@@ -373,33 +459,7 @@ namespace Altar.Recomp
                             SkipWhitespace();
                             var t2 = TokenToData(ExpectReadKind(TokenKind.DataType));
 
-                            ComparisonType ct;
-
-                            switch (opc)
-                            {
-                                case TokenType.Clt:
-                                    ct = ComparisonType.LowerThan;
-                                    break;
-                                case TokenType.Cle:
-                                    ct = ComparisonType.LTOrEqual;
-                                    break;
-                                case TokenType.Ceq:
-                                    ct = ComparisonType.Equality;
-                                    break;
-                                case TokenType.Cne:
-                                    ct = ComparisonType.Inequality;
-                                    break;
-                                case TokenType.Cge:
-                                    ct = ComparisonType.GTOrEqual;
-                                    break;
-                                case TokenType.Cgt:
-                                    ct = ComparisonType.GreaterThan;
-                                    break;
-                                default:
-                                    throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                            }
-
-                            yield return new Compare { OpCode = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, ComparisonType = ct };
+                            yield return new Compare { OpCode = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, ComparisonType = TokenToComp(nt) };
                         }
                         break;
                     case TokenType.Cmp:
@@ -416,12 +476,15 @@ namespace Altar.Recomp
                         }
                         break;
                     #endregion
+                    #region singletype
                     case TokenType.Dup:
                     case TokenType.Ret:
                     case TokenType.Exit:
                     case TokenType.Pop:
                         yield return new SingleType { OpCode = TokenToOpCodes(nt), Type = TokenToData(ExpectReadKind(TokenKind.DataType)) };
                         break;
+                    #endregion
+                    #region branch
                     case TokenType.Br:
                     case TokenType.Brt:
                     case TokenType.Brf:
@@ -429,6 +492,7 @@ namespace Altar.Recomp
                     case TokenType.PopEnv:
                         yield return new Branch { OpCode = TokenToOpCodes(nt), Label = LabelValue(Dequeue()) };
                         break;
+                    #endregion
                     #region set
                     case TokenType.Set:
                         {
@@ -439,13 +503,7 @@ namespace Altar.Recomp
                             var t2 = TokenToData(ExpectReadKind(TokenKind.DataType));
                             SkipWhitespace();
 
-                            var o = Dequeue();
-
-                            if ((!(o is NormalToken) && !(o is WordToken))
-                                    || (o is NormalToken && ((NormalToken)o).Kind != TokenKind.InstanceType)
-                                    || (o is WordToken && !((WordToken)o).Value.StartsWith(SR.O_BRACKET, StringComparison.Ordinal)
-                                                       && !((WordToken)o).Value.EndsWith(SR.C_BRACKET, StringComparison.Ordinal)))
-                                throw new FormatException($"Variable owner must be an instance type or object name, but is '{o}', {Pos(o)}.");
+                            var instu = ReadInstanceType();
 
                             SkipWhitespace();
                             Expect(TokenType.Colon);
@@ -456,65 +514,9 @@ namespace Altar.Recomp
                             if (!(n is WordToken))
                                 throw new FormatException($"Variable name must be a valid identifier, but is '{n}', {Pos(n)}.");
 
-                            var t3 = VariableType.Normal;
-                            if (q.Count > 0)
-                            {
-                                SkipWhitespace();
+                            var t3 = TryReadVariableType();
 
-                                var p = q.Peek();
-
-                                if (p is NormalToken && ((NormalToken)p).Kind == TokenKind.VariableType)
-                                {
-                                    q.Dequeue();
-
-                                    switch (((NormalToken)p).Type)
-                                    {
-                                        case TokenType.StackTop:
-                                            t3 = VariableType.StackTop;
-                                            break;
-                                        case TokenType.Array:
-                                            t3 = VariableType.Array;
-                                            break;
-                                        default:
-                                            throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                                    }
-                                }
-                            }
-
-                            var inst = (InstanceType)1;
-                            string insn = null;
-
-                            if (o is NormalToken)
-                                switch (((NormalToken)o).Type)
-                                {
-                                    case TokenType.Stog:
-                                        inst = InstanceType.StackTopOrGlobal;
-                                        break;
-                                    case TokenType.Self:
-                                        inst = InstanceType.Self;
-                                        break;
-                                    case TokenType.Other:
-                                        inst = InstanceType.Other;
-                                        break;
-                                    case TokenType.All:
-                                        inst = InstanceType.All;
-                                        break;
-                                    case TokenType.Noone:
-                                        inst = InstanceType.Noone;
-                                        break;
-                                    case TokenType.Global:
-                                        inst = InstanceType.Global;
-                                        break;
-                                    default:
-                                        throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                                }
-                            else
-                            {
-                                insn = ((WordToken)o).Value;
-                                insn = insn.Substring(1, insn.Length - 2);
-                            }
-
-                            yield return new Set { OpCode  = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, InstanceType = inst, InstanceName = insn, TargetVariable = ((WordToken)n).Value, VariableType = t3 };
+                            yield return new Set { OpCode  = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, InstanceType = instu.Item2, InstanceName = instu.Item1, TargetVariable = ((WordToken)n).Value, VariableType = t3 };
                         }
                         break;
                     #endregion
@@ -531,13 +533,7 @@ namespace Altar.Recomp
                             switch (t1)
                             {
                                 case DataType.Variable:
-                                    var o = Dequeue();
-
-                                    if ((!(o is NormalToken) && !(o is WordToken))
-                                            || (o is NormalToken && ((NormalToken)o).Kind != TokenKind.InstanceType)
-                                            || (o is WordToken && !((WordToken)o).Value.StartsWith(SR.O_BRACKET, StringComparison.Ordinal)
-                                                               && !((WordToken)o).Value.EndsWith  (SR.C_BRACKET, StringComparison.Ordinal)))
-                                        throw new FormatException($"Variable owner must be an instance type or object name, but is '{o}', {Pos(o)}.");
+                                    var instu = ReadInstanceType();
 
                                     SkipWhitespace();
                                     Expect(TokenType.Colon);
@@ -547,65 +543,9 @@ namespace Altar.Recomp
                                     if (!(n is WordToken))
                                         throw new FormatException($"Variable name must be a valid identifier, but is '{n}', {Pos(n)}.");
 
-                                    var t2 = VariableType.Normal;
-                                    if (q.Count > 0)
-                                    {
-                                        SkipWhitespace();
+                                    var t2 = TryReadVariableType();
 
-                                        var p = q.Peek();
-
-                                        if (p is NormalToken && ((NormalToken)p).Kind == TokenKind.VariableType)
-                                        {
-                                            q.Dequeue();
-
-                                            switch (((NormalToken)p).Type)
-                                            {
-                                                case TokenType.StackTop:
-                                                    t2 = VariableType.StackTop;
-                                                    break;
-                                                case TokenType.Array:
-                                                    t2 = VariableType.Array;
-                                                    break;
-                                                default:
-                                                    throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                                            }
-                                        }
-                                    }
-
-                                    var inst = (InstanceType)1;
-                                    string insn = null;
-
-                                    if (o is NormalToken)
-                                        switch (((NormalToken)o).Type)
-                                        {
-                                            case TokenType.Stog:
-                                                inst = InstanceType.StackTopOrGlobal;
-                                                break;
-                                            case TokenType.Self:
-                                                inst = InstanceType.Self;
-                                                break;
-                                            case TokenType.Other:
-                                                inst = InstanceType.Other;
-                                                break;
-                                            case TokenType.All:
-                                                inst = InstanceType.All;
-                                                break;
-                                            case TokenType.Noone:
-                                                inst = InstanceType.Noone;
-                                                break;
-                                            case TokenType.Global:
-                                                inst = InstanceType.Global;
-                                                break;
-                                            default:
-                                                throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                                        }
-                                    else
-                                    {
-                                        insn = ((WordToken)o).Value;
-                                        insn = insn.Substring(1, insn.Length - 2);
-                                    }
-
-                                    yield return new PushVariable { OpCode = TokenToOpCodes(nt, 0, t1, inst), Type = t1, InstanceType = inst, InstanceName = insn, VariableName = ((WordToken)n).Value, VariableType = t2 };
+                                    yield return new PushVariable { OpCode = TokenToOpCodes(nt, 0, t1, instu.Item2), Type = t1, InstanceType = instu.Item2, InstanceName = instu.Item1, VariableName = ((WordToken)n).Value, VariableType = t2 };
                                     break;
                                 default:
                                     var v = InnerValue(Dequeue());
@@ -635,35 +575,13 @@ namespace Altar.Recomp
                             if (!(n is WordToken))
                                 throw new FormatException($"Call target must be a valid identifier, but is '{c}', {Pos(c)}.");
 
-                            var t2 = VariableType.Normal;
-                            if (q.Count > 0)
-                            {
-                                SkipWhitespace();
-
-                                var p = q.Peek();
-
-                                if (p is NormalToken && ((NormalToken)p).Kind == TokenKind.VariableType)
-                                {
-                                    q.Dequeue();
-
-                                    switch (((NormalToken)p).Type)
-                                    {
-                                        case TokenType.StackTop:
-                                            t2 = VariableType.StackTop;
-                                            break;
-                                        case TokenType.Array:
-                                            t2 = VariableType.Array;
-                                            break;
-                                        default:
-                                            throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
-                                    }
-                                }
-                            }
+                            var t2 = TryReadVariableType();
 
                             yield return new Call { OpCode = TokenToOpCodes(nt), ReturnType = t1, Arguments = ((IntToken)c).Value, FunctionName = ((WordToken)n).Value, FunctionType = t2 };
                         }
                         break;
                     #endregion
+                    #region break
                     case TokenType.Break:
                         {
                             var t1 = TokenToData(ExpectReadKind(TokenKind.DataType));
@@ -676,6 +594,7 @@ namespace Altar.Recomp
                             yield return new Break { OpCode = TokenToOpCodes(nt), Type = t1, Signal = ((IntToken)s).Value };
                         }
                         break;
+                    #endregion
                     default:
                         throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
                 }
