@@ -15,7 +15,7 @@ altar [--version|-v]
 altar <verb> <options...>
 ```
 
-(NOTE: use `./altar` if it is not added to your `%PATH%` yet, but resides in the current dir. Not applicable to `CMD`(but you shouldn't be using that).)
+(NOTE: use `./altar` if it is not added to your `%PATH%` yet, but resides in the current dir. Not applicable to `CMD`(but you shouldn't be using that).)    
 (NOTE: use `mono altar.exe <args...>` on mono (should be obvious).)
 
 Verbs:
