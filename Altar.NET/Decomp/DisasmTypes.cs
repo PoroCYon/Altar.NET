@@ -31,12 +31,18 @@ namespace Altar.Decomp
     /// </summary>
     public enum InstanceType : short
     {
-        StackTopOrGlobal,
+        StackTopOrGlobal = 0,
+
         Self   = -1,
         Other  = -2,
         All    = -3,
         Noone  = -4,
-        Global = -5
+        Global = -5,
+
+        //TODO: unknown
+        Unknown = -6,
+        //! ?
+        Local   = -7
     }
     public enum VariableType : byte
     {
@@ -130,6 +136,7 @@ namespace Altar.Decomp
         PushEnv = 0xBA,
         PopEnv  = 0xBB,
         PushCst = 0xC0,
+        PushLoc = 0xC1,
         PushGlb = 0xC2,
         PushVar = 0xC3,
         PushI16 = 0x84,
@@ -318,6 +325,7 @@ namespace Altar.Decomp
                     case FOpCode.Set:
                         return InstructionKind.Set;
                     case FOpCode.PushCst:
+                    case FOpCode.PushLoc:
                     case FOpCode.PushGlb:
                     case FOpCode.PushVar:
                     case FOpCode.PushI16:
@@ -462,14 +470,19 @@ namespace Altar.Decomp
         [DebuggerHidden]
         public static string ToPrettyString(this FOpCode type)
         {
-            if (type == FOpCode.PushCst)
-                return "push.cst";
-            if (type == FOpCode.PushGlb)
-                return "push.glb";
-            if (type == FOpCode.PushI16)
-                return "push.i16";
-            if (type == FOpCode.PushVar)
-                return "push.var";
+            switch (type)
+            {
+                case FOpCode.PushCst:
+                    return "push.cst";
+                case FOpCode.PushLoc:
+                    return "push.loc";
+                case FOpCode.PushGlb:
+                    return "push.glb";
+                case FOpCode.PushI16:
+                    return "push.i16";
+                case FOpCode.PushVar:
+                    return "push.var";
+            }
 
             return type.ToString().ToLowerInvariant();
         }
@@ -585,6 +598,7 @@ namespace Altar.Decomp
                     case FOpCode.PopEnv:
                         return GeneralOpCode.PopEnv;
                     case FOpCode.PushCst:
+                    case FOpCode.PushLoc:
                     case FOpCode.PushGlb:
                     case FOpCode.PushVar:
                     case FOpCode.PushI16:

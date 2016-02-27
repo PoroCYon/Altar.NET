@@ -415,7 +415,15 @@ namespace Altar
                 switch (verb)
                 {
                     case "export":
-                        Export((ExportOptions)vo);
+                        try
+                        {
+                            Export((ExportOptions)vo);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("An error occured:");
+                            Console.WriteLine(e);
+                        }
                         break;
                 }
             });

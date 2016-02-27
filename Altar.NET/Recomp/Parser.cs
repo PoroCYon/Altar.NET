@@ -55,7 +55,7 @@ namespace Altar.Recomp
                     case TokenType.And:
                         return new OpCodePair { VersionE = EOpCode.And, VersionF = FOpCode.And };
                     case TokenType.Or:
-                        return new OpCodePair { VersionE = EOpCode.Or, VersionF = FOpCode.Or };
+                        return new OpCodePair { VersionE = EOpCode.Or , VersionF = FOpCode.Or  };
                     case TokenType.Xor:
                         return new OpCodePair { VersionE = EOpCode.Xor, VersionF = FOpCode.Xor };
                     case TokenType.Neg:
@@ -89,7 +89,7 @@ namespace Altar.Recomp
                     case TokenType.Pop:
                         return new OpCodePair { VersionE = EOpCode.Pop, VersionF = FOpCode.Pop };
                     case TokenType.Br:
-                        return new OpCodePair { VersionE = EOpCode.Br, VersionF = FOpCode.Br };
+                        return new OpCodePair { VersionE = EOpCode.Br , VersionF = FOpCode.Br  };
                     case TokenType.Brt:
                         return new OpCodePair { VersionE = EOpCode.Brt, VersionF = FOpCode.Brt };
                     case TokenType.Brf:
@@ -97,7 +97,7 @@ namespace Altar.Recomp
                     case TokenType.PushEnv:
                         return new OpCodePair { VersionE = EOpCode.PushEnv, VersionF = FOpCode.PushEnv };
                     case TokenType.PopEnv:
-                        return new OpCodePair { VersionE = EOpCode.PopEnv, VersionF = FOpCode.PopEnv };
+                        return new OpCodePair { VersionE = EOpCode.PopEnv , VersionF = FOpCode.PopEnv  };
                     case TokenType.Push:
                         FOpCode pt = FOpCode.PushCst;
                         switch (data)
@@ -147,6 +147,8 @@ namespace Altar.Recomp
                         return new OpCodePair { VersionE = ct, VersionF = FOpCode.Cmp };
                     case TokenType.PushCst:
                         return new OpCodePair { VersionE = EOpCode.Push, VersionF = FOpCode.PushCst };
+                    case TokenType.PushLoc:
+                        return new OpCodePair { VersionE = EOpCode.Push, VersionF = FOpCode.PushLoc };
                     case TokenType.PushGlb:
                         return new OpCodePair { VersionE = EOpCode.Push, VersionF = FOpCode.PushGlb };
                     case TokenType.PushVar:
@@ -535,6 +537,7 @@ namespace Altar.Recomp
                     #region push
                     case TokenType.Push:
                     case TokenType.PushCst:
+                    case TokenType.PushLoc:
                     case TokenType.PushGlb:
                     case TokenType.PushI16:
                     case TokenType.PushVar:

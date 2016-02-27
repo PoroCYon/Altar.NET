@@ -544,6 +544,7 @@ namespace Altar.Unpack
                 return ret;
             });
         }
+        //TODO: unused stuff might contain info about local vars?
         public static ReferenceDef[] GetRefDefsWithLength(GMFileContent content, SectionRefDefs* section)
         {
             return GetRefDefsInternal(content, section, 1, section->Entries.NameOffset /* actually length, because reasons */, 12, p =>
