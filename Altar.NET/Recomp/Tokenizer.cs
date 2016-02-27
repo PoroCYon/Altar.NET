@@ -242,6 +242,9 @@ namespace Altar.Recomp
                     case "PUSH.CST":
                         type = TokenType.PushCst;
                         break;
+                    case "PUSH.LOC":
+                        type = TokenType.PushLoc;
+                        break;
                     case "PUSH.GLB":
                         type = TokenType.PushGlb;
                         break;
