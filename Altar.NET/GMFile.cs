@@ -210,6 +210,9 @@ namespace Altar
                         break;
                     case SectionHeaders.Extensions:
                         ret.Extensions = (SectionUnknown*)hdr;
+
+                        if (ret.Extensions->Header.Size > 4)
+                            Console.WriteLine("Warning: EXTN chunk is not empty!");
                         break;
                     case SectionHeaders.Sounds:
                         ret.Sounds = (SectionCountOffsets*)hdr;
@@ -228,12 +231,18 @@ namespace Altar
                         break;
                     case SectionHeaders.Shaders:
                         ret.Shaders = (SectionUnknown*)hdr;
+
+                        if (ret.Extensions->Header.Size > 4)
+                            Console.WriteLine("Warning: SHDR chunk is not empty!");
                         break;
                     case SectionHeaders.Fonts:
                         ret.Fonts = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Timelines:
                         ret.Timelines = (SectionUnknown*)hdr;
+
+                        if (ret.Extensions->Header.Size > 4)
+                            Console.WriteLine("Warning: TMLN chunk is not empty!");
                         break;
                     case SectionHeaders.Objects:
                         ret.Objects = (SectionCountOffsets*)hdr;
@@ -243,6 +252,9 @@ namespace Altar
                         break;
                     case SectionHeaders.DataFiles:
                         ret.DataFiles = (SectionUnknown*)hdr;
+
+                        if (ret.Extensions->Header.Size > 4)
+                            Console.WriteLine("Warning: DAFL chunk is not empty!");
                         break;
                     case SectionHeaders.TexturePage:
                         ret.TexturePages = (SectionCountOffsets*)hdr;
@@ -267,6 +279,14 @@ namespace Altar
                         break;
                     case SectionHeaders.AudioGroup:
                         ret.AudioGroup = (SectionUnknown*)hdr;
+
+                        if (ret.Extensions->Header.Size > 4)
+                            Console.WriteLine("Warning: AGRP chunk is not empty!");
+                        break;
+                    default:
+                        if (hdr->Size > 4)
+                            Console.WriteLine($"Warning: unexpected {hdr->Identity.ToChunkName()}, chunk is not empty!");
+
                         break;
                 }
 

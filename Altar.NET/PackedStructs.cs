@@ -134,45 +134,8 @@ namespace Altar
     {
         public SectionHeader Header;
 
-        /*
-            uint color_depth;
-            uint resolution;
-            uint frequency;
-            uint buttonless;?
-            uint sync_vertex;
-            bool fullscreen_key; (1 bit)
-            bool help_key;
-            bool quit_key;
-            bool save_key;
-            bool screenshot_key;
-            bool close_secondary;
-            uint process_priority;
-            bool freeze_lose_focus;
-            bool? show_load_progress;
-            uint mbe_splash_bg_offset;?
-            uint mbe_splash_fg_offset;?
-            uint mbe_splash_ld_offset;?
-            bool load_transparency;
-            byte? load_alpha;
-            bool scale_load_progress;
-            bool display_errors;
-            bool write_errors;
-            bool abort_errors;
-            uint treat_uninit_zero;?
-            uint creation_event_order;?
-        */
-
-        fixed uint _pad0[2];
-        public uint IconOffset;
-        // 0x80000000
-        // 2
-        // 0xCC7A1#
-        // 0
-        // *
-        // 0 0 0 0
-        // *
-        // 0 0 0 0
-        // 0xFF
+        fixed uint _pad0[2]; // flags?
+        public uint IconOffset; //TODO !? what do do with this?
         fixed uint _pad1[0xC];
         public CountOffsetsPair ConstMap;
     }

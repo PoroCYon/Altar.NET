@@ -199,6 +199,7 @@ namespace Altar.Decomp
             var stmts = new List<Statement>();
 
             var firstI = code.Instructions[0];
+            var baseOff = absolute ? (long)content.RawData.BPtr : (long)firstI;
 
             //TODO: use locals
 
@@ -375,15 +376,12 @@ namespace Altar.Decomp
                         break;
                     case GeneralOpCode.Pop:
                         if (stack.Count > 0 && stack.Peek() is CallExpression)
-                            AddStmt(new CallStatement
-                            {
-                                Call = stack.Pop() as CallExpression
-                            });
+                            AddStmt(new CallStatement { Call = (CallExpression)stack.Pop() });
                         else
                             AddStmt(new PopStatement());
                         break;
                     #endregion
-                    #region env
+                    #region br etc
                     //TODO: use actual '(with obj ...)' syntax
                     //! it might mess with the CFG structure
                     case GeneralOpCode.PushEnv:
@@ -400,7 +398,7 @@ namespace Altar.Decomp
                             }
 
                             var tar = (AnyInstruction*)((long)ins + unchecked((int)a));
-                            var off = (absolute ? (long)content.RawData.BPtr : (long)firstI) + unchecked((int)a);
+                            var off = baseOff + unchecked((int)a);
 
                             switch (opc)
                             {
@@ -477,9 +475,8 @@ namespace Altar.Decomp
                             case ExpressionType.Variable:
                                 var vt = ((Reference*)&pps->ValueRest)->Type;
 
-                                if (vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal)
-                                {
-                                    stack.Push(new MemberExpression
+                                stack.Push(vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
+                                    ? new MemberExpression
                                     {
                                         Owner        = Pop(),
                                         ReturnType   = ps.Type,
@@ -488,10 +485,8 @@ namespace Altar.Decomp
                                         OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance).Name : null,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                                         ArrayIndices = TryGetIndices(vt)
-                                    });
-                                }
-                                else
-                                    stack.Push(new VariableExpression
+                                    }
+                                    : new VariableExpression
                                     {
                                         ReturnType   = ps.Type,
                                         Type         = vt,
@@ -503,8 +498,8 @@ namespace Altar.Decomp
                             #endregion
                             #region literal
                             case ExpressionType.Literal:
-                                object v         = null;
-                                var rest         = &pps->ValueRest;
+                                object v = null;
+                                var rest = &pps->ValueRest;
 
                                 #region get value
                                 switch (ps.Type)

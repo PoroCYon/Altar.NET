@@ -370,8 +370,29 @@ namespace Altar
             }
         }
 
+        // used to prove the chunk order doesn't matter
+        unsafe static void SwapChunks(GMFileContent f)
+        {
+            int EmptyChunkSize = sizeof(SectionUnknown);
+
+            var exntO = (long)f.Extensions - (long)f.RawData.BPtr;
+            var tmlnO = (long)f.Timelines  - (long)f.RawData.BPtr;
+
+            byte[] extnT = new byte[EmptyChunkSize];
+
+            ILHacks.Cpblk((IntPtr)f.Extensions, extnT, 0, EmptyChunkSize);
+            ILHacks.Cpblk((IntPtr)f.Timelines, (IntPtr)f.Extensions, EmptyChunkSize);
+            ILHacks.Cpblk(extnT, (IntPtr)f.Timelines, 0, EmptyChunkSize);
+
+            byte[] EVERYTHING = new byte[f.RawData.Size];
+
+            ILHacks.Cpblk(f.RawData.IPtr, EVERYTHING, 0, f.RawData.Size);
+
+            File.WriteAllBytes("data.fake.win", EVERYTHING);
+        }
+
         [STAThread]
-        unsafe static void Main(string[] args)
+        static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
                 CultureInfo.InvariantCulture;

@@ -84,21 +84,6 @@ namespace Altar.Unpack
             return ret;
         }
 
-        static TexturePageInfo TPagFromOffset  (GMFileContent content, long off)
-        {
-            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, off);
-
-            var ret = new TexturePageInfo();
-
-            ret.Position      = tpe->Position;
-            ret.RenderOffset  = tpe->RenderOffset;
-            ret.Size          = tpe->Size;
-            ret.BoundingBox   = tpe->BoundingBox;
-            ret.SpritesheetId = tpe->SpritesheetId;
-
-            return ret;
-        }
-
         static RoomBackground ReadRoomBg  (GMFileContent content, IntPtr p)
         {
             var entry = (RoomBgEntry*)p;
@@ -321,8 +306,6 @@ namespace Altar.Unpack
 
             var ret = new FontInfo();
 
-            var tpag = TPagFromOffset(content, fe->TPagOffset);
-
             ret.CodeName     = StringFromOffset(content, fe->CodeName  );
             ret.SystemName   = StringFromOffset(content, fe->SystemName);
             ret.EmSize       = fe->EmSize;
@@ -434,7 +417,17 @@ namespace Altar.Unpack
             if (id >= content.TexturePages->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            return TPagFromOffset(content, (&content.TexturePages->Offsets)[id]);
+            var tpe = (TexPageEntry*)GMFile.PtrFromOffset(content, (&content.TexturePages->Offsets)[id]);
+
+            var ret = new TexturePageInfo();
+
+            ret.Position      = tpe->Position     ;
+            ret.RenderOffset  = tpe->RenderOffset ;
+            ret.Size          = tpe->Size         ;
+            ret.BoundingBox   = tpe->BoundingBox  ;
+            ret.SpritesheetId = tpe->SpritesheetId;
+
+            return ret;
         }
         public static TextureInfo     GetTextureInfo(GMFileContent content, uint id)
         {
