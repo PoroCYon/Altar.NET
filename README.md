@@ -7,6 +7,18 @@ Contains a lot of pointer-littered spaghetti code, because it's basically a cont
 
 I'm not sure if this counts as 'redistribution of modified [libaltar] source', but including their notice just in case.
 
+## Building
+
+You can build it from within Visual Studio (or MonoDevelop, or SharpDevelop, ...), or from the command-line:
+
+```
+[ms|x]build /m Altar.NET.sln /p:Configuration=[Debug|Release]
+```
+
+(NOTE: use `msbuild` on Windows, `xbuild` otherwise)
+(NOTE: using the `Debug` configuration emits debug code, use `Release` for an optimized binary.)
+(NOTE: the binary can be found at `<repo-dir>/bin/<config>/altar.exe`, it has all its dependencies merged into it. For a binary with separate DLLs for the dependencies, use the one in `<repo-dir>/Altar.NET/bin/<config>/altar.exe`.)
+
 ## Usage
 
 ```
@@ -31,6 +43,7 @@ Verbs:
 To read a `data.win` file:
 ```csharp
 using Altar;
+using Altar.Decomp; // for the Disassembler and Decompiler classes
 
 // [...]
 
