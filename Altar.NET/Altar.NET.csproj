@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="CommandLine">
       <HintPath>..\References\CommandLine.dll</HintPath>
@@ -91,6 +94,18 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent Condition="'$(OS)' != 'Unix'">
+      cd "$(SolutionDir)ILRepack"
+      md "$(SolutionDir)$(OutDir)"
+      ilrepack /union /target:exe "/out:$(SolutionDir)$(OutDir)$(TargetFileName)" "$(TargetPath)" "$(TargetDir)Altar.NET.Util.dll" "$(TargetDir)CommandLine.dll"
+    </PostBuildEvent>
+    <PostBuildEvent Condition="'$(OS)' == 'Unix'">
+      cd "$(SolutionDir)ILRepack"
+      mkdir "$(SolutionDir)$(OutDir)"
+      mono ilrepack /union /target:exe "/out:$(SolutionDir)$(OutDir)$(TargetFileName)" "$(TargetPath)" "$(TargetDir)Altar.NET.Util.dll" "$(TargetDir)CommandLine.dll"
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

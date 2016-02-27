@@ -8,8 +8,20 @@ namespace Altar.Recomp
 {
     public static class Tokenizer
     {
+        enum CommentType : byte
+        {
+            None,
+            Line,
+            Block
+        }
+
+        const TokenType NullTokenType = (TokenType)(-1);
+
         readonly static char[] WordSep = " \r\n\t".ToCharArray();
+        readonly static string[] LineComments = { ";", "//" };
+        readonly static string BlockCommentStart = "/*", BlockCommentEnd = "*/";
         readonly static string[] SpecialWords = { ":", "[]", "*" };
+        readonly static string NewlineWord = "\n", Quote = "\"";
 
         static string Unescape(string s) =>
             s.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\b", "\b")
@@ -39,16 +51,92 @@ namespace Altar.Recomp
         {
             int pos = 0;
             var _rwB = new StringBuilder();
+            var rWhB = new StringBuilder();
 
             int line = 1;
             int lastLineIndex = 0;
 
             Func<char, bool> IsWordSep = c => (Array.IndexOf(WordSep, c) > 0 || Char.IsWhiteSpace(c));
-            Func<int   > PeekChar = () => pos == code.Length ? -1 : code[pos  ];
-            Func<int   > ReadChar = () => pos == code.Length ? -1 : code[pos++];
+            Func<int> PeekChar = () => pos == code.Length ? -1 : code[pos  ];
+            Func<int> ReadChar = () => pos == code.Length ? -1 : code[pos++];
+            Func<Predicate<char>, string> ReadWhile = p =>
+            {
+                rWhB.Clear();
+
+                while (true)
+                {
+                    var c = PeekChar();
+                    if (c == -1 || !p((char)c))
+                        break;
+
+                    rWhB.Append((char)c);
+                    ReadChar();
+                }
+
+                return rWhB.ToString();
+
+            };
+            #region Func<string, bool, bool> MatchString = (s, skip) => { [...] };
+            Func<string, bool, bool> MatchString = (s, skip) =>
+            {
+                var cpos = pos;
+
+                for (int i = 0; i < s.Length; i++)
+                {
+                    if (PeekChar() != s[i])
+                    {
+                        pos = cpos;
+                        return false;
+                    }
+
+                    ReadChar();
+                }
+
+                if (!skip)
+                    pos = cpos;
+
+                return true;
+            };
+            #endregion
+            #region Func<CommentType> IsComment = () => { [...] };
+            Func<CommentType> IsComment = () =>
+            {
+                for (int i = 0; i < LineComments.Length; i++)
+                    if (MatchString(LineComments[i], true))
+                        return CommentType.Line;
+                if (MatchString(BlockCommentStart, true))
+                    return CommentType.Block;
+
+                return CommentType.None;
+            };
+            #endregion
+            #region Func<bool> SkipComments = () => { [...] };
+            Func<bool> SkipComments = () =>
+            {
+                var r = false;
+
+                CommentType t;
+                while ((t = IsComment()) != CommentType.None)
+                {
+                    switch (t)
+                    {
+                        case CommentType.Line:
+                            ReadWhile(c => c != '\r' && c != '\n');
+                            break;
+                        case CommentType.Block:
+                            ReadWhile(_ => !MatchString(BlockCommentEnd, false));
+                            break;
+                    }
+
+                    r = true;
+                }
+
+                return r;
+            };
+            #endregion
+
             #region Func<string> ReadWord = () => { [...] };
             // basically the lexer fn
-            //TODO: URGENT REFACTOR NEEDED!
             Func<string> ReadWord = () =>
             {
                 _rwB.Clear();
@@ -63,18 +151,10 @@ namespace Altar.Recomp
                         break;
 
                     // comment -> ignore
-                    // only line comments for now
-                    if (p == ';' && !inString)
-                    {
-                        // read until end of line
-                        do
-                        {
-                            ReadChar();
-                            p = PeekChar();
-                        } while (p != -1 && p != '\r' && p != '\n');
-                        break; // return
-                    }
+                    if (!inString && SkipComments()) // && can break early -> SkipComments is only called when !inString is true
+                        break;
 
+                    #region match special things
                     var si = inString ? -1 : Array.FindIndex(SpecialWords, s => s[0] == p);
                     if (si > -1) // one of the special things (':', '*' or '[]')
                     {
@@ -88,20 +168,10 @@ namespace Altar.Recomp
 
                         for (int i = 1; i < SpecialWords[si].Length; i++)
                         {
-                            var p_ = PeekChar();
+                            if (SkipComments())
+                                goto BREAK_OUTER;
 
-                            // comment
-                            if (p_ == ';')
-                            {
-                                do
-                                {
-                                    ReadChar();
-                                    p_ = PeekChar();
-                                } while (p_ != -1 && p_ != '\r' && p_ != '\n');
-                                return _rwB.ToString();
-                            }
-
-                            if (SpecialWords[si][i] != p_)
+                            if (SpecialWords[si][i] != PeekChar())
                                 goto IGNORE;
 
                             ReadChar();
@@ -119,15 +189,18 @@ namespace Altar.Recomp
                     IGNORE:
                         pos = opos;
                     }
+                    #endregion
 
+                    // change in-string state if the " isn't escaped
                     if (p == '"' && !inEsc)
                         inString = !inString;
 
+                    // write char to current word
                     ReadChar();
                     _rwB.Append(p == '\r' ? '\n' : (char)p); // normalise to \n
-
                     if (p == '\r' && PeekChar() == '\n') ReadChar(); // merge CRLF
 
+                    // '\' is the escape character, but the 2nd char in "\\" shouldn't be counted as escape
                     inEsc = p == '\\' && !inEsc;
 
                     var op = p;
@@ -140,21 +213,14 @@ namespace Altar.Recomp
                         op = p;
                         p = ReadChar();
 
-                        // comment
-                        if (p == ';')
-                        {
-                            do
-                            {
-                                ReadChar();
-                                p = PeekChar();
-                            } while (p != -1 && p != '\r' && p != '\n');
-                            return _rwB.ToString();
-                        }
+                        if (SkipComments())
+                            goto BREAK_OUTER;
                     }
 
                     if (p == -1 || ((IsWordSep((char)p) || IsWordSep((char)op)) && !inString))
                         break;
                 }
+            BREAK_OUTER:
 
                 return _rwB.ToString();
             };
@@ -168,7 +234,7 @@ namespace Altar.Recomp
                 if (!String.IsNullOrWhiteSpace(w))
                     w = w.Trim();
 
-                var type = (TokenType)(-1);
+                var type = NullTokenType;
 
                 switch (w.ToUpperInvariant())
                 {
@@ -218,18 +284,18 @@ namespace Altar.Recomp
                         {
                             // ignore
                             if ((type <= TokenType.PushI16 && type > TokenType.Cmp) || type > TokenType.Global)
-                                type = (TokenType)(-1);
+                                type = NullTokenType;
                                 //throw new FormatException($"Unexpected token '{type}' at line {line} and column {col}.");
                         }
 
-                        if ((short)type == -1)
+                        if (type == NullTokenType)
                         {
                             long lval;
                             double fval;
 
                             if (w == SR.COLON)
                                 type = TokenType.Colon;
-                            else if (w == "\n")
+                            else if (w == NewlineWord)
                             {
                                 line++;
                                 lastLineIndex = pos;
@@ -243,7 +309,7 @@ namespace Altar.Recomp
                                 yield return new IntToken { OrigString = w, Value = lval, Line = line, Column = col };
                             else if (Double.TryParse(w, NumberStyles.Float, CultureInfo.InvariantCulture, out fval))
                                 yield return new FloatToken { OrigString = w, Value = fval, Line = line, Column = col };
-                            else if (w.StartsWith("\"", StringComparison.Ordinal) && w.EndsWith("\"", StringComparison.Ordinal))
+                            else if (w.StartsWith(Quote, StringComparison.Ordinal) && w.EndsWith(Quote, StringComparison.Ordinal))
                                 yield return new StringToken { OrigString = w, Value = Unescape(w.Substring(1, w.Length - 2)), Line = line, Column = col };
                             else
                                 yield return new WordToken { OrigString = w, Value = w, Line = line, Column = col };
@@ -251,7 +317,7 @@ namespace Altar.Recomp
                         break;
                 }
 
-                if ((short)type != -1)
+                if (type != NullTokenType)
                     yield return new NormalToken { OrigString = w, Type = type, Line = line, Column = col };
             }
 

@@ -61,7 +61,7 @@ namespace Altar.Recomp
 
         public VariableType VariableType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + (InstanceName == null ? InstanceType.ToPrettyString() : InstanceName) + SR.COLON + TargetVariable + VariableType.ToPrettyString();
+        public override string ToString() => OpCode + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + TargetVariable + VariableType.ToPrettyString();
     }
     public class Call : Instruction
     {
@@ -97,6 +97,6 @@ namespace Altar.Recomp
 
         public VariableType VariableType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + Type.ToPrettyString() + SR.SPACE_S + (InstanceName == null ? InstanceType.ToPrettyString() : InstanceName) + SR.COLON + VariableName + VariableType.ToPrettyString();
+        public override string ToString() => OpCode + SR.SPACE_S + Type.ToPrettyString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + VariableName + VariableType.ToPrettyString();
     }
 }

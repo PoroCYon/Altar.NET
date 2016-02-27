@@ -34,6 +34,26 @@ namespace Altar
 
         Count = 23
     }
+    public static class SectionHeadersExtensions
+    {
+        readonly static StringBuilder sb = new StringBuilder(4);
+
+        public static string ToChunkName(this SectionHeaders h)
+        {
+            sb.Clear();
+
+            var u = (uint)h;
+
+            var c0 = (char)(u & 0xFF000000);
+            var c1 = (char)(u & 0x00FF0000);
+            var c2 = (char)(u & 0x0000FF00);
+            var c3 = (char)(u & 0X000000FF);
+
+            return sb
+                .Append(c0).Append(c1).Append(c2).Append(c3)
+                .ToString();
+        }
+    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe class UniquePtr : IDisposable
@@ -44,11 +64,18 @@ namespace Altar
         public void*  VPtr => (void*)stuff;
         public byte*  BPtr => (byte*)stuff;
 
+        public int Size;
+        public long LongSize;
+
         public UniquePtr(byte[] data)
         {
+            Size     = data.Length;
+            LongSize = data.LongLength;
+
             stuff = Marshal.AllocHGlobal(data.Length);
 
-            Marshal.Copy(data, 0, stuff, data.Length);
+            ILHacks.Cpblk(data, stuff, 0, data.Length);
+            //Marshal.Copy(data, 0, stuff, data.Length);
         }
         ~UniquePtr()
         {

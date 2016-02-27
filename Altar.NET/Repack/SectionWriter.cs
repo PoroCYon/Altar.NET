@@ -4,6 +4,58 @@ using System.Linq;
 
 namespace Altar.Repack
 {
+    /* original (offset refs only)
+     * GEN8 -> STRG
+     * OPTN -> STRG
+     *-EXTN
+     * SOND -> STRG
+     *-AGRP
+     * SPRT -> STRG, TPAG
+     * BGND -> STRG, TPAG
+     * PATH -> STRG
+     * SCPT -> STRG
+     *-SHDR
+     * FONT -> STRG, TPAG
+     *-TMLN
+     * OBJT -> STRG
+     * ROOM -> STRG
+     *-DAFL
+     * TPAG
+     * CODE -> STRG
+     * VARI -> STRG, CODE!
+     * FUNC -> STRG, CODE!
+     * STRG
+     * TXTR
+     * AUDO
+     *
+     * useful order:
+     *-EXTN
+     *-AGRP
+     *-SHDR
+     *-TMLN
+     *-DAFL
+     * STRG
+     * TXTR
+     * AUDO
+     * TPAG
+     * GEN8 -> STRG
+     * OPTN -> STRG
+     * CODE -> STRG
+     * SOND -> STRG
+     * PATH -> STRG
+     * SCPT -> STRG
+     * OBJT -> STRG
+     * ROOM -> STRG
+     * SPRT -> STRG, TPAG
+     * BGND -> STRG, TPAG
+     * FONT -> STRG, TPAG
+     * VARI -> STRG, CODE!
+     * FUNC -> STRG, CODE!
+     */
+
+    //TODO: dump the empty chunks? -> non-empty examples?
+    //TODO: what to do with unknown data? -> add to JSON?
+
     public class BBData
     {
         public BinBuffer Buffer;
