@@ -238,7 +238,7 @@
         ldarg.0
         ldlen
         ldarg.2
-        blt.s NORMAL
+        bgt.s NORMAL
 
         ldstr "length"
         newobj instance void [mscorlib]System.ArgumentOutOfRangeException::.ctor(string)
