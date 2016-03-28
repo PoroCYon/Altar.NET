@@ -99,7 +99,12 @@ namespace Altar
                     TEnum v_ = default(TEnum);
                     if (TryParseEnum(split[i], ignoreCase, allowNumber, false, ref v_))
                         v = ILHacks.CombineEnums(v, v_);
+                    else
+                        return false;
                 }
+
+                value = v;
+                return true;
             }
             else
             {
