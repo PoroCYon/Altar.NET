@@ -440,4 +440,47 @@
 
         ret
     }
+
+    .method public hidebysig static
+        void Cpobj<valuetype .ctor ([mscorlib]System.ValueType) T>(
+            !!T& source,
+            !!T& target
+        ) cil managed
+    {
+        .maxstack 2
+
+        ldarg.0
+        ldarg.1
+
+        cpobj !!T
+
+        ret
+    }
+    .method public hidebysig static
+        void Cpobj<valuetype .ctor ([mscorlib]System.ValueType) T1, valuetype .ctor ([mscorlib]System.ValueType) T2>(
+            !!T1& source,
+            !!T2& target
+        ) cil managed
+    {
+        .maxstack 2
+
+        sizeof !!T1
+        sizeof !!T2
+
+        beq NORMAL
+
+        ldstr "Type parameters must be of the same size."
+        ldstr "T1, T2"
+        newobj instance void [mscorlib]System.Argument::.ctor(string, string)
+        throw
+
+    NORMAL:
+
+        ldarg.0
+        ldarg.1
+
+        cpobj !!T1
+
+        ret
+    }
 }
