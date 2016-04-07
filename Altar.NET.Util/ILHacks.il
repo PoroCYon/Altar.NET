@@ -483,4 +483,116 @@
 
         ret
     }
+
+    .method public hidebysig static
+        void Initblk(
+            native int     addr,
+            unsigned int8  val ,
+            unsigned int32 size
+        ) cil managed
+    {
+        .maxstack 3
+
+        ldarg.0
+        ldarg.1
+        ldarg.2
+
+        initblk
+
+        ret
+    }
+
+    //T[]
+    //T&
+    //T*
+    .method public hidebysig static
+        void Initblk<valuetype .ctor ([mscorlib]System.ValueType) T>(
+            !!T[]         arr,
+            unsigned int8 val
+        ) cil managed
+    {
+        .maxstack 4
+
+        ldarg.0
+        ldarg.1
+
+        ldarg.0
+        ldlen
+        sizeof !!T
+        mul
+
+        initblk
+
+        ret
+    }
+    .method public hidebysig static
+        void Initblk<valuetype .ctor ([mscorlib]System.ValueType) T>(
+            !!T&          mref,
+            unsigned int8 val
+        ) cil managed
+    {
+        .maxstack 3
+
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+
+        initblk
+
+        ret
+    }
+    .method public hidebysig static
+        void Initblk<valuetype .ctor ([mscorlib]System.ValueType) T>(
+            !!T*           ptr ,
+            unsigned int8  val ,
+            unsigned int32 size
+        ) cil managed
+    {
+        .maxstack 3
+
+        ldarg.0
+        ldarg.1
+        ldarg.2
+
+        initblk
+
+        ret
+    }
+
+    .method public hidebysig static
+        void Initobj<([mscorib]System.Object) T>(
+            !!T& mref
+        ) cil managed
+    {
+        .maxstack 1
+
+        ldarg.0
+        initobj !!T
+
+        ret
+    }
+    .method public hidebysig static
+        void Initobj<([mscorlib]System.Object) T>(
+            native int ptr
+        ) cil managed
+    {
+        .maxstack 1
+
+        ldarg.0
+        initobj !!T
+
+        ret
+    }
+    .method public hidebysig static
+        void Initobj<valuetype .ctor ([mscorlib]System.ValueType) T>(
+            !!T* ptr
+        ) cil managed
+    {
+        .maxstack 1
+
+        ldarg.0
+        initobj !!T
+
+        ret
+    }
 }
