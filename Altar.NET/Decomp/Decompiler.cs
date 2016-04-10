@@ -398,7 +398,7 @@ namespace Altar.Decomp
                             }
 
                             var tar = (AnyInstruction*)((long)ins + unchecked((int)a));
-                            var off = baseOff + unchecked((int)a);
+                            var off = (long)ins - baseOff + unchecked((int)a);
 
                             switch (opc)
                             {
