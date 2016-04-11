@@ -7,8 +7,6 @@ using System.Threading;
 using CommandLine;
 using LitJson;
 using Altar.Decomp;
-using Altar.Recomp;
-using Altar.Repack;
 using Altar.Unpack;
 
 using static Altar.SR;
