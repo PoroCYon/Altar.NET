@@ -35,6 +35,7 @@ namespace Altar
             RIGHTSH   = ">>",
             LEFTSH    = "<<",
             XOR       = "^" ,
+            QMARK     = "?" ,
 
             INDENT4 = "    ",
 
