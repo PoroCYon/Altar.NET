@@ -214,7 +214,6 @@ namespace Altar.Decomp
 
                 return ret;
             };
-            #region Action FlushStack = () => { };
             Action FlushStack = () =>
             {
                 var readd = new Stack<Expression>();
@@ -236,7 +235,6 @@ namespace Altar.Decomp
 
                 stack.PushRange(readd);
             };
-            #endregion
             Action<Statement> AddStmt = s =>
             {
                 FlushStack();

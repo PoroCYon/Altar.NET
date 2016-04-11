@@ -496,6 +496,7 @@ namespace Altar.Decomp
                     case FOpCode.PushGlb:
                     case FOpCode.PushVar:
                     case FOpCode.PushI16:
+                    case FOpCode.PushLoc:
                         return instr.Push.Type == DataType.Variable ? ExpressionType.Variable : ExpressionType.Literal;
                     case FOpCode.Set:
                         return ExpressionType.Set;

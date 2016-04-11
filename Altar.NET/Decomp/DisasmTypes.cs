@@ -48,7 +48,8 @@ namespace Altar.Decomp
     {
         Array,
         StackTop = 0x80,
-        Normal   = 0xA0
+        Normal   = 0xA0,
+        Unknown  = 0xE0  //TODO: FIND OUT WHAT THIS IS
     }
     public enum ComparisonType : byte
     {
@@ -461,6 +462,8 @@ namespace Altar.Decomp
                     return BRACKETS;
                 case VariableType.StackTop:
                     return ASTERISK;
+                case VariableType.Unknown:
+                    return QMARK;
                 case VariableType.Normal:
                     return String.Empty;
                 default:
