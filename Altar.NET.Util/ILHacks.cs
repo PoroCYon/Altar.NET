@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable 626 // extern method without DllImport
+
 namespace Altar
 {
     public unsafe static class ILHacks

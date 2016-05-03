@@ -1,7 +1,7 @@
 Altar.NET
 ======================
 
-GameMaker: Studio `data.win` unpacker and decompiler (non-YYC, specifically made for Undertale), based on [libaltar](https://github.com/kvanberendonck/libaltar) and [Mirrawrs' data site](http://undertale.rawr.ws/) (followed by my corrections/completions [here](https://gist.github.com/PoroCYon/4045acfcad7728b87a0d) and [here](https://gist.github.com/PoroCYon/45f947d576f715de3a4d)).
+GameMaker: Studio `data.win` unpacker and decompiler (non-YYC, specifically made for Undertale), based on [libaltar](https://github.com/kvanberendonck/libaltar) and [Mirrawrs' data site](http://undertale.rawr.ws/) (followed by my corrections/completions [here](https://gitlab.com/snippets/14944) and [here](https://gitlab.com/snippets/14943)).
 
 Contains a lot of pointer-littered spaghetti code, because it's basically a continuation of libaltar, but in C#.
 
