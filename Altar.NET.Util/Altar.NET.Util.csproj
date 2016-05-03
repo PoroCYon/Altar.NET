@@ -90,19 +90,19 @@
     <PropertyGroup Condition=" '$(OutputType)' == 'Library' ">
       <ILAsm>$(ILAsm) /dll</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(DebugType)' == 'pdbonly' ">
+    <PropertyGroup Condition=" '$(DebugType)' == 'pdbonly' And '$(OS)' != 'Unix'"> <!-- not supported in mono ilasm -->
       <ILAsm>$(ILAsm) /pdb</ILAsm>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(DebugType)' == 'full' ">
       <ILAsm>$(ILAsm) /debug</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Optimize)' == 'true' ">
+    <PropertyGroup Condition=" '$(Optimize)' == 'true' And '$(OS)' != 'Unix'">
       <ILAsm>$(ILAsm) /optimize</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Platform)' == 'x64' ">
+    <PropertyGroup Condition=" '$(Platform)' == 'x64' And '$(OS)' != 'Unix'">
       <ILAsm>$(ILAsm) /pe64 /x64</ILAsm>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Platform)' == 'Itanium' ">
+    <PropertyGroup Condition=" '$(Platform)' == 'Itanium' And '$(OS)' != 'Unix'">
       <ILAsm>$(ILAsm) /pe64 /itanium</ILAsm>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(AssemblyOriginatorKeyFile)' != '' ">

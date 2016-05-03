@@ -389,6 +389,43 @@ namespace Altar
             File.WriteAllBytes("data.fake.win", EVERYTHING);
         }
 
+        // EXTN: SectionCountOffset<Extension>
+        // {
+        //     STRG*
+        //     STRG*
+        //     STRG*
+        //     CountOffsetList<T>
+        //     {
+        //         STRG*
+        //     }
+        //     STRG*
+        //     STRG*
+        //     int32 02 00 00 00
+        //
+        //     CountOffsetList<T>
+        //     {
+        //         // 01
+        //         STRG** (1)
+        //         int32 10 04 00 00 (offset?)
+        //         STRG*  (1)
+        //         int32 01 00 00 00
+        //         int32 0C 00 00 00
+        //         int32 02 00 00 00
+        //
+        //         // 02
+        //         STRG*
+        //         int32 00 00 00 00
+        //         STRG*
+        //         int32 02 00 00 00
+        //         int32 0C 00 00 00
+        //         int32 02 00 00 00
+        //     }
+        //
+        //     STRG*
+        //     int32 00 00 00 00
+        //     int32[4] 66 82 4C A8  69 1E 7C 85  5B 70 AC 11  67 C0 D2 D5 // WTF? hash?
+        // }
+
         [STAThread]
         static void Main(string[] args)
         {

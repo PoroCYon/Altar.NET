@@ -14,7 +14,7 @@
 {
     .custom instance void [mscorlib]System.Reflection.AssemblyCompanyAttribute                     ::.ctor(string) = { string('PoroCYon')                                  }
     .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32 ) = { int32(8)                                            }
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute  ::.ctor(      ) = { property bool 'WrapNonExceptionThrows' = bool(true) }
+  //.custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute  ::.ctor(      ) = { property bool 'WrapNonExceptionThrows' = bool(true) }
     .custom instance void [mscorlib]System.Reflection.AssemblyTitleAttribute                       ::.ctor(string) = { string('Altar.NET.Util')                            }
     .custom instance void [mscorlib]System.Reflection.AssemblyDescriptionAttribute                 ::.ctor(string) = { string('Utility methods for Altar.NET')             }
     .custom instance void [mscorlib]System.Reflection.AssemblyConfigurationAttribute               ::.ctor(string) = { string('')                                          }
@@ -25,7 +25,7 @@
     .custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool  ) = { bool(false)                                                                                              }
     .custom instance void [mscorlib]System.Runtime.InteropServices.GuidAttribute      ::.ctor(string) = { string('a5a66bee-a24b-40d7-8f72-bb3ac53a8e67')                                                           }
     .custom instance void [mscorlib]System.Reflection.AssemblyFileVersionAttribute    ::.ctor(string) = { string('1.0.0.0')                                                                                        }
-    .custom instance void [mscorlib]System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(string) = { string('.NETFramework,Version=v4.0') property string 'FrameworkDisplayName' = string('.NET Framework 4') }
+  //.custom instance void [mscorlib]System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(string) = { string('.NETFramework,Version=v4.0') property string 'FrameworkDisplayName' = string('.NET Framework 4') }
 
     .permissionset reqmin = { [mscorlib]System.Security.Permissions.SecurityPermissionAttribute = { property bool 'SkipVerification' = bool(true) } }
 
