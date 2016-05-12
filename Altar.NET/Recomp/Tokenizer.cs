@@ -56,7 +56,7 @@ namespace Altar.Recomp
             int line = 1;
             int lastLineIndex = 0;
 
-            Func<char, bool> IsWordSep = c => (Array.IndexOf(WordSep, c) > 0 || Char.IsWhiteSpace(c));
+            Func<char, bool> IsWordSep = c => (Array.IndexOf(WordSep, c) >= 0 || Char.IsWhiteSpace(c));
             Func<int> PeekChar = () => pos == code.Length ? -1 : code[pos  ];
             Func<int> ReadChar = () => pos == code.Length ? -1 : code[pos++];
             Func<Predicate<char>, string> ReadWhile = p =>
