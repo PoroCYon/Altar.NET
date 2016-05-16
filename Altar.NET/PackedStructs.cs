@@ -186,12 +186,12 @@ namespace Altar
     [Flags]
     public enum RoomEntryFlags
     {
-        EnableViews = 1,
-        ShowColour  = 2
+        EnableViews        = 1,
+        ShowColour         = 2,
+        ClearDisplayBuffer = 4 // clear display buffer with window colour
 
         // isometric?
         // clearViewBg?
-        // clearDisplayBuf?
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -207,6 +207,12 @@ namespace Altar
         public float Pan   ; // probably
         public int AudioId;
     }
+
+    public struct SpriteCollisionMask
+    {
+        public uint MaskCount;
+        public byte MaskData;
+    }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SpriteEntry
     {
@@ -217,12 +223,13 @@ namespace Altar
 
         fixed uint _pad[3]; // type? coltolerance? htile? vtile? for3D?
         public uint BBoxMode;
-        public uint SepMasks;
+        public DwordBool SeparateColMasks;
 
         public Point Origin;
 
         public CountOffsetsPair Textures;
-        // colkind?
+
+        // SpriteCollisionMask
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
@@ -266,6 +273,13 @@ namespace Altar
 
         public CountOffsetsPair Chars;
     }
+
+    public enum CollisionShape : uint
+    {
+        Circle = 0,
+        Box    = 1,
+        Custom = 2
+    }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ObjectEntry
     {
@@ -280,7 +294,9 @@ namespace Altar
         public int ParentId; // OBJT
         public int MaskId  ; // SPRT
 
-        fixed uint _pad[3]; // 0, 0, 0
+        public DwordBool HasPhysics;
+        public DwordBool IsSensor;
+        public CollisionShape CollisionShape;
 
         public ObjectPhysics Physics;
 
@@ -296,8 +312,8 @@ namespace Altar
         public DwordBool Persistent;
         public Colour Colour;
 
-        // isometric? [hv]snap? clearViewBackground? clearDisplayBuffer?
-        fixed uint _pad[2]; // unknown: 1, * (can be -1 -> option?)
+        public DwordBool DrawBackgroundColour;
+        uint _pad; // unknown (can be -1 -> option?)
 
         public RoomEntryFlags Flags;
 
@@ -367,6 +383,8 @@ namespace Altar
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public unsafe struct ObjectRest
     {
+        // event data?
+
         [FieldOffset(0)]
         public fixed float MoreFloats[4];
         [FieldOffset(0)]
@@ -399,8 +417,8 @@ namespace Altar
     {
         public Point Position;
         public uint DefIndex;
-        uint _count; // 100000 (0x186A0), keeps increasing by  per element
-        uint _pad; // -1 (locked?)
+        public uint InstanceID;
+        public uint CreateCodeID; // gml_RoomCC_<name>_<CreateCodeID>_Create
         public PointF Scale;
         public Colour Colour;
         public float Rotation;
@@ -412,8 +430,8 @@ namespace Altar
         public uint DefIndex;
         public Point SourcePos;
         public Point Size;
-        uint _magicnum; // somewhere near 1000000 (log), usually
-        uint _count; // 10000000, keeps increasing by 1 per element
+        public uint TileDepth;
+        public uint InstanceID;
         public PointF Scale;
         public Colour Colour;
     }

@@ -105,6 +105,10 @@ namespace Altar.Decomp
                         var st = iptr->SingleType;
 
                         sb.Append(st.Type.ToPrettyString());
+
+                        if (bcv > 0xE && st.OpCode.VersionF == FOpCode.Dup)
+                            sb.Append(' ').Append(st.DupExtra);
+
                         break;
                     case InstructionKind.DoubleType:
                         var dt = iptr->DoubleType;
@@ -133,6 +137,12 @@ namespace Altar.Decomp
 
                         sb.Append(s.Types).Append(' ');
 
+                        if (s.IsMagic)
+                        {
+                            sb.Append(MAGIC);
+                            break;
+                        }
+
                         if (s.Instance <= InstanceType.StackTopOrGlobal)
                             sb.Append(s.Instance.ToPrettyString());
                         else
@@ -141,7 +151,7 @@ namespace Altar.Decomp
 
                             sb.Append('[').Append(o.Name).Append(']');
                         }
-
+                        
                         sb.Append(':');
 
                         sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);

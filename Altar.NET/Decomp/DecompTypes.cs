@@ -338,6 +338,13 @@ namespace Altar.Decomp
 
         public override string ToString() => POPE + SPACE_S + HEX_PRE + Utils.ToHexSignString(TargetOffset, HEX_FM6);
     }
+    public class MagicSetStatement : Statement
+    {
+        public DataType OriginalType;
+        public DataType ReturnType;
+
+        public override string ToString() => SET_S + OriginalType + COLON + ReturnType + SPACE_S + MAGIC;
+    }
 
     // temp..?
     public class PushStatement : Statement

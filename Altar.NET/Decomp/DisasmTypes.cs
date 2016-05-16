@@ -9,6 +9,7 @@ namespace Altar.Decomp
     using static SR;
 
     // http://undertale.rawr.ws/decompilation
+    // https://gitlab.com/snippets/14943
 
     public enum DataType : byte
     {
@@ -41,7 +42,7 @@ namespace Altar.Decomp
 
         //TODO: unknown
         Unknown = -6,
-        //! ?
+        // script-scope local var
         Local   = -7
     }
     public enum VariableType : byte
@@ -49,6 +50,7 @@ namespace Altar.Decomp
         Array,
         StackTop = 0x80,
         Normal   = 0xA0,
+        //? room-scope local vars?
         Unknown  = 0xE0  //TODO: FIND OUT WHAT THIS IS
     }
     public enum ComparisonType : byte
@@ -74,11 +76,11 @@ namespace Altar.Decomp
         Or      = 0x0B,
         Xor     = 0x0C,
         /// <summary>
-        /// Unary negation (probably)
+        /// Unary negation
         /// </summary>
         Neg     = 0x0D,
         /// <summary>
-        /// Bitwise NOT (!, maybe ~)
+        /// Bitwise NOT (! for bools, ~ otherwise)
         /// </summary>
         Not     = 0x0E,
         Shl     = 0x0F,
@@ -116,11 +118,11 @@ namespace Altar.Decomp
         Or      = 0x0F,
         Xor     = 0x10,
         /// <summary>
-        /// Unary negation (probably)
+        /// Unary negation
         /// </summary>
         Neg     = 0x11,
         /// <summary>
-        /// Bitwise NOT (!, maybe ~)
+        /// Bitwise NOT (! for bools, ~ otherwise)
         /// </summary>
         Not     = 0x12,
         Shl     = 0x13,
@@ -157,11 +159,11 @@ namespace Altar.Decomp
         Or      = 0x0B,
         Xor     = 0x0C,
         /// <summary>
-        /// Unary negation (probably)
+        /// Unary negation
         /// </summary>
         Neg     = 0x0D,
         /// <summary>
-        /// Bitwise NOT (!, maybe ~)
+        /// Bitwise NOT (! for bools, ~ otherwise)
         /// </summary>
         Not     = 0x0E,
         Shl     = 0x0F,
@@ -193,7 +195,7 @@ namespace Altar.Decomp
         Break         ,
         Environment
     }
-
+    
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct TypePair
     {
@@ -201,6 +203,11 @@ namespace Altar.Decomp
 
         public DataType Type1 => unchecked((DataType)( val & 0x0F      ));
         public DataType Type2 => unchecked((DataType)((val & 0xF0) >> 4));
+
+        public TypePair(DataType t1, DataType t2)
+        {
+            val = (byte)((int)t1 | ((int)t2 << 4));
+        }
 
         public override string ToString() => Type1.ToPrettyString() + COLON + Type2.ToPrettyString();
     }
@@ -229,7 +236,7 @@ namespace Altar.Decomp
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SingleTypeInstruction
     {
-        ushort _pad;
+        public ushort DupExtra;
         public DataType Type;
         public OpCodes OpCode;
     }
@@ -255,6 +262,17 @@ namespace Altar.Decomp
         public OpCodes OpCode;
 
         public Reference DestVar;
+
+        public unsafe bool IsMagic
+        {
+            get
+            {
+                fixed (SetInstruction* self = &this)
+                {
+                    return *(uint*)self == DisasmExt.SetArrayMagic;
+                }
+            }
+        }
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PushInstruction
@@ -317,6 +335,14 @@ namespace Altar.Decomp
 
     public unsafe static class DisasmExt
     {
+        internal const uint SetArrayMagic = 0x455F0006;
+        internal readonly static SetInstruction MagicSetInstr = new SetInstruction
+        {
+            Instance = (InstanceType)6,
+            OpCode   = new OpCodes { VersionF = FOpCode.Set },
+            Types    = new TypePair(DataType.Int16, DataType.Variable)
+        };
+
         [DebuggerHidden]
         public static InstructionKind Kind(this OpCodes code, uint bcv)
         {
@@ -524,7 +550,12 @@ namespace Altar.Decomp
                 case InstructionKind.Environment:
                     return 1;
                 case InstructionKind.Call:
+                    return 2;
+
                 case InstructionKind.Set:
+                    if (*(uint*)pInstr == SetArrayMagic) // some magic number that has something to do with arrays
+                        return 1;
+
                     return 2;
                 case InstructionKind.Push: // 0xF?
                     var pui = (PushInstruction*)pInstr;

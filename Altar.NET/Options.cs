@@ -56,7 +56,7 @@ namespace Altar
             get;
             set;
         }
-        [Option('o', HelpText = "Export object definitions.", MutuallyExclusiveSet = "EXPORT")]
+        [Option('j', HelpText = "Export object definitions.", MutuallyExclusiveSet = "EXPORT")]
         public bool Object
         {
             get;
