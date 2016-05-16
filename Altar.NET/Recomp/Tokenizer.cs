@@ -29,7 +29,7 @@ namespace Altar.Recomp
 
         public static TokenKind KindOf(TokenType type)
         {
-            if (type <= TokenType.Newline)
+            if (type <= TokenType.Newline || type == TokenType.Magic)
                 return TokenKind.Other;
             if (type <= TokenType.PushI16)
                 return TokenKind.OpCode;
@@ -76,7 +76,6 @@ namespace Altar.Recomp
                 return rWhB.ToString();
 
             };
-            #region Func<string, bool, bool> MatchString = (s, skip) => { [...] };
             Func<string, bool, bool> MatchString = (s, skip) =>
             {
                 var cpos = pos;
@@ -97,8 +96,6 @@ namespace Altar.Recomp
 
                 return true;
             };
-            #endregion
-            #region Func<CommentType> IsComment = () => { [...] };
             Func<CommentType> IsComment = () =>
             {
                 for (int i = 0; i < LineComments.Length; i++)
@@ -109,8 +106,6 @@ namespace Altar.Recomp
 
                 return CommentType.None;
             };
-            #endregion
-            #region Func<bool> SkipComments = () => { [...] };
             Func<bool> SkipComments = () =>
             {
                 var r = false;
@@ -133,9 +128,7 @@ namespace Altar.Recomp
 
                 return r;
             };
-            #endregion
-
-            #region Func<string> ReadWord = () => { [...] };
+            
             // basically the lexer fn
             Func<string> ReadWord = () =>
             {
@@ -224,7 +217,6 @@ namespace Altar.Recomp
 
                 return _rwB.ToString();
             };
-            #endregion
 
             while (pos < code.Length)
             {
@@ -279,6 +271,10 @@ namespace Altar.Recomp
                         break;
                     case ">":
                         type = TokenType.GT;
+                        break;
+
+                    case "!MAGIC":
+                        type = TokenType.Magic;
                         break;
                     #endregion
 

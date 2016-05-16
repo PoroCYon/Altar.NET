@@ -10,7 +10,7 @@ namespace Altar.Unpack
     {
         // http://undertale.rawr.ws/unpacking
         // https://www.reddit.com/r/Underminers/comments/3teemm/wip_documenting_stringstxt/
-        // https://gist.github.com/PoroCYon/4045acfcad7728b87a0d
+        // https://gitlab.com/snippets/14944
 
         static float[] EmptyFloatArr = { };
 
@@ -130,6 +130,9 @@ namespace Altar.Unpack
             o.Colour   = entry->Colour  ;
             o.Rotation = entry->Rotation;
 
+            o.InstanceID   = entry->InstanceID  ;
+            o.CreateCodeID = entry->CreateCodeID;
+
             return o;
         }
         static RoomTile       ReadRoomTile(GMFileContent content, IntPtr p)
@@ -144,6 +147,9 @@ namespace Altar.Unpack
             t.Size           = entry->Size;
             t.Scale          = entry->Scale;
             t.Colour         = entry->Colour;
+
+            t.Depth      = entry->TileDepth ;
+            t.InstanceID = entry->InstanceID;
 
             return t;
         }
@@ -226,8 +232,9 @@ namespace Altar.Unpack
             ret.Size     = se->Size    ;
             ret.Bounding = se->Bounding;
             ret.BBoxMode = se->BBoxMode;
-            ret.SepMasks = se->SepMasks;
             ret.Origin   = se->Origin  ;
+
+            ret.SeparateColMasks = se->SeparateColMasks.IsTrue();
 
             ret.TextureIndices = new uint[se->Textures.Count];
 
@@ -238,6 +245,41 @@ namespace Altar.Unpack
                         ret.TextureIndices[i] = j;
                         break;
                     }
+
+            SpriteCollisionMask* masks =
+                (SpriteCollisionMask*)&se->Textures + sizeof(uint) * se->Textures.Count;
+
+            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+            ret.CollisionMasks = new bool[amt][,];
+            byte* maskData = &masks->MaskData;
+
+            uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
+            uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
+
+            uint wPad = ((w & 7) == 0) ? w : (w - (w & 7) + 8);
+
+            for (uint i = 0; i < amt; i++)
+            {
+                bool[,] stuff = new bool[w, h];
+
+                for (uint y = 0; y < h; y++)
+                    for (uint x = 0; x < w; x++)
+                    {
+                        uint rown = y * wPad;
+
+                        uint byten =        x >> 3 ;
+                        byte bitn  = (byte)(x &  7);
+
+                        byte* curptr = maskData + rown + byten;
+                        byte curbyte = *curptr;
+                        byte curbit  = (byte)(curbyte & (byte)(1 << bitn));
+
+                        stuff[x, y] = curbit != 0;
+                    }
+
+                ret.CollisionMasks[i] = stuff;
+                maskData += wPad * h;
+            }
 
             return ret;
         }
@@ -356,8 +398,10 @@ namespace Altar.Unpack
 
             ret.ParentId  = oe->ParentId < 0 ? null : (uint?)oe->ParentId;
             ret.TexMaskId = oe->MaskId   < 0 ? null : (uint?)oe->MaskId  ;
-
-            ret.Physics = oe->Physics;
+            
+            ret.Physics        = oe->HasPhysics.IsTrue() ? (ObjectPhysics?)oe->Physics : null;
+            ret.IsSensor       = oe->IsSensor.IsTrue();
+            ret.CollisionShape = oe->CollisionShape;
 
             var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
@@ -371,9 +415,9 @@ namespace Altar.Unpack
             else
                 ret.OtherFloats = EmptyFloatArr;
 
-            ret.ShapePoints = new Point[shapeCop->Count / 2];
+            ret.ShapePoints = new Point[shapeCop->Count >> 1];
 
-            for (uint i = 0; i < shapeCop->Count / 2; i++)
+            for (uint i = 0; i < (shapeCop->Count >> 1); i++)
                 ret.ShapePoints[i] = new Point(
                     *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2    ]),
                     *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2 + 1])
@@ -397,8 +441,11 @@ namespace Altar.Unpack
             ret.IsPersistent = re->Persistent.IsTrue();
             ret.Colour       = re->Colour        ;
 
-            ret.EnableViews = (re->Flags & RoomEntryFlags.EnableViews) != 0;
-            ret.ShowColour  = (re->Flags & RoomEntryFlags.ShowColour ) != 0;
+            ret.DrawBackgroundColour = re->DrawBackgroundColour.IsTrue();
+
+            ret.EnableViews        = (re->Flags & RoomEntryFlags.EnableViews       ) != 0;
+            ret.ShowColour         = (re->Flags & RoomEntryFlags.ShowColour        ) != 0;
+            ret.ClearDisplayBuffer = (re->Flags & RoomEntryFlags.ClearDisplayBuffer) != 0;
 
             ret.World          = re->World         ;
             ret.Bounding       = re->Bounding      ;
@@ -516,9 +563,9 @@ namespace Altar.Unpack
         }
 
         // C# doesn't like pointers of generic types...
-        static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, long elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter)
+        static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, long elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter, bool correct = true)
         {
-            amount = amount == 0 ? section->Header.Size / rdeSize : amount;
+            amount = correct && amount == 0 ? section->Header.Size / rdeSize : amount;
             var r = new ReferenceDef[amount];
 
             uint i = 0;
@@ -557,7 +604,7 @@ namespace Altar.Unpack
                 ret.FirstOffset = rde->FirstAddress;
 
                 return ret;
-            });
+            }, false);
         }
         public static ReferenceDef[] GetRefDefsWithOthers(GMFileContent content, SectionRefDefs* section)
         {

@@ -265,7 +265,13 @@ namespace Altar.Recomp
             int instrs = 0;
             var labels = new Dictionary<IComparable, int>();
 
-            #region Func<Token> Dequeue = () => { [...] };
+            Func<Token> Peek = () =>
+            {
+                if (q.Count == 0)
+                    throw new FormatException("Token expected, but EOF was reached.");
+
+                return q.Peek();
+            };
             Func<Token> Dequeue = () =>
             {
                 if (q.Count == 0)
@@ -273,8 +279,7 @@ namespace Altar.Recomp
 
                 return q.Dequeue();
             };
-            #endregion
-            Action<TokenType> Expect = tt =>
+            Func<TokenType, Token> Expect = tt =>
             {
                 if (q.Count == 0)
                     throw new FormatException($"Expected token '{tt}', but EOF was reached.");
@@ -283,21 +288,19 @@ namespace Altar.Recomp
 
                 if (!(p is NormalToken) || ((NormalToken)p).Type != tt)
                     throw new FormatException($"Invalid token '{p}' {Pos(p)}, token '{tt}' expected.");
+
+                return p;
             };
-            #region Action SkipWhitespace = () => { [...] };
             Action SkipWhitespace = () =>
             {
                 while (q.Count > 0 && q.Peek() is NormalToken && ((NormalToken)q.Peek()).Type == TokenType.Whitespace)
                     q.Dequeue();
             };
-            #endregion
-            #region Action SkipWhitespaceAndLines = () => { [...] };
             Action SkipWhitespaceAndLines = () =>
             {
                 while (q.Count > 0 && q.Peek() is NormalToken && (((NormalToken)q.Peek()).Type == TokenType.Whitespace || ((NormalToken)q.Peek()).Type == TokenType.Newline))
                     q.Dequeue();
             };
-            #endregion
             Func<TokenKind, NormalToken> ExpectReadKind = k  =>
             {
                 var tt = Dequeue();
@@ -316,8 +319,7 @@ namespace Altar.Recomp
 
                 return (NormalToken)tt;
             };
-
-            #region Func<VariableType> TryReadVariableType = () => { [...] };
+            
             Func<VariableType> TryReadVariableType = () =>
             {
                 var vt = VariableType.Normal;
@@ -347,8 +349,6 @@ namespace Altar.Recomp
 
                 return vt;
             };
-            #endregion
-            #region Func<Tuple<string, InstanceType>> ReadInstanceType = () => { [...] };
             Func<Tuple<string, InstanceType>> ReadInstanceType = () =>
             {
                 var o = Dequeue();
@@ -394,8 +394,6 @@ namespace Altar.Recomp
 
                 return Tuple.Create(insn, inst);
             };
-            #endregion
-            #region Func<string> ReadIdentifier = () => { [...] };
             Func<string> ReadIdentifier = () =>
             {
                 var n = Dequeue();
@@ -405,7 +403,6 @@ namespace Altar.Recomp
 
                 return n is WordToken ? ((WordToken)n).Value : n.OrigString;
             };
-            #endregion
 
             Token t;
             while (q.Count > 0)
@@ -494,8 +491,25 @@ namespace Altar.Recomp
                         }
                         break;
                     #endregion
-                    #region singletype
+                    #region dup
                     case TokenType.Dup:
+                        {
+                            var t1 = ExpectReadKind(TokenKind.DataType);
+
+                            var p = Peek();
+
+                            ushort nn = 0;
+
+                            if (!(p is IntToken))
+                                nn = 0;
+                            else
+                                nn = (ushort)((IntToken)p).Value;
+
+                            yield return new Dup { OpCode = TokenToOpCodes(nt), Type = TokenToData(t1), Extra = nn };
+                        }
+                        break;
+                    #endregion
+                    #region singletype
                     case TokenType.Ret:
                     case TokenType.Exit:
                     case TokenType.Pop:
@@ -520,6 +534,19 @@ namespace Altar.Recomp
                             SkipWhitespace();
                             var t2 = TokenToData(ExpectReadKind(TokenKind.DataType));
                             SkipWhitespace();
+
+                            {
+                                var nn = Peek();
+
+                                if (!(nn is WordToken) && !(nn is NormalToken) /* can be an instruction or type name... */)
+                                    throw new FormatException($"Identifier expected, but found '{nn}', {Pos(nn)}.");
+
+                                var m = nn is WordToken ? ((WordToken)nn).Value : nn.OrigString;
+
+                                if (m.ToLowerInvariant() == SR.MAGIC)
+                                    yield return new MagicSet { OpCode = TokenToOpCodes(nt), Type1 = t1, Type2 = t2 };
+                            }
+
 
                             var instu = ReadInstanceType();
 

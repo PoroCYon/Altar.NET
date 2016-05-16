@@ -205,6 +205,9 @@ namespace Altar.Unpack
             r["colour"  ] = obj.Colour.ToHexString();
             r["rotation"] = obj.Rotation;
 
+            r["instanceid"  ] = obj.InstanceID  ;
+            r["createcodeid"] = obj.CreateCodeID;
+
             return r;
         }
         static JsonData SerializeRoomTile(RoomTile       tile, BackgroundInfo[] bgs )
@@ -218,7 +221,36 @@ namespace Altar.Unpack
             r["scale"    ] = SerializePoint(tile.Scale);
             r["colour"   ] = tile.Colour.ToHexString();
 
+            r["tiledepth" ] = tile.Depth     ;
+            r["instanceid"] = tile.InstanceID;
+
             return r;
+        }
+
+        static JsonData SerializeColMask(bool[,] colMask)
+        {
+            var j = CreateObj();
+            var a = CreateArr();
+            
+            int w = colMask.GetLength(0),
+                h = colMask.GetLength(1);
+
+            j["w"] = w;
+            j["h"] = h;
+
+            for (int y = 0; y < h; y++)
+            {
+                var l = CreateArr();
+
+                for (int x = 0; x < w; x++)
+                    l.Add(colMask[x, y]);
+
+                a.Add(l);
+            }
+
+            j["data"] = a;
+
+            return j;
         }
 
         public static JsonData SerializeGeneral(GeneralInfo gen8)
@@ -273,9 +305,11 @@ namespace Altar.Unpack
             r["size"    ] = SerializeSize(sprt.Size);
             r["bounding"] = SerializeRect(sprt.Bounding);
             r["bboxmode"] = sprt.BBoxMode;
-            r["sepmasks"] = sprt.SepMasks;
+            r["sepmasks"] = sprt.SeparateColMasks;
             r["origin"  ] = SerializePoint(sprt.Origin);
             r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
+
+            r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);
 
             return r;
         }
@@ -338,7 +372,11 @@ namespace Altar.Unpack
             if (objt.TexMaskId.HasValue)
                 r["texmask"] = objt.TexMaskId.Value;
 
-            r["physics"] = SerializeObjPhysics(objt.Physics);
+            if (objt.Physics.HasValue)
+                r["physics"] = SerializeObjPhysics(objt.Physics.Value);
+
+            r["sensor"  ] = objt.IsSensor;
+            r["colshape"] = objt.CollisionShape.ToString().ToLowerInvariant();
 
             r["data"  ] = SerializeArray(objt.OtherFloats, Utils.Identity);
             r["points"] = SerializeArray(objt.ShapePoints, SerializePoint);
@@ -356,10 +394,13 @@ namespace Altar.Unpack
             r["colour"     ] = room.Colour.ToHexString();
             r["enableviews"] = room.EnableViews;
             r["showcolour" ] = room.ShowColour;
+            r["clearbuf"   ] = room.ClearDisplayBuffer;
             r["world"      ] = room.World;
             r["bounding"   ] = SerializeRect(room.Bounding);
             r["gravity"    ] = SerializePoint(room.Gravity);
             r["metresperpx"] = room.MetresPerPixel;
+
+            r["drawbgcol"] = room.DrawBackgroundColour;
 
             r["bgs"  ] = SerializeArray(room.Backgrounds, b => SerializeRoomBg  (b, bgs ));
             r["views"] = SerializeArray(room.Views      , v => SerializeRoomView(v, objs));

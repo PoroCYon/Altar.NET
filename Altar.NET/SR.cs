@@ -99,6 +99,8 @@ namespace Altar
             BREAK = "break " ,
             RET_S = "ret "   ,
             EXIT  = "exit"   ,
+            MAGIC = "!magic" ,
+            SET_S = "set "   ,
 
             REMAIN = "rem"        ,
             ASSERT = "assert_neq:",

@@ -85,7 +85,9 @@ namespace Altar.Recomp
         EQ,
         NE,
         GE,
-        GT
+        GT,
+
+        Magic
     }
     public enum TokenKind : sbyte
     {

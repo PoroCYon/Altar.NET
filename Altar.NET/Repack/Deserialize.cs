@@ -169,10 +169,12 @@ namespace Altar.Repack
         {
             var r = new RoomObject
             {
-                Position = DeserializePoint (j.pos  ),
-                Scale    = DeserializePointF(j.scale),
-                Colour   = ParseColour((JsonData)j.colour),
-                Rotation = j.rotation
+                Position     = DeserializePoint (j.pos  )     ,
+                Scale        = DeserializePointF(j.scale)     ,
+                Colour       = ParseColour((JsonData)j.colour),
+                Rotation     = j.rotation                     ,
+                InstanceID   = j.instanceid                   ,
+                CreateCodeID = j.createcodeid
             };
 
             var i = Array.FindIndex(objs, o => o.Name == (string)j.obj);
@@ -186,11 +188,13 @@ namespace Altar.Repack
         {
             var r = new RoomTile
             {
-                Position       = DeserializePoint (j.pos      ),
-                SourcePosition = DeserializePoint (j.sourcepos),
-                Size           = DeserializeSize  (j.size     ),
-                Scale          = DeserializePointF(j.scale    ),
-                Colour         = ParseColour((JsonData)j.colour)
+                Position       = DeserializePoint (j.pos      ) ,
+                SourcePosition = DeserializePoint (j.sourcepos) ,
+                Size           = DeserializeSize  (j.size     ) ,
+                Scale          = DeserializePointF(j.scale    ) ,
+                Colour         = ParseColour((JsonData)j.colour),
+                Depth          = j.tiledepth                    ,
+                InstanceID     = j.instanceid
             };
 
             var i = Array.FindIndex(bgs, b => b.Name == (string)j.bg);
@@ -224,6 +228,24 @@ namespace Altar.Repack
         };
         #endregion
 
+        public static bool[,] DeserializeColMask(JsonData j)
+        {
+            var w = (int)j["w"];
+            var h = (int)j["h"];
+            
+            var a = j["data"];
+
+            //TODO: check of h == a.Count
+
+            bool[,] ret = new bool[w, h];
+
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    ret[x, y] = (bool)a[y][x];
+
+            return ret;
+        }
+
         #region public static SoundInfo      DeserializeSound (dynamic j)
         public static SoundInfo DeserializeSound(dynamic j) => new SoundInfo
         {
@@ -239,12 +261,13 @@ namespace Altar.Repack
         #region public static SpriteInfo     DeserializeSprite(dynamic j)
         public static SpriteInfo DeserializeSprite(dynamic j) => new SpriteInfo
         {
-            BBoxMode       = j.bboxmode,
-            SepMasks       = j.sepmasks,
-            Size           = DeserializeSize (j.size    ),
-            Bounding       = DeserializeBBox2(j.bounding),
-            Origin         = DeserializePoint(j.origin  ),
-            TextureIndices = DeserializeArray(j.textures, (Func<dynamic, uint>)(jd => (uint)jd))
+            BBoxMode         = j.bboxmode,
+            SeparateColMasks = j.sepmasks,
+            Size             = DeserializeSize (j.size    ),
+            Bounding         = DeserializeBBox2(j.bounding),
+            Origin           = DeserializePoint(j.origin  ),
+            TextureIndices   = DeserializeArray(j.textures, (Func<dynamic, uint>)(jd => (uint)jd)),
+            CollisionMasks   = DeserializeArray(j.colmasks, (Func<JsonData, bool[,]>)DeserializeColMask)
         };
         #endregion
         #region public static BackgroundInfo DeserializeBg    (dynamic j)
@@ -297,7 +320,11 @@ namespace Altar.Repack
                 ParentId   = ((JsonData)j).Has("parent" ) ? (uint?)objNameToId(j.parent) : null,
                 TexMaskId  = ((JsonData)j).Has("texmask") ? (uint?)j.texmask             : null,
 
-                Physics     = DeserializeObjPhysics(j.physics),
+                Physics     = ((JsonData)j).Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j.physics) : null,
+
+                IsSensor       = j.sensor,
+                CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j.colshape, true),
+
                 OtherFloats = DeserializeArray(j.data  , (Func<dynamic, float>)(d => (float)d)),
                 ShapePoints = DeserializeArray(j.points, (Func<dynamic, Point>)(d => DeserializePoint(d)))
             };
@@ -305,21 +332,25 @@ namespace Altar.Repack
         #region public static RoomInfo        DeserializeRoom(dynamic j, BackgroundInfo[] bgs, ObjectInfo[] objs)
         public static RoomInfo DeserializeRoom(dynamic j, BackgroundInfo[] bgs, ObjectInfo[] objs) => new RoomInfo
         {
-            Caption        = j.caption    ,
-            Speed          = j.speed      ,
-            IsPersistent   = j.persist    ,
-            EnableViews    = j.enableviews,
-            ShowColour     = j.showcolour ,
-            World          = j.world      ,
-            MetresPerPixel = j.metresperpx,
-            Size           = DeserializeSize  (j.size    ),
-            Colour         = ParseColour      (j.colour  ),
-            Bounding       = DeserializeBBox  (j.bounding),
-            Gravity        = DeserializePointF(j.gravity ),
-            Backgrounds    = DeserializeArray(j.bgs, (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg  (d, bgs ))),
-            Views          = DeserializeArray(j.bgs, (Func<dynamic, RoomView      >)(d => DeserializeRoomView(d, objs))),
-            Objects        = DeserializeArray(j.bgs, (Func<dynamic, RoomObject    >)(d => DeserializeRoomObj (d, objs))),
-            Tiles          = DeserializeArray(j.bgs, (Func<dynamic, RoomTile      >)(d => DeserializeRoomTile(d, bgs )))
+            Caption              = j.caption    ,
+            Speed                = j.speed      ,
+            IsPersistent         = j.persist    ,
+            EnableViews          = j.enableviews,
+            ShowColour           = j.showcolour ,
+            ClearDisplayBuffer   = j.clearbuf   ,
+            World                = j.world      ,
+            MetresPerPixel       = j.metresperpx,
+            DrawBackgroundColour = j.drawbgcol  ,
+
+            Size               = DeserializeSize  (j.size    ),
+            Colour             = ParseColour      (j.colour  ),
+            Bounding           = DeserializeBBox  (j.bounding),
+            Gravity            = DeserializePointF(j.gravity ),
+
+            Backgrounds        = DeserializeArray(j.bgs, (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg  (d, bgs ))),
+            Views              = DeserializeArray(j.bgs, (Func<dynamic, RoomView      >)(d => DeserializeRoomView(d, objs))),
+            Objects            = DeserializeArray(j.bgs, (Func<dynamic, RoomObject    >)(d => DeserializeRoomObj (d, objs))),
+            Tiles              = DeserializeArray(j.bgs, (Func<dynamic, RoomTile      >)(d => DeserializeRoomTile(d, bgs )))
         };
         #endregion
         #region public static TexturePageInfo DeserializeTPag(dynamic j)

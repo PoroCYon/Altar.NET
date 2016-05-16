@@ -40,17 +40,23 @@ namespace Altar.Recomp
 
         public override string ToString() => OpCode + SR.SPACE_S + Type1.ToPrettyString() + SR.COLON + Type2.ToPrettyString();
     }
+    public class Dup : SingleType
+    {
+        public ushort Extra;
+
+        public override string ToString() => base.ToString() + SR.SPACE_S + Extra;
+    }
     public class Compare : DoubleType
     {
         public ComparisonType ComparisonType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + ComparisonType.ToPrettyString() + SR.SPACE_S + Type1.ToPrettyString() + SR.COLON + Type2.ToPrettyString();
+        public override string ToString() => base.ToString() + SR.SPACE_S + ComparisonType.ToPrettyString() + SR.SPACE_S + Type1.ToPrettyString() + SR.COLON + Type2.ToPrettyString();
     }
     public class Branch : Instruction
     {
         public object Label;
 
-        public override string ToString() => OpCode + SR.SPACE_S + Label;
+        public override string ToString() => base.ToString() + SR.SPACE_S + Label;
     }
     public class Set : DoubleType
     {
@@ -61,7 +67,7 @@ namespace Altar.Recomp
 
         public VariableType VariableType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + TargetVariable + VariableType.ToPrettyString();
+        public override string ToString() => base.ToString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + TargetVariable + VariableType.ToPrettyString();
     }
     public class Call : Instruction
     {
@@ -71,13 +77,17 @@ namespace Altar.Recomp
         public string FunctionName;
         public VariableType FunctionType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + ReturnType.ToPrettyString() + SR.COLON + Arguments + SR.SPACE_S + FunctionName + FunctionType.ToPrettyString();
+        public override string ToString() => base.ToString() + SR.SPACE_S + ReturnType.ToPrettyString() + SR.COLON + Arguments + SR.SPACE_S + FunctionName + FunctionType.ToPrettyString();
     }
     public class Break : SingleType
     {
         public long Signal;
 
-        public override string ToString() => OpCode + SR.SPACE_S + Signal;
+        public override string ToString() => base.ToString() + SR.SPACE_S + Signal;
+    }
+    public class MagicSet : DoubleType
+    {
+        public override string ToString() => base.ToString() + SR.SPACE_S + SR.MAGIC;
     }
 
     public abstract class Push : SingleType { }
@@ -86,7 +96,7 @@ namespace Altar.Recomp
     {
         public object Value;
 
-        public override string ToString() => OpCode + SR.SPACE_S + Type.ToPrettyString() + SR.SPACE_S + Value;
+        public override string ToString() => base.ToString() + SR.SPACE_S + Value;
     }
     public class PushVariable : Push
     {
@@ -97,6 +107,6 @@ namespace Altar.Recomp
 
         public VariableType VariableType;
 
-        public override string ToString() => OpCode + SR.SPACE_S + Type.ToPrettyString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + VariableName + VariableType.ToPrettyString();
+        public override string ToString() => base.ToString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + VariableName + VariableType.ToPrettyString();
     }
 }

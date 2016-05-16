@@ -65,10 +65,11 @@ namespace Altar
         public Point Size;
         public BoundingBox2 Bounding;
         public uint BBoxMode;
-        public uint SepMasks;
+        public bool SeparateColMasks;
         public Point Origin;
 
         public uint[] TextureIndices;
+        public bool[][,] CollisionMasks;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct BackgroundInfo
@@ -108,6 +109,7 @@ namespace Altar
 
         public FontCharacter[] Characters;
     }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct ObjectInfo
     {
@@ -122,7 +124,10 @@ namespace Altar
         public uint? ParentId ;
         public uint? TexMaskId;
 
-        public ObjectPhysics Physics;
+        public bool IsSensor;
+        public CollisionShape CollisionShape;
+
+        public ObjectPhysics? Physics;
         public float[] OtherFloats;
         public Point[] ShapePoints;
     }
@@ -136,8 +141,11 @@ namespace Altar
         public bool IsPersistent;
         public Colour Colour;
 
+        public bool DrawBackgroundColour;
+
         public bool EnableViews;
         public bool ShowColour;
+        public bool ClearDisplayBuffer;
 
         public uint World;
         public BoundingBox Bounding;
@@ -205,6 +213,8 @@ namespace Altar
     {
         public Point Position;
         public uint DefIndex;
+        public uint InstanceID;
+        public uint CreateCodeID; // gml_RoomCC_<name>_<CreateCodeID>_Create
         public PointF Scale;
         public Colour Colour;
         public float Rotation;
@@ -216,6 +226,8 @@ namespace Altar
         public uint DefIndex;
         public Point SourcePosition;
         public Point Size;
+        public uint Depth;
+        public uint InstanceID;
         public PointF Scale;
         public Colour Colour;
     }

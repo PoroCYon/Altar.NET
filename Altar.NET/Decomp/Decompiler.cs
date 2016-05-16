@@ -357,20 +357,28 @@ namespace Altar.Decomp
                         if (!dupTars.Contains(stack.Peek()))
                             dupTars.Add(stack.Peek());
 
-                        if (stack.Peek().WalkExprTree(e => e is CallExpression).Any(_ => _))
-                        {
-                            stack.Push(new UnaryOperatorExpression
-                            {
-                                Input        = stack.Peek(),
-                                Operator     = UnaryOperator.Duplicate,
-                                OriginalType = stack.Peek().ReturnType,
-                                ReturnType   = st.Type
-                            });
+                        //var stackArr = stack.ToArray();
+                        //for (i = 0; i <= ins->SingleType.DupExtra; i++)
+                        //{
+                        //    if (i >= stackArr.Length)
+                        //    {
+                        //        // .__.
+                        //        break;
+                        //    }
 
-                            //AddStmt(new DupStatement());
-                        }
-                        else
-                            stack.Push(stack.Peek());
+                            var elem = stack.Peek();//stackArr[stackArr.Length - i - 1];
+
+                            if (elem.WalkExprTree(e => e is CallExpression).Any(Utils.Identity))
+                                stack.Push(new UnaryOperatorExpression
+                                {
+                                    Input = elem,
+                                    Operator = UnaryOperator.Duplicate,
+                                    OriginalType = elem.ReturnType,
+                                    ReturnType = st.Type
+                                });
+                            else
+                                stack.Push(elem);
+                        //}
                         break;
                     case GeneralOpCode.Pop:
                         if (stack.Count > 0 && stack.Peek() is CallExpression)
@@ -452,6 +460,17 @@ namespace Altar.Decomp
                     #endregion
                     #region set
                     case GeneralOpCode.Set:
+                        if (se.IsMagic)
+                        {
+                            AddStmt(new MagicSetStatement
+                            {
+                                OriginalType = se.Types.Type1,
+                                ReturnType   = se.Types.Type2
+                            });
+
+                            break;
+                        }
+
                         var ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
                         AddStmt(new SetStatement
                         {
