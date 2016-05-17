@@ -211,20 +211,27 @@ namespace Altar.Repack
             IsDebug        = j.debug,
             FileName       = j.filename,
             Configuration  = j.config,
-            GameId         = j.gameid,
+            GameID         = j.gameid,
             Version        = new Version(j.version),
             WindowSize     = DeserializeSize(j.size),
             LicenceCRC32   = j.licensecrc32,
             DisplayName    = j.displayname,
             Timestamp      = DateTime.Parse(j.timestamp, CultureInfo.InvariantCulture),
-            LicenseMD5Hash = DeserializeArray(j.licensemd5, (Func<dynamic, byte>)(jd => (byte)jd))
+            LicenseMD5Hash = DeserializeArray(j.licensemd5, (Func<dynamic, byte>)(jd => (byte)jd)),
+
+            InfoFlags     = (InfoFlags  )Enum.Parse(typeof(InfoFlags  ), (string)j.flags  , true),
+            ActiveTargets = (GameTargets)Enum.Parse(typeof(GameTargets), (string)j.targets, true),
+
+            SteamAppID = j.appid
         };
         #endregion
         #region public static OptionInfo  DeserializeOptions(dynamic j)
         public static OptionInfo  DeserializeOptions(dynamic j) => new OptionInfo
         {
             Constants = ((JsonData)j.constants).ToDictionary()
-                .ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value)
+                .ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value),
+
+            InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j.flags, true)
         };
         #endregion
 
@@ -232,7 +239,7 @@ namespace Altar.Repack
         {
             var w = (int)j["w"];
             var h = (int)j["h"];
-            
+
             var a = j["data"];
 
             //TODO: check of h == a.Count
@@ -255,7 +262,7 @@ namespace Altar.Repack
             File         = j.file      ,
             VolumeMod    = j.volume    ,
             PitchMod     = j.pitch     ,
-            PanMod       = j.pan
+            GroupID      = j.groupid
         };
         #endregion
         #region public static SpriteInfo     DeserializeSprite(dynamic j)

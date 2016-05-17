@@ -165,10 +165,14 @@ namespace Altar.Unpack
             ret.Configuration   = StringFromOffset(content, ge->ConfigOffset     );
             ret.Name            = StringFromOffset(content, ge->NameOffset       );
             ret.DisplayName     = StringFromOffset(content, ge->DisplayNameOffset);
-            ret.GameId          = ge->GameId;
+            ret.GameID          = ge->GameID;
             ret.WindowSize      = ge->WindowSize;
             ret.BytecodeVersion = ge->BytecodeVersion;
             ret.Version         = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
+
+            ret.InfoFlags     = ge->Info         ;
+            ret.ActiveTargets = ge->ActiveTargets;
+            ret.SteamAppID    = ge->AppID        ;
 
             ret.LicenseMD5Hash = new byte[0x10];
             Marshal.Copy((IntPtr)ge->MD5, ret.LicenseMD5Hash, 0, 0x10);
@@ -188,7 +192,7 @@ namespace Altar.Unpack
 
             var oe = content.Options;
 
-            var h = GMFile.ChunkOf(content, oe->IconOffset);
+            ret.InfoFlags = oe->GEN8FlagsDup;
 
             ret.Constants = new Dictionary<string, string>((int)oe->ConstMap.Count);
             for (uint i = 0; i < oe->ConstMap.Count; i++)
@@ -213,7 +217,9 @@ namespace Altar.Unpack
             ret.VolumeMod = se->Volume;
             ret.PitchMod  = se->Pitch ;
 
-            ret.AudioId      =  se->AudioId;
+            ret.GroupID = se->GroupID;
+
+            ret.AudioID      =  se->AudioID;
             ret.IsEmbedded   = (se->Flags & SoundEntryFlags.Embedded  ) != 0;
             ret.IsCompressed = (se->Flags & SoundEntryFlags.Compressed) != 0;
 

@@ -260,7 +260,7 @@ namespace Altar.Unpack
             r["debug"   ] = gen8.IsDebug;
             r["filename"] = gen8.FileName;
             r["config"  ] = gen8.Configuration;
-            r["gameid"  ] = gen8.GameId;
+            r["gameid"  ] = gen8.GameID;
             r["version" ] = gen8.Version.ToString();
 
             r["windowsize"] = SerializeSize(gen8.WindowSize);
@@ -271,11 +271,17 @@ namespace Altar.Unpack
             r["displayname" ] = gen8.DisplayName;
             r["timestamp"   ] = gen8.Timestamp.ToString(SR.SHORT_L /* 's': sortable */);
 
+            r["flags"  ] = gen8.InfoFlags    .ToString();
+            r["appid"  ] = gen8.SteamAppID              ;
+            r["targets"] = gen8.ActiveTargets.ToString();
+
             return r;
         }
         public static JsonData SerializeOptions(OptionInfo  optn)
         {
             var r = CreateObj();
+
+            r["flags"] = optn.InfoFlags.ToString();
 
             r["constants"] = CreateObj();
             foreach (var kvp in optn.Constants)
@@ -294,7 +300,7 @@ namespace Altar.Unpack
             r["file"      ] = sond.File;
             r["volume"    ] = sond.VolumeMod;
             r["pitch"     ] = sond.PitchMod;
-            r["pan"       ] = sond.PanMod;
+            r["groupid"   ] = sond.GroupID;
 
             return r;
         }
@@ -448,8 +454,8 @@ namespace Altar.Unpack
             var infoTable = new Dictionary<int, SoundInfo>();
 
             foreach (var s in f.Sound)
-                if ((s.IsEmbedded || s.IsCompressed) && s.AudioId != -1)
-                    infoTable[s.AudioId] = s;
+                if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
+                    infoTable[s.AudioID] = s;
 
             r["audio"] = CreateArr();
             for (int i = 0; i < f.Audio.Length; i++)
