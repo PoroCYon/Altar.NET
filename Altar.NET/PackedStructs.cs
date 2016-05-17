@@ -95,9 +95,16 @@ namespace Altar
         StudioVersionB3   = 0x800,
         StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
         SteamEnabled      = 0x1000,
-        LocalDataEnabled  = 0x2000
+        LocalDataEnabled  = 0x2000,
+        BorderlessWindow  = 0x4000
 
         // others...?
+    }
+    public enum GameTargets : uint
+    {
+        None = 0
+
+        // ?
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -111,7 +118,7 @@ namespace Altar
         public uint ConfigOffset;
         public uint LastObj;
         public uint LastTile;
-        public uint GameId;
+        public uint GameID;
         fixed uint _pad1[4]; // 0, 0, 0, 0
         public uint NameOffset;
         public int Major;
@@ -124,8 +131,9 @@ namespace Altar
         public uint CRC32;
         public ulong Timestamp; // UNIX time (64-bit, luckily)
         public uint DisplayNameOffset;
-        public uint ActiveTargets;
-        fixed uint _pad2[5]; // unknown (0, *, 0, *, *) -> more flags?
+        public GameTargets ActiveTargets;
+        fixed uint _pad[4]; // unknown, more flags?
+        public uint AppID;
         public uint NumberCount;
         public uint Numbers;
     }
@@ -135,7 +143,7 @@ namespace Altar
         public SectionHeader Header;
 
         fixed uint _pad0[2]; // flags?
-        public uint IconOffset; //TODO !? what do do with this?
+        public InfoFlags GEN8FlagsDup;
         fixed uint _pad1[0xC];
         public CountOffsetsPair ConstMap;
     }
@@ -201,11 +209,11 @@ namespace Altar
         public SoundEntryFlags Flags;
         public uint TypeOffset;
         public uint FileOffset;
-        public uint _pad; // effects?
-        public float Volume;
-        public float Pitch ;
-        public float Pan   ; // probably
-        public int AudioId;
+        uint _pad; // effects?
+        public float Volume   ;
+        public float Pitch    ;
+        public int   GroupID  ;
+        public int   AudioID  ;
     }
 
     public struct SpriteCollisionMask

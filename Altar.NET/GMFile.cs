@@ -152,8 +152,8 @@ namespace Altar
             {
                 var s = Sound[i];
 
-                if ((s.IsEmbedded || s.IsCompressed) && s.AudioId != -1)
-                    AudioSoundMap[(uint)s.AudioId] = i;
+                if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
+                    AudioSoundMap[(uint)s.AudioID] = i;
             }
 
             var vars = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);

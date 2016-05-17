@@ -133,8 +133,8 @@ namespace Altar
                     var infoTable = new Dictionary<int, SoundInfo>();
 
                     foreach (var s in f.Sound)
-                        if ((s.IsEmbedded || s.IsCompressed) && s.AudioId != -1)
-                            infoTable[s.AudioId] = s;
+                        if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
+                            infoTable[s.AudioID] = s;
 
                     if (!Directory.Exists(od + DIR_WAV))
                         Directory.CreateDirectory(od + DIR_WAV);

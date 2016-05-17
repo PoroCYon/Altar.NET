@@ -492,7 +492,7 @@ namespace Altar.Decomp
                             case ExpressionType.Variable:
                                 var vt = ((Reference*)&pps->ValueRest)->Type;
 
-                                stack.Push(vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
+                                stack.Push(/*vt == VariableType.StackTop &&*/ (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
                                     ? new MemberExpression
                                     {
                                         Owner        = Pop(),

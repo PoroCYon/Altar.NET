@@ -23,7 +23,7 @@ namespace Altar
         public uint BytecodeVersion;
         public string FileName;
         public string Configuration;
-        public uint GameId;
+        public uint GameID;
         public string Name;
         public Version Version;
         public Point WindowSize;
@@ -31,6 +31,10 @@ namespace Altar
         public uint LicenceCRC32;
         public string DisplayName;
         public DateTime Timestamp;
+
+        public GameTargets ActiveTargets;
+        public uint SteamAppID;
+        public InfoFlags InfoFlags;
 
         public uint[] WeirdNumbers;
 
@@ -40,6 +44,8 @@ namespace Altar
     public struct OptionInfo
     {
         public IDictionary<string, string> Constants;
+
+        public InfoFlags InfoFlags;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -52,11 +58,11 @@ namespace Altar
         public string File        ;
         public float  VolumeMod   ;
         public float  PitchMod    ;
-        public float  PanMod      ;
+        public int    GroupID     ;
         /// <summary>
         /// -1 if unused? Only makes sense when embedded or compressed?
         /// </summary>
-        public int    AudioId     ;
+        public int    AudioID     ;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo
