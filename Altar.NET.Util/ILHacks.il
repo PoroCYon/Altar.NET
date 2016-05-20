@@ -560,7 +560,7 @@
     }
 
     .method public hidebysig static
-        void Initobj<([mscorib]System.Object) T>(
+        void Initobj<([mscorlib]System.Object) T>(
             !!T& mref
         ) cil managed
     {
