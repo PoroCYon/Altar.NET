@@ -10,7 +10,7 @@ using static Altar.SR;
 namespace Altar.Decomp
 {
     // http://undertale.rawr.ws/decompilation
-    // https://gist.github.com/PoroCYon/45f947d576f715de3a4d
+    // https://gitlab.com/snippets/14943
 
     public unsafe static class Disassembler
     {
@@ -151,7 +151,7 @@ namespace Altar.Decomp
 
                             sb.Append('[').Append(o.Name).Append(']');
                         }
-                        
+
                         sb.Append(':');
 
                         sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);

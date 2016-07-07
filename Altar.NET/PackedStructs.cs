@@ -81,18 +81,18 @@ namespace Altar
     [Flags]
     public enum InfoFlags : uint
     {
-        Fullscreen        = 0x001,
-        SyncVertex1       = 0x002,
-        SyncVertex2       = 0x004,
-        Interpolate       = 0x008,
-        Unknown           = 0x010, // seems to be 1 all the time...
-        ShowCursor        = 0x020,
-        Sizeable          = 0x040,
-        ScreenKey         = 0x080,
-        SyncVertex3       = 0x100,
-        StudioVersionB1   = 0x200,
-        StudioVersionB2   = 0x400,
-        StudioVersionB3   = 0x800,
+        Fullscreen        = 0x0001,
+        SyncVertex1       = 0x0002,
+        SyncVertex2       = 0x0004,
+        Interpolate       = 0x0008,
+        Unknown           = 0x0010, // seems to be 1 all the time...
+        ShowCursor        = 0x0020,
+        Sizeable          = 0x0040,
+        ScreenKey         = 0x0080,
+        SyncVertex3       = 0x0100,
+        StudioVersionB1   = 0x0200,
+        StudioVersionB2   = 0x0400,
+        StudioVersionB3   = 0x0800,
         StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
         SteamEnabled      = 0x1000,
         LocalDataEnabled  = 0x2000,

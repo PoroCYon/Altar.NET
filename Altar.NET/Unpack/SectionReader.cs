@@ -571,6 +571,9 @@ namespace Altar.Unpack
         // C# doesn't like pointers of generic types...
         static ReferenceDef[] GetRefDefsInternal(GMFileContent content, SectionRefDefs* section, long elemOff, uint amount, uint rdeSize, Func<IntPtr, ReferenceDef> iter, bool correct = true)
         {
+            if (section->Header.Size <= 4)
+                return new ReferenceDef[0];
+
             amount = correct && amount == 0 ? section->Header.Size / rdeSize : amount;
             var r = new ReferenceDef[amount];
 

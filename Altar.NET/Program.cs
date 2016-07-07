@@ -80,7 +80,7 @@ namespace Altar
                 #endregion
 
                 #region STRG
-                if (eo.String)
+                if (eo.String && f.Strings != null)
                 {
                     Console.WriteLine("Dumping strings...");
 
@@ -88,7 +88,7 @@ namespace Altar
                 }
                 #endregion
                 #region VARI
-                if (eo.Variables)
+                if (eo.Variables && f.RefData.Variables != null)
                 {
                     Console.WriteLine("Dumping variables...");
 
@@ -96,7 +96,7 @@ namespace Altar
                 }
                 #endregion
                 #region FUNC
-                if (eo.Functions)
+                if (eo.Functions && f.RefData.Functions != null)
                 {
                     Console.WriteLine("Dumping functions...");
 
@@ -105,7 +105,7 @@ namespace Altar
                 #endregion
 
                 #region TXTR
-                if (eo.Texture)
+                if (eo.Texture && f.Textures != null)
                 {
                     Console.Write("Exporting texture sheets... ");
                     var cl = Console.CursorLeft;
@@ -124,7 +124,7 @@ namespace Altar
                 }
                 #endregion
                 #region AUDO
-                if (eo.Audio)
+                if (eo.Audio && f.Audio != null)
                 {
                     Console.Write("Exporting audio files... ");
                     var cl = Console.CursorLeft;
@@ -149,7 +149,7 @@ namespace Altar
                 }
                 #endregion
                 #region CODE
-                if (eo.Decompile)
+                if (eo.Decompile && f.Code != null)
                 {
                     Console.Write("Decompiling code... ");
                     var cl = Console.CursorLeft;
@@ -166,7 +166,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_LSP, Decompiler.DecompileCode(f, i, eo.AbsoluteAddresses));
                     }
                 }
-                if (eo.Disassemble)
+                if (eo.Disassemble && f.Code != null)
                 {
                     Console.Write("Disassembling bytecode... ");
                     var cl = Console.CursorLeft;
@@ -186,7 +186,7 @@ namespace Altar
                 #endregion
 
                 #region SCPT
-                if (eo.Script)
+                if (eo.Script && f.Scripts != null && f.Code != null)
                 {
                     Console.Write("Exporting scripts... ");
                     var cl = Console.CursorLeft;
@@ -205,7 +205,7 @@ namespace Altar
                 }
                 #endregion
                 #region TPAG
-                if (eo.TPag)
+                if (eo.TPag && f.TexturePages != null)
                 {
                     Console.Write("Exporting texture maps... ");
                     var cl = Console.CursorLeft;
@@ -224,7 +224,7 @@ namespace Altar
                 }
                 #endregion
                 #region SPRT
-                if (eo.Sprite)
+                if (eo.Sprite && f.Sprites != null)
                 {
                     Console.Write("Exporting sprites... ");
                     var cl = Console.CursorLeft;
@@ -243,7 +243,7 @@ namespace Altar
                 }
                 #endregion
                 #region SOND
-                if (eo.Sound)
+                if (eo.Sound && f.Sound != null)
                 {
                     Console.Write("Exporting sounds... ");
                     var cl = Console.CursorLeft;
@@ -263,7 +263,7 @@ namespace Altar
                 #endregion
 
                 #region OBJT
-                if (eo.Object)
+                if (eo.Object && f.Objects != null && f.Sprites != null)
                 {
                     Console.Write("Exporting objects... ");
                     var cl = Console.CursorLeft;
@@ -282,7 +282,7 @@ namespace Altar
                 }
                 #endregion
                 #region BGND
-                if (eo.Background)
+                if (eo.Background && f.Backgrounds != null)
                 {
                     Console.Write("Exporting backgrounds... ");
                     var cl = Console.CursorLeft;
@@ -301,7 +301,7 @@ namespace Altar
                 }
                 #endregion
                 #region ROOM
-                if (eo.Room)
+                if (eo.Room && f.Rooms != null)
                 {
                     Console.Write("Exporting rooms... ");
                     var cl = Console.CursorLeft;
@@ -321,7 +321,7 @@ namespace Altar
                 #endregion
 
                 #region FONT
-                if (eo.Background)
+                if (eo.Background && f.Fonts != null)
                 {
                     Console.Write("Exporting fonts... ");
                     var cl = Console.CursorLeft;
@@ -340,7 +340,7 @@ namespace Altar
                 }
                 #endregion
                 #region PATH
-                if (eo.Path)
+                if (eo.Path && f.Paths != null)
                 {
                     Console.Write("Exporting paths... ");
                     var cl = Console.CursorLeft;
