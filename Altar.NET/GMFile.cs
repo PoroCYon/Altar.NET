@@ -133,19 +133,32 @@ namespace Altar
             General = SectionReader.GetGeneralInfo(f);
             Options = SectionReader.GetOptionInfo (f);
 
-            Sound        = Utils.UintRange(0, f.Sounds      ->Count).Select(i => SectionReader.GetSoundInfo   (f, i)).ToArray();
-            Sprites      = Utils.UintRange(0, f.Sprites     ->Count).Select(i => SectionReader.GetSpriteInfo  (f, i)).ToArray();
-            Backgrounds  = Utils.UintRange(0, f.Backgrounds ->Count).Select(i => SectionReader.GetBgInfo      (f, i)).ToArray();
-            Paths        = Utils.UintRange(0, f.Paths       ->Count).Select(i => SectionReader.GetPathInfo    (f, i)).ToArray();
-            Scripts      = Utils.UintRange(0, f.Scripts     ->Count).Select(i => SectionReader.GetScriptInfo  (f, i)).ToArray();
-            Fonts        = Utils.UintRange(0, f.Fonts       ->Count).Select(i => SectionReader.GetFontInfo    (f, i)).ToArray();
-            Objects      = Utils.UintRange(0, f.Objects     ->Count).Select(i => SectionReader.GetObjectInfo  (f, i)).ToArray();
-            Rooms        = Utils.UintRange(0, f.Rooms       ->Count).Select(i => SectionReader.GetRoomInfo    (f, i)).ToArray();
-            TexturePages = Utils.UintRange(0, f.TexturePages->Count).Select(i => SectionReader.GetTexPageInfo (f, i)).ToArray();
-            Code         = Utils.UintRange(0, f.Code        ->Count).Select(i => Disassembler .DisassembleCode(f, i)).ToArray();
-            Strings      = Utils.UintRange(0, f.Strings     ->Count).Select(i => SectionReader.GetStringInfo  (f, i)).ToArray();
-            Textures     = Utils.UintRange(0, f.Textures    ->Count).Select(i => SectionReader.GetTextureInfo (f, i)).ToArray();
-            Audio        = Utils.UintRange(0, f.Audio       ->Count).Select(i => SectionReader.GetAudioInfo   (f, i)).ToArray();
+            if (!f.Sounds->Header.IsEmpty())
+                Sound        = Utils.UintRange(0, f.Sounds      ->Count).Select(i => SectionReader.GetSoundInfo   (f, i)).ToArray();
+            if (!f.Sprites->Header.IsEmpty())
+                Sprites      = Utils.UintRange(0, f.Sprites     ->Count).Select(i => SectionReader.GetSpriteInfo  (f, i)).ToArray();
+            if (!f.Backgrounds->Header.IsEmpty())
+                Backgrounds  = Utils.UintRange(0, f.Backgrounds ->Count).Select(i => SectionReader.GetBgInfo      (f, i)).ToArray();
+            if (!f.Paths->Header.IsEmpty())
+                Paths        = Utils.UintRange(0, f.Paths       ->Count).Select(i => SectionReader.GetPathInfo    (f, i)).ToArray();
+            if (!f.Scripts->Header.IsEmpty())
+                Scripts      = Utils.UintRange(0, f.Scripts     ->Count).Select(i => SectionReader.GetScriptInfo  (f, i)).ToArray();
+            if (!f.Fonts->Header.IsEmpty())
+                Fonts        = Utils.UintRange(0, f.Fonts       ->Count).Select(i => SectionReader.GetFontInfo    (f, i)).ToArray();
+            if (!f.Objects->Header.IsEmpty())
+                Objects      = Utils.UintRange(0, f.Objects     ->Count).Select(i => SectionReader.GetObjectInfo  (f, i)).ToArray();
+            if (!f.Rooms->Header.IsEmpty())
+                Rooms        = Utils.UintRange(0, f.Rooms       ->Count).Select(i => SectionReader.GetRoomInfo    (f, i)).ToArray();
+            if (!f.TexturePages->Header.IsEmpty())
+                TexturePages = Utils.UintRange(0, f.TexturePages->Count).Select(i => SectionReader.GetTexPageInfo (f, i)).ToArray();
+            if (!f.Code->Header.IsEmpty())
+                Code         = Utils.UintRange(0, f.Code        ->Count).Select(i => Disassembler .DisassembleCode(f, i)).ToArray();
+            if (!f.Code->Header.IsEmpty())
+                Strings      = Utils.UintRange(0, f.Strings     ->Count).Select(i => SectionReader.GetStringInfo  (f, i)).ToArray();
+            if (!f.Textures->Header.IsEmpty())
+                Textures     = Utils.UintRange(0, f.Textures    ->Count).Select(i => SectionReader.GetTextureInfo (f, i)).ToArray();
+            if (!f.Audio->Header.IsEmpty())
+                Audio        = Utils.UintRange(0, f.Audio       ->Count).Select(i => SectionReader.GetAudioInfo   (f, i)).ToArray();
 
             AudioSoundMap = new Dictionary<uint, uint>();
             for (uint i = 0; i < Sound.Length; i++)
@@ -212,7 +225,7 @@ namespace Altar
                         ret.Extensions = (SectionUnknown*)hdr;
 
                         if (ret.Extensions->Header.Size > 4)
-                            Console.WriteLine("Warning: EXTN chunk is not empty!");
+                            Console.WriteLine("Warning: EXTN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Sounds:
                         ret.Sounds = (SectionCountOffsets*)hdr;
@@ -233,7 +246,7 @@ namespace Altar
                         ret.Shaders = (SectionUnknown*)hdr;
 
                         if (ret.Shaders->Header.Size > 4)
-                            Console.WriteLine("Warning: SHDR chunk is not empty!");
+                            Console.WriteLine("Warning: SHDR chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Fonts:
                         ret.Fonts = (SectionCountOffsets*)hdr;
@@ -242,7 +255,7 @@ namespace Altar
                         ret.Timelines = (SectionUnknown*)hdr;
 
                         if (ret.Timelines->Header.Size > 4)
-                            Console.WriteLine("Warning: TMLN chunk is not empty!");
+                            Console.WriteLine("Warning: TMLN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Objects:
                         ret.Objects = (SectionCountOffsets*)hdr;
@@ -254,7 +267,7 @@ namespace Altar
                         ret.DataFiles = (SectionUnknown*)hdr;
 
                         if (ret.DataFiles->Header.Size > 4)
-                            Console.WriteLine("Warning: DAFL chunk is not empty!");
+                            Console.WriteLine("Warning: DAFL chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.TexturePage:
                         ret.TexturePages = (SectionCountOffsets*)hdr;
@@ -281,11 +294,11 @@ namespace Altar
                         ret.AudioGroup = (SectionUnknown*)hdr;
 
                         if (ret.AudioGroup->Header.Size > 4)
-                            Console.WriteLine("Warning: AGRP chunk is not empty!");
+                            Console.WriteLine("Warning: AGRP chunk is not empty, its content will not be exported!");
                         break;
                     default:
                         if (hdr->Size > 4)
-                            Console.WriteLine($"Warning: unexpected {hdr->Identity.ToChunkName()}, chunk is not empty!");
+                            Console.WriteLine($"Warning: unexpected chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
 
                         break;
                 }
@@ -318,6 +331,13 @@ namespace Altar
         }
 
         [DebuggerStepThrough]
-        public static bool IsEmpty(SectionHeader* header) => header->Size <= 4;
+        public static bool IsEmpty(     SectionHeader* header) => header->Size <= 4;
+        [DebuggerStepThrough]
+        public static bool IsEmpty(     SectionHeader  header) => header. Size <= 4;
+    }
+    public static class GMFileExt
+    {
+        [DebuggerStepThrough]
+        public static bool IsEmpty(this SectionHeader  header) => header. Size <= 4;
     }
 }

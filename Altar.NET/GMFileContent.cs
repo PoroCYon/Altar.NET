@@ -44,10 +44,10 @@ namespace Altar
 
             var u = (uint)h;
 
-            var c0 = (char)(u & 0xFF000000);
-            var c1 = (char)(u & 0x00FF0000);
-            var c2 = (char)(u & 0x0000FF00);
-            var c3 = (char)(u & 0X000000FF);
+            var c0 = (char)((u & 0xFF000000) >> 24);
+            var c1 = (char)((u & 0x00FF0000) >> 16);
+            var c2 = (char)((u & 0x0000FF00) >>  8);
+            var c3 = (char)((u & 0X000000FF)      );
 
             return sb
                 .Append(c0).Append(c1).Append(c2).Append(c3)
