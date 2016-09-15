@@ -256,37 +256,43 @@ namespace Altar.Unpack
                 (SpriteCollisionMask*)&se->Textures + sizeof(uint) * se->Textures.Count;
 
             uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
-          //Console.WriteLine("amt="+amt.ToString("X") + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString("X"));
-            ret.CollisionMasks = new bool[amt][,];
-            byte* maskData = &masks->MaskData;
+          //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
 
-            uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
-            uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
-
-            uint wPad = ((w & 7) == 0) ? w : (w - (w & 7) + 8);
-
-            for (uint i = 0; i < amt; i++)
+            if (amt < 0x100) // guesstimate
             {
-                bool[,] stuff = new bool[w, h];
+                ret.CollisionMasks = new bool[amt][,];
+                byte* maskData = &masks->MaskData;
 
-                for (uint y = 0; y < h; y++)
-                    for (uint x = 0; x < w; x++)
-                    {
-                        uint rown = y * wPad;
+                uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
+                uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
 
-                        uint byten =        x >> 3 ;
-                        byte bitn  = (byte)(x &  7);
+                uint wPad = ((w & 7) == 0) ? w : (w - (w & 7) + 8);
 
-                        byte* curptr = maskData + rown + byten;
-                        byte curbyte = *curptr;
-                        byte curbit  = (byte)(curbyte & (byte)(1 << bitn));
+                for (uint i = 0; i < amt; i++)
+                {
+                    bool[,] stuff = new bool[w, h];
 
-                        stuff[x, y] = curbit != 0;
-                    }
+                    for (uint y = 0; y < h; y++)
+                        for (uint x = 0; x < w; x++)
+                        {
+                            uint rown = y * wPad;
 
-                ret.CollisionMasks[i] = stuff;
-                maskData += wPad * h;
+                            uint byten =        x >> 3 ;
+                            byte bitn  = (byte)(x &  7);
+
+                            byte* curptr = maskData + rown + byten;
+                            byte curbyte = *curptr;
+                            byte curbit  = (byte)(curbyte & (byte)(1 << bitn));
+
+                            stuff[x, y] = curbit != 0;
+                        }
+
+                    ret.CollisionMasks[i] = stuff;
+                    maskData += wPad * h;
+                }
             }
+            else
+                Console.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
 
             return ret;
         }
@@ -405,7 +411,7 @@ namespace Altar.Unpack
 
             ret.ParentId  = oe->ParentId < 0 ? null : (uint?)oe->ParentId;
             ret.TexMaskId = oe->MaskId   < 0 ? null : (uint?)oe->MaskId  ;
-            
+
             ret.Physics        = oe->HasPhysics.IsTrue() ? (ObjectPhysics?)oe->Physics : null;
             ret.IsSensor       = oe->IsSensor.IsTrue();
             ret.CollisionShape = oe->CollisionShape;
@@ -422,13 +428,40 @@ namespace Altar.Unpack
             else
                 ret.OtherFloats = EmptyFloatArr;
 
-            ret.ShapePoints = new Point[shapeCop->Count >> 1];
+            if ((shapeCop->Count & 0xFFFFF000) != 0)
+            {
+                Console.WriteLine($"Warning: shape point coords of object {id} are bogus, ignoring...");
 
-            for (uint i = 0; i < (shapeCop->Count >> 1); i++)
-                ret.ShapePoints[i] = new Point(
-                    *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2    ]),
-                    *(int*)GMFile.PtrFromOffset(content, (&shapeCop->Offsets)[i * 2 + 1])
-                );
+                ret.ShapePoints = null;
+            }
+            else
+            {
+                ret.ShapePoints = new Point[shapeCop->Count >> 1];
+
+                for (uint i = 0; i < (shapeCop->Count >> 1); i++)
+                {
+                    uint xoff = (&shapeCop->Offsets)[ i << 1     ],
+                         yoff = (&shapeCop->Offsets)[(i << 1) + 1];
+
+                    int* xptr = (int*)GMFile.PtrFromOffset(content, xoff),
+                         yptr = (int*)GMFile.PtrFromOffset(content, yoff);
+
+                  //Console.WriteLine(((IntPtr)xoff).ToString(SR.HEX_FM8) + SR.SPACE_S + ((IntPtr)yoff).ToString(SR.HEX_FM8));
+                    if (((xoff | yoff) & 0xFFF00000) != 0 || xptr == null || yptr == null)
+                    {
+                        Console.WriteLine($"Warning: shape point coord {i} of object {id} is bogus, ignoring...");
+
+                        ret.ShapePoints[i] = new Point(-0xDEAD, -0xC0DE);
+
+                        continue;
+                    }
+
+                    ret.ShapePoints[i] = new Point(
+                        *(int*)GMFile.PtrFromOffset(content, xoff),
+                        *(int*)GMFile.PtrFromOffset(content, yoff)
+                    );
+                }
+            }
 
             return ret;
         }

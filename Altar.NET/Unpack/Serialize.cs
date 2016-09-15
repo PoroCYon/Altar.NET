@@ -315,7 +315,8 @@ namespace Altar.Unpack
             r["origin"  ] = SerializePoint(sprt.Origin);
             r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
 
-            r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);
+            if (sprt.CollisionMasks != null)
+                r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);
 
             return r;
         }
@@ -385,7 +386,9 @@ namespace Altar.Unpack
             r["colshape"] = objt.CollisionShape.ToString().ToLowerInvariant();
 
             r["data"  ] = SerializeArray(objt.OtherFloats, Utils.Identity);
-            r["points"] = SerializeArray(objt.ShapePoints, SerializePoint);
+
+            if (objt.ShapePoints != null)
+                r["points"] = SerializeArray(objt.ShapePoints, SerializePoint);
 
             return r;
         }
