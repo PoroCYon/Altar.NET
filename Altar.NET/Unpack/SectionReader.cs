@@ -256,6 +256,7 @@ namespace Altar.Unpack
                 (SpriteCollisionMask*)&se->Textures + sizeof(uint) * se->Textures.Count;
 
             uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+          //Console.WriteLine("amt="+amt.ToString("X") + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString("X"));
             ret.CollisionMasks = new bool[amt][,];
             byte* maskData = &masks->MaskData;
 

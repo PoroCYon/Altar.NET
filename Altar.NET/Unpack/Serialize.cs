@@ -231,7 +231,7 @@ namespace Altar.Unpack
         {
             var j = CreateObj();
             var a = CreateArr();
-            
+
             int w = colMask.GetLength(0),
                 h = colMask.GetLength(1);
 
@@ -432,7 +432,7 @@ namespace Altar.Unpack
         public static JsonData SerializeVars   (GMFile f) => SerializeArray(f.RefData.Variables, v => v.Name);
         public static JsonData SerializeFuncs  (GMFile f) => SerializeArray(f.RefData.Functions, n => n.Name);
 
-        public static JsonData SerializeProject(GMFile f)
+        public unsafe static JsonData SerializeProject(GMFile f, List<IntPtr> chunks = null)
         {
             var r = CreateObj();
 
@@ -475,6 +475,18 @@ namespace Altar.Unpack
             r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
             r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
             r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
+
+            if (chunks != null && chunks.Count > 0)
+            {
+                r["chunks"] = CreateArr();
+
+                for (int i = 0; i < chunks.Count; i++)
+                {
+                    var hdr = (SectionHeader*)chunks[i];
+
+                    r["chunks"][i] = hdr->MagicString() + SR.EXT_BIN;
+                }
+            }
 
             return r;
         }

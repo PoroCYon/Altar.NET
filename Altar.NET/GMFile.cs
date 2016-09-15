@@ -224,7 +224,7 @@ namespace Altar
                     case SectionHeaders.Extensions:
                         ret.Extensions = (SectionUnknown*)hdr;
 
-                        if (ret.Extensions->Header.Size > 4)
+                        if (!ret.Extensions->IsEmpty())
                             Console.WriteLine("Warning: EXTN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Sounds:
@@ -245,7 +245,7 @@ namespace Altar
                     case SectionHeaders.Shaders:
                         ret.Shaders = (SectionUnknown*)hdr;
 
-                        if (ret.Shaders->Header.Size > 4)
+                        if (!ret.Shaders->IsEmpty())
                             Console.WriteLine("Warning: SHDR chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Fonts:
@@ -254,7 +254,7 @@ namespace Altar
                     case SectionHeaders.Timelines:
                         ret.Timelines = (SectionUnknown*)hdr;
 
-                        if (ret.Timelines->Header.Size > 4)
+                        if (!ret.Timelines->IsEmpty())
                             Console.WriteLine("Warning: TMLN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Objects:
@@ -266,7 +266,7 @@ namespace Altar
                     case SectionHeaders.DataFiles:
                         ret.DataFiles = (SectionUnknown*)hdr;
 
-                        if (ret.DataFiles->Header.Size > 4)
+                        if (!ret.DataFiles->IsEmpty())
                             Console.WriteLine("Warning: DAFL chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.TexturePage:
@@ -293,14 +293,35 @@ namespace Altar
                     case SectionHeaders.AudioGroup:
                         ret.AudioGroup = (SectionUnknown*)hdr;
 
-                        if (ret.AudioGroup->Header.Size > 4)
+                        if (!ret.AudioGroup->IsEmpty())
                             Console.WriteLine("Warning: AGRP chunk is not empty, its content will not be exported!");
                         break;
+                    case SectionHeaders.GNAL_Unk:
+                        ret.GNAL_Unk = (SectionUnknown*)hdr;
+
+                        if (!ret.GNAL_Unk->IsEmpty())
+                            Console.WriteLine("Warning: GNAL chunk is not empty, its content will not be exported!");
+                        break;
                     default:
-                        if (hdr->Size > 4)
+                        var unk = (SectionUnknown*)hdr;
+                        if (!unk->IsEmpty())
                             Console.WriteLine($"Warning: unexpected chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
 
+                        ret.UnknownChunks.Add(hdr->Identity, (IntPtr)unk);
                         break;
+                }
+
+                for (int i = 0; i < ret.HeaderOffsets.Length; i++)
+                    if (((SectionHeader*)((byte*)basePtr + ret.HeaderOffsets[i]))->Identity == hdr->Identity)
+                        Console.WriteLine($"WARNING: chunk {hdr->MagicString()} encountered (at least) twice! Only the last occurrence will be exported! (If you see this message, consider reversing manually.)");
+
+                if (ret.HeaderOffsets.Length >= headersMet)
+                {
+                    var ho = ret.HeaderOffsets;
+
+                    Array.Resize(ref ho, (headersMet == ret.HeaderOffsets.Length) ? 1 : (headersMet + 2));
+
+                    ret.HeaderOffsets = ho;
                 }
 
                 ret.HeaderOffsets[headersMet++] = (byte*)hdr - (byte*)basePtr;

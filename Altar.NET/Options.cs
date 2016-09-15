@@ -116,7 +116,7 @@ namespace Altar
             get;
             set;
         }
-        [Option('*', "any", HelpText = "Export everything (except -d).", MutuallyExclusiveSet = "EXPORT")]
+        [Option('*', "any", HelpText = "Export everything (except -d, --dumpempty, --dumpall).", MutuallyExclusiveSet = "EXPORT")]
         public bool Any
         {
             get;
@@ -130,7 +130,7 @@ namespace Altar
             set;
         }
 
-        [Option("project", HelpText = "Export everything (except -d, -w and -h) to a project-like structure and emit a project file that can be rebuilt (in a later version).", MutuallyExclusiveSet = "PROJ")]
+        [Option("project", HelpText = "Export everything (except -dwhk) to a project-like structure and emit a project file that can be rebuilt (in a later version).", MutuallyExclusiveSet = "PROJ")]
         public bool ExportToProject
         {
             get;
@@ -145,6 +145,25 @@ namespace Altar
         }
         [Option("out", HelpText = "Specifies the output folder.")]
         public string OutputDirectory
+        {
+            get;
+            set;
+        }
+
+        [Option('k', "dumpunk", HelpText = "Dumps the contents of unknown chunks. (NOTE: dumps them as binary files *with* chunk header. You'll need a hex editor of some sort to make something useful out of it)", MutuallyExclusiveSet = "EXPORT")]
+        public bool DumpUnknownChunks
+        {
+            get;
+            set;
+        }
+        [Option("dumpepty", HelpText = "Dumps the contents of unknown empty chunks, too.", MutuallyExclusiveSet = "EXPORT")]
+        public bool DumpEmptyChunks
+        {
+            get;
+            set;
+        }
+        [Option("dumpall", HelpText = "Dumps *ALL* chunks, does not imply --dumpempty. (NOTE: <see note of --dumpunk)", MutuallyExclusiveSet = "EXPORT")]
+        public bool DumpAllChunks
         {
             get;
             set;
