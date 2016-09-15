@@ -165,7 +165,14 @@ namespace Altar
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_LSP, Decompiler.DecompileCode(f, i, eo.AbsoluteAddresses));
+                        try
+                        {
+                            File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_LSP, Decompiler.DecompileCode(f, i, eo.AbsoluteAddresses));
+                        }
+                        catch (Exception e)
+                        {
+                            Console.Error.WriteLine($"Error: Failed to decompile {f.Code[i].Name}, ignoring...");
+                        }
                     }
                 }
                 if (eo.Disassemble && f.Code != null)
