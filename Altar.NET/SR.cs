@@ -64,6 +64,7 @@ namespace Altar
             EXT_WAV     = ".wav" ,
             EXT_GML_ASM = ".gml.asm",
             EXT_GML_LSP = ".gml.lsp",
+            EXT_BIN     = ".bin",
 
             FILE_STR = "strings.json",
             FILE_VAR = "vars.json"   ,

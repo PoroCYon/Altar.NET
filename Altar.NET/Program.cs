@@ -18,7 +18,7 @@ namespace Altar
     using AsmParser = Altar.Recomp.Parser;
     using CLParser  = CommandLine.Parser;
 
-    static class Program
+    unsafe static class Program
     {
         static void Export(ExportOptions eo)
         {
@@ -38,7 +38,7 @@ namespace Altar
                         || eo.Audio  || eo.Background || eo.Decompile || eo.Font || eo.General
                         || eo.Object || eo.Options || eo.Path || eo.Room || eo.Script
                         || eo.Sound  || eo.Sprite  || eo.Texture || eo.TPag
-                        || eo.ExportToProject || eo.Any))
+                        || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks))
                     eo.Any = true;
 
                 if (eo.ExportToProject)
@@ -47,7 +47,8 @@ namespace Altar
 
                     eo.Audio = eo.Background = eo.Decompile   = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
-                        = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = true;
+                        = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
+                        = true;
                 }
                 if (eo.Any)
                 {
@@ -56,7 +57,8 @@ namespace Altar
                     eo.Audio = eo.Background = eo.Decompile   = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
                         = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag
-                        = eo.String = eo.Variables = eo.Functions = true;
+                        = eo.String = eo.Variables = eo.Functions = eo.DumpUnknownChunks
+                        = true;
                 }
                 #endregion
 
@@ -359,11 +361,70 @@ namespace Altar
                 }
                 #endregion
 
+                List<IntPtr> chunks = new List<IntPtr>(6);
+
+                if (eo.DumpUnknownChunks || eo.DumpAllChunks)
+                {
+                    Action<IntPtr> DumpUnk = _unk =>
+                    {
+                        var unk = (SectionUnknown*)_unk;
+
+                        if (unk->IsEmpty() && !eo.DumpEmptyChunks)
+                            return;
+
+                        Console.WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
+
+                        byte[] buf = new byte[sizeof(SectionHeader) + unk->Header.Size];
+                        uint* src = &unk->Unknown;
+
+                        ILHacks.Cpblk(src, buf, 0, buf.Length);
+
+                        File.WriteAllBytes(od + unk->Header.MagicString() + EXT_BIN, buf);
+                    };
+
+                    var c = f.Content;
+
+                    chunks.Add((IntPtr)c.Extensions);
+                    chunks.Add((IntPtr)c.AudioGroup);
+                    chunks.Add((IntPtr)c.Shaders   );
+                    chunks.Add((IntPtr)c.Timelines );
+                    chunks.Add((IntPtr)c.DataFiles );
+                    chunks.Add((IntPtr)c.GNAL_Unk  );
+
+                    if (eo.DumpAllChunks)
+                    {
+                        chunks.Add((IntPtr)c.General);
+                        chunks.Add((IntPtr)c.Options);
+
+                        chunks.Add((IntPtr)c.Sounds      );
+                        chunks.Add((IntPtr)c.Sprites     );
+                        chunks.Add((IntPtr)c.Backgrounds );
+                        chunks.Add((IntPtr)c.Paths       );
+                        chunks.Add((IntPtr)c.Scripts     );
+                        chunks.Add((IntPtr)c.Fonts       );
+                        chunks.Add((IntPtr)c.Objects     );
+                        chunks.Add((IntPtr)c.Rooms       );
+                        chunks.Add((IntPtr)c.TexturePages);
+                        chunks.Add((IntPtr)c.Code        );
+                        chunks.Add((IntPtr)c.Strings     );
+                        chunks.Add((IntPtr)c.Textures    );
+                        chunks.Add((IntPtr)c.Audio       );
+
+                        chunks.Add((IntPtr)c.Functions);
+                        chunks.Add((IntPtr)c.Variables);
+                    }
+
+                    chunks = chunks.Where(cc => cc != IntPtr.Zero && !((SectionUnknown*)cc)->IsEmpty()).ToList();
+
+                    for (int i = 0; i < chunks.Count; i++)
+                        DumpUnk(chunks[i]);
+                }
+
                 if (eo.ExportToProject)
                 {
                     Console.WriteLine("Emitting project file...");
 
-                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f)));
+                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f, chunks)));
                 }
             }
         }

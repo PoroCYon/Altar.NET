@@ -31,8 +31,9 @@ namespace Altar
         Strings     = 0x47525453, // STRG
         Textures    = 0x52545854, // TXTR
         Audio       = 0x4F445541, // AUDO
+        GNAL_Unk    = 0x4C414E47, // GNAL
 
-        Count = 23
+        Count = 24
     }
     public static class SectionHeadersExtensions
     {
@@ -75,7 +76,7 @@ namespace Altar
             stuff = Marshal.AllocHGlobal(data.Length);
 
             ILHacks.Cpblk(data, stuff, 0, data.Length);
-            //Marshal.Copy(data, 0, stuff, data.Length);
+          //Marshal.Copy(data, 0, stuff, data.Length);
         }
         ~UniquePtr()
         {
@@ -113,6 +114,7 @@ namespace Altar
         public SectionUnknown* Shaders   ; // empty
         public SectionUnknown* Timelines ; // empty
         public SectionUnknown* DataFiles ; // empty
+        public SectionUnknown* GNAL_Unk  ; // empty?
 
         public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
@@ -131,11 +133,82 @@ namespace Altar
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
 
+        public Dictionary<SectionHeaders, IntPtr> UnknownChunks = new Dictionary<SectionHeaders, IntPtr>();
+
         internal long[] HeaderOffsets = new long[(int)SectionHeaders.Count];
+
+        public SectionHeader* GetChunk(SectionHeaders ident)
+        {
+            switch (ident)
+            {
+                case SectionHeaders.Form:
+                    return (SectionHeader*)Form;
+
+                case SectionHeaders.General:
+                    return (SectionHeader*)General;
+                case SectionHeaders.Options:
+                    return (SectionHeader*)Options;
+
+                case SectionHeaders.Extensions:
+                    return (SectionHeader*)Extensions;
+                case SectionHeaders.AudioGroup:
+                    return (SectionHeader*)AudioGroup;
+                case SectionHeaders.Shaders:
+                    return (SectionHeader*)Shaders;
+                case SectionHeaders.Timelines:
+                    return (SectionHeader*)Timelines;
+                case SectionHeaders.DataFiles:
+                    return (SectionHeader*)DataFiles;
+                case SectionHeaders.GNAL_Unk:
+                    return (SectionHeader*)GNAL_Unk;
+
+                case SectionHeaders.Sounds:
+                    return (SectionHeader*)Sounds;
+                case SectionHeaders.Sprites:
+                    return (SectionHeader*)Sprites;
+                case SectionHeaders.Backgrounds:
+                    return (SectionHeader*)Backgrounds;
+                case SectionHeaders.Paths:
+                    return (SectionHeader*)Paths;
+                case SectionHeaders.Scripts:
+                    return (SectionHeader*)Scripts;
+                case SectionHeaders.Fonts:
+                    return (SectionHeader*)Fonts;
+                case SectionHeaders.Objects:
+                    return (SectionHeader*)Objects;
+                case SectionHeaders.Rooms:
+                    return (SectionHeader*)Rooms;
+                case SectionHeaders.TexturePage:
+                    return (SectionHeader*)TexturePages;
+                case SectionHeaders.Code:
+                    return (SectionHeader*)Code;
+                case SectionHeaders.Strings:
+                    return (SectionHeader*)Strings;
+                case SectionHeaders.Textures:
+                    return (SectionHeader*)Textures;
+                case SectionHeaders.Audio:
+                    return (SectionHeader*)Audio;
+
+                case SectionHeaders.Functions:
+                    return (SectionHeader*)Functions;
+                case SectionHeaders.Variables:
+                    return (SectionHeader*)Variables;
+
+                default:
+                    if (UnknownChunks.ContainsKey(ident))
+                        return (SectionHeader*)UnknownChunks[ident];
+
+                    return null;
+            }
+        }
 
         void Disposing()
         {
-            RawData.Dispose();
+            if (RawData != null)
+            {
+                RawData.Dispose();
+                RawData = null;
+            }
         }
 
         public void Dispose()
@@ -150,3 +223,4 @@ namespace Altar
         }
     }
 }
+
