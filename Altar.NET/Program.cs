@@ -384,7 +384,7 @@ namespace Altar
                         byte[] buf = new byte[sizeof(SectionHeader) + unk->Header.Size];
                         uint* src = &unk->Unknown;
 
-                        ILHacks.Cpblk(src, buf, 0, buf.Length);
+                        ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
 
                         File.WriteAllBytes(od + unk->Header.MagicString() + EXT_BIN, buf);
                     };
