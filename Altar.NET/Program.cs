@@ -381,7 +381,7 @@ namespace Altar
 
                         Console.WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
 
-                        byte[] buf = new byte[sizeof(SectionHeader) + unk->Header.Size];
+                        byte[] buf = new byte[unk->Header.Size];
                         uint* src = &unk->Unknown;
 
                         ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
