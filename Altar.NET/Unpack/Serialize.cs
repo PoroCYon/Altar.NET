@@ -422,11 +422,10 @@ namespace Altar.Unpack
         {
             var r = CreateObj();
 
-            r["pos"     ] = SerializePoint(tpag.Position);
-            r["size"    ] = SerializeSize(tpag.Size);
-            r["offset"  ] = SerializePoint(tpag.RenderOffset);
-            r["bounding"] = SerializeRect(tpag.BoundingBox);
-            r["sheetid" ] = tpag.SpritesheetId;
+            r["src"    ] = SerializeRect(tpag.Source     );
+            r["dest"   ] = SerializeRect(tpag.Destination);
+            r["size"   ] = SerializeSize(tpag.Size       );
+            r["sheetid"] = tpag.SpritesheetId;
 
             return r;
         }

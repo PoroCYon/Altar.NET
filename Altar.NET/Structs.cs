@@ -166,10 +166,9 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct TexturePageInfo
     {
-        public Point16 Position;
+        public Rectangle16 Source;
+        public Rectangle16 Destination;
         public Point16 Size;
-        public Point16 RenderOffset;
-        public Rectangle16 BoundingBox;
         public uint SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential)]

@@ -349,8 +349,8 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry
     {
-        public Point16 Position, Size, RenderOffset;
-        public Rectangle16 BoundingBox;
+        public Rectangle16 Source, Dest;
+        public Point16 Size;
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
