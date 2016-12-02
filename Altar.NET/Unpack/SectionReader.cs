@@ -508,10 +508,9 @@ namespace Altar.Unpack
 
             var ret = new TexturePageInfo();
 
-            ret.Position      = tpe->Position     ;
-            ret.RenderOffset  = tpe->RenderOffset ;
+            ret.Source        = tpe->Source       ;
+            ret.Destination   = tpe->Dest         ;
             ret.Size          = tpe->Size         ;
-            ret.BoundingBox   = tpe->BoundingBox  ;
             ret.SpritesheetId = tpe->SpritesheetId;
 
             return ret;

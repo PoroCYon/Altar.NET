@@ -363,10 +363,9 @@ namespace Altar.Repack
         #region public static TexturePageInfo DeserializeTPag(dynamic j)
         public static TexturePageInfo DeserializeTPag(dynamic j) => new TexturePageInfo
         {
-            Position      = DeserializePoint16(j.pos     ),
-            Size          = DeserializeSize16 (j.size    ),
-            RenderOffset  = DeserializePoint16(j.offset  ),
-            BoundingBox   = DeserializeRect16 (j.bounding),
+            Source        = DeserializeRect16 (j.src ),
+            Destination   = DeserializeRect16 (j.dest),
+            Size          = DeserializeSize16 (j.size),
             SpritesheetId = j.sheetid
         };
         #endregion
