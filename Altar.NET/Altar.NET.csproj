@@ -102,7 +102,7 @@
     </PostBuildEvent>
     <PostBuildEvent Condition="'$(OS)' == 'Unix'">
       cd "$(SolutionDir)ILRepack"
-      mkdir "$(SolutionDir)$(OutDir)"
+      mkdir -p "$(SolutionDir)$(OutDir)"
       mono ILRepack.exe /union /target:exe "/out:$(SolutionDir)$(OutDir)$(TargetFileName)" "$(TargetPath)" "$(TargetDir)Altar.NET.Util.dll" "$(TargetDir)CommandLine.dll"
     </PostBuildEvent>
   </PropertyGroup>

@@ -161,13 +161,14 @@ namespace Altar
                 Audio        = Utils.UintRange(0, f.Audio       ->Count).Select(i => SectionReader.GetAudioInfo   (f, i)).ToArray();
 
             AudioSoundMap = new Dictionary<uint, uint>();
-            for (uint i = 0; i < Sound.Length; i++)
-            {
-                var s = Sound[i];
+            if (Sound != null)
+                for (uint i = 0; i < Sound.Length; i++)
+                {
+                    var s = Sound[i];
 
-                if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
-                    AudioSoundMap[(uint)s.AudioID] = i;
-            }
+                    if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
+                        AudioSoundMap[(uint)s.AudioID] = i;
+                }
 
             var vars = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
             var fns  = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
@@ -305,7 +306,7 @@ namespace Altar
                     default:
                         var unk = (SectionUnknown*)hdr;
                         if (!unk->IsEmpty())
-                            Console.WriteLine($"Warning: unexpected chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
+                            Console.WriteLine($"Warning: unknown chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
 
                         ret.UnknownChunks.Add(hdr->Identity, (IntPtr)unk);
                         break;
