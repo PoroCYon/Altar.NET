@@ -156,7 +156,7 @@ namespace Altar
             get;
             set;
         }
-        [Option("dumpepty", HelpText = "Dumps the contents of unknown empty chunks, too.", MutuallyExclusiveSet = "EXPORT")]
+        [Option("dumpempty", HelpText = "Dumps the contents of unknown empty chunks, too.", MutuallyExclusiveSet = "EXPORT")]
         public bool DumpEmptyChunks
         {
             get;
