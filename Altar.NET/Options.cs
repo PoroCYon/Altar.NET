@@ -169,6 +169,19 @@ namespace Altar
             set;
         }
 
+        [Option('q', "quiet", HelpText = "Does not output any info on progress.")]
+        public bool Quiet
+        {
+            get;
+            set;
+        }
+        [Option("noprecprog", HelpText = "Doesn't output precise progress on large chunks.")]
+        public bool NoPrecProg
+        {
+            get;
+            set;
+        }
+
         [HelpOption]
         public string GetUsage() => HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
     }
