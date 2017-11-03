@@ -34,26 +34,27 @@ namespace Altar.Unpack
             return (long)++chunk - (long)png;
         }
 
-        internal static void   ReadString(byte* ptr, StringBuilder sb)
-        {
-            while (*ptr != 0)
-            {
-                sb.Append((char)*ptr);
-
-                ptr++;
-            }
-        }
         internal static string ReadString(byte* ptr)
         {
-            var sb = new StringBuilder();
-
-            ReadString(ptr, sb);
-
-            return sb.ToString();
+            // assuming UTF-8
+            int len = 0;
+            // UTF-8 guarantees that no single byte will be zero (but this
+            // assumes well-formed UTF-8, ofc)
+            for (byte* c = ptr; *c != 0 && len > 0 /* avoid checking into
+                                                      oblivion */; ++c, ++len) ;
+#if NET46
+            return Encoding.UTF8.GetString(ptr, len);
+#else
+            // :(
+            byte[] arr = new byte[len];
+            ILHacks.Cpblk((void*)ptr, arr, 0, len);
+            return Encoding.UTF8.GetString(arr);
+#endif
         }
         internal static string StringFromOffset(GMFileContent content, long off)
         {
-            if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00)
+            if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00 /* avoid crashes due
+                                                                to bogus offsets */)
                 return String.Empty;
 
             return ReadString((byte*)GMFile.PtrFromOffset(content, off));
