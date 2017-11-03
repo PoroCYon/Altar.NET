@@ -219,6 +219,9 @@ namespace Altar
                         catch (Exception e)
                         {
                             Console.Error.WriteLine($"Error: Failed to decompile {f.Code[i].Name}, ignoring...");
+#if DEBUG
+                            Console.Error.WriteLine(e);
+#endif
                         }
                     }
                 }

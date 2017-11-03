@@ -316,7 +316,7 @@ namespace Altar.Decomp
                 var pcl = (CallInstruction      *)ins;
                 var pps = (PushInstruction      *)ins;
                 var pse = (SetInstruction       *)ins;
-                var pbr = (BranchInstruction      *)ins;
+                var pbr = (BranchInstruction    *)ins;
                 var pbk = (BreakInstruction     *)ins;
 
                 var st = ins->SingleType;
