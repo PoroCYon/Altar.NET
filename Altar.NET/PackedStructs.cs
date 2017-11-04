@@ -58,14 +58,7 @@ namespace Altar
 
         public string MagicString()
         {
-            char[] str = new char[4];
-
-            str[0] = (char)( (long)Identity & 0x000000FF       );
-            str[1] = (char)(((long)Identity & 0x0000FF00) >>  8);
-            str[2] = (char)(((long)Identity & 0x00FF0000) >> 16);
-            str[3] = (char)(((long)Identity & 0xFF000000) >> 24);
-
-            return new string(str);
+            return Identity.ToChunkName();
         }
 
         internal string DebugDisplay() => Identity.ToString() + SR.SPACE_S + SR.O_PAREN + MagicString() + SR.C_PAREN + SR.SPACE_S + SR.COLON_S + SR.HEX_PRE + Size.ToString(SR.HEX_FM8);

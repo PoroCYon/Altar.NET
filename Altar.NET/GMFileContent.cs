@@ -45,10 +45,10 @@ namespace Altar
 
             var u = (uint)h;
 
-            var c0 = (char)((u & 0xFF000000) >> 24);
-            var c1 = (char)((u & 0x00FF0000) >> 16);
-            var c2 = (char)((u & 0x0000FF00) >>  8);
-            var c3 = (char)((u & 0X000000FF)      );
+            var c3 = (char)((u & 0xFF000000) >> 24);
+            var c2 = (char)((u & 0x00FF0000) >> 16);
+            var c1 = (char)((u & 0x0000FF00) >>  8);
+            var c0 = (char)((u & 0x000000FF)      );
 
             return sb
                 .Append(c0).Append(c1).Append(c2).Append(c3)
@@ -136,6 +136,17 @@ namespace Altar
         public Dictionary<SectionHeaders, IntPtr> UnknownChunks = new Dictionary<SectionHeaders, IntPtr>();
 
         internal long[] HeaderOffsets = new long[(int)SectionHeaders.Count];
+
+        public void DumpChunkOffs()
+        {
+            for (int i = 0; i < HeaderOffsets.Length; ++i)
+            {
+                var l = HeaderOffsets[i];
+                var p = *(SectionHeader*)GMFile.PtrFromOffset(this, l);
+
+                Console.Error.WriteLine(p.MagicString() + ": " + l.ToString("X8") + "-" + (l+p.Size).ToString("X8") + " (" + p.Size.ToString("X8") + ")");
+            }
+        }
 
         public SectionHeader* GetChunk(SectionHeaders ident)
         {

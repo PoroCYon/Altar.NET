@@ -40,14 +40,19 @@ namespace Altar.Unpack
             int len = 0;
             // UTF-8 guarantees that no single byte will be zero (but this
             // assumes well-formed UTF-8, ofc)
-            for (byte* c = ptr; *c != 0 && len > 0 /* avoid checking into
-                                                      oblivion */; ++c, ++len) ;
+            for (byte* c = ptr; *c != 0 && len >= 0 /* avoid checking into
+                                                       oblivion */; ++c, ++len);
+            //return Encoding.ASCII.GetString(ptr, len);
+
 #if NET46
             return Encoding.UTF8.GetString(ptr, len);
 #else
             // :(
             byte[] arr = new byte[len];
-            ILHacks.Cpblk((void*)ptr, arr, 0, len);
+            fixed (byte* parr = arr)
+            {
+                ILHacks.Cpblk((void*)ptr, (void*)parr, len);
+            }
             return Encoding.UTF8.GetString(arr);
 #endif
         }
@@ -195,9 +200,17 @@ namespace Altar.Unpack
 
             ret.InfoFlags = oe->GEN8FlagsDup;
 
-            ret.Constants = new Dictionary<string, string>((int)oe->ConstMap.Count);
+            ret.Constants    = new Dictionary<string, string>((int)oe->ConstMap.Count);
             for (uint i = 0; i < oe->ConstMap.Count; i++)
-                ret.Constants.Add(StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2]), StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2 + 1]));
+            {
+                uint inoff = (&oe->ConstMap.Offsets)[ i << 1   ];
+                uint ouoff = (&oe->ConstMap.Offsets)[(i << 1)|1];
+                //Console.Error.Write(inoff.ToString("X") + " -> " + ouoff.ToString("X"));
+                string instr = StringFromOffset(content, inoff);
+                string oustr = StringFromOffset(content, ouoff);
+                //Console.Error.WriteLine(": " + instr + " -> " + oustr);
+                ret.Constants   [instr] = oustr;
+            }
 
             return ret;
         }
@@ -243,57 +256,62 @@ namespace Altar.Unpack
 
             ret.SeparateColMasks = se->SeparateColMasks.IsTrue();
 
-            ret.TextureIndices = new uint[se->Textures.Count];
-
-            for (uint i = 0; i < se->Textures.Count; i++)
-                for (uint j = 0; j < content.TexturePages->Count; j++)
-                    if ((&se->Textures.Offsets)[i] == (&content.TexturePages->Offsets)[j])
-                    {
-                        ret.TextureIndices[i] = j;
-                        break;
-                    }
-
-            SpriteCollisionMask* masks =
-                (SpriteCollisionMask*)&se->Textures + sizeof(uint) * se->Textures.Count;
-
-            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
-          //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
-
-            if (amt < 0x100) // guesstimate
+            if (se->Textures.Count != ~(uint)0)
             {
-                ret.CollisionMasks = new bool[amt][,];
-                byte* maskData = &masks->MaskData;
+                ret.TextureIndices = new uint[se->Textures.Count];
 
-                uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
-                uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
-
-                uint wPad = ((w & 7) == 0) ? w : (w - (w & 7) + 8);
-
-                for (uint i = 0; i < amt; i++)
-                {
-                    bool[,] stuff = new bool[w, h];
-
-                    for (uint y = 0; y < h; y++)
-                        for (uint x = 0; x < w; x++)
+                for (uint i = 0; i < se->Textures.Count; i++)
+                    for (uint j = 0; j < content.TexturePages->Count; j++)
+                        if ((&se->Textures.Offsets)[i] == (&content.TexturePages->Offsets)[j])
                         {
-                            uint rown = y * wPad;
-
-                            uint byten =        x >> 3 ;
-                            byte bitn  = (byte)(x &  7);
-
-                            byte* curptr = maskData + rown + byten;
-                            byte curbyte = *curptr;
-                            byte curbit  = (byte)(curbyte & (byte)(1 << bitn));
-
-                            stuff[x, y] = curbit != 0;
+                            ret.TextureIndices[i] = j;
+                            break;
                         }
 
-                    ret.CollisionMasks[i] = stuff;
-                    maskData += wPad * h;
+                SpriteCollisionMask* masks =
+                    (SpriteCollisionMask*)&se->Textures + sizeof(uint) * se->Textures.Count;
+
+                uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+              //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
+
+                if (amt < 0x100) // guesstimate
+                {
+                    ret.CollisionMasks = new bool[amt][,];
+                    byte* maskData = &masks->MaskData;
+
+                    uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
+                    uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
+
+                    uint wPad = ((w & 7) == 0) ? w : (w - (w & 7) + 8);
+
+                    for (uint i = 0; i < amt; i++)
+                    {
+                        bool[,] stuff = new bool[w, h];
+
+                        for (uint y = 0; y < h; y++)
+                            for (uint x = 0; x < w; x++)
+                            {
+                                uint rown = y * wPad;
+
+                                uint byten =        x >> 3 ;
+                                byte bitn  = (byte)(x &  7);
+
+                                byte* curptr = maskData + rown + byten;
+                                byte curbyte = *curptr;
+                                byte curbit  = (byte)(curbyte & (byte)(1 << bitn));
+
+                                stuff[x, y] = curbit != 0;
+                            }
+
+                        ret.CollisionMasks[i] = stuff;
+                        maskData += wPad * h;
+                    }
                 }
+                else
+                    Console.Error.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
             }
             else
-                Console.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
+                Console.Error.WriteLine($"Warning: texture count of sprite {id} is -1.");
 
             return ret;
         }
@@ -525,14 +543,19 @@ namespace Altar.Unpack
 
             var ret = new TextureInfo();
 
-            var png = (PngHeader*)GMFile.PtrFromOffset(content, te->Offset);
+            if (te->Offset != 0)
+            {
+                var png = (PngHeader*)GMFile.PtrFromOffset(content, te->Offset);
 
-            ret.Width  = Utils.SwapEnd32(png->IHDR.Width );
-            ret.Height = Utils.SwapEnd32(png->IHDR.Height);
+                ret.Width  = Utils.SwapEnd32(png->IHDR.Width );
+                ret.Height = Utils.SwapEnd32(png->IHDR.Height);
 
-            ret.PngData = new byte[PngLength(png)];
+                ret.PngData = new byte[PngLength(png)];
 
-            Marshal.Copy((IntPtr)png, ret.PngData, 0, ret.PngData.Length);
+                Marshal.Copy((IntPtr)png, ret.PngData, 0, ret.PngData.Length);
+            }
+            else
+                Console.Error.WriteLine($"Warning: texture {id} has no PNG data.");
 
             return ret;
         }

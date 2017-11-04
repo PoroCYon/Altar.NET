@@ -195,7 +195,7 @@ namespace Altar.Decomp
         Break         ,
         Environment
     }
-    
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct TypePair
     {
