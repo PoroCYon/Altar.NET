@@ -141,6 +141,9 @@ namespace Altar
 
                     for (int i = 0; i < f.Textures.Length; i++)
                     {
+                        if (f.Textures[i].PngData == null)
+                            continue;
+
                         if (!eo.Quiet && !eo.NoPrecProg)
                         {
                             Console.SetCursorPosition(cl, ct);

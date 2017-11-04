@@ -313,7 +313,8 @@ namespace Altar.Unpack
             r["bboxmode"] = sprt.BBoxMode;
             r["sepmasks"] = sprt.SeparateColMasks;
             r["origin"  ] = SerializePoint(sprt.Origin);
-            r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
+            if (sprt.TextureIndices != null)
+                r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
 
             if (sprt.CollisionMasks != null)
                 r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);

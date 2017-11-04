@@ -131,6 +131,7 @@ namespace Altar
             Content = f;
 
             General = SectionReader.GetGeneralInfo(f);
+            //Console.Error.WriteLine(General.BytecodeVersion);
             Options = SectionReader.GetOptionInfo (f);
 
             if (!f.Sounds->Header.IsEmpty())
@@ -330,6 +331,8 @@ namespace Altar
             }
 
             ret.RawData = hdr_bp;
+
+            //ret.DumpChunkOffs();
 
             return new GMFile(ret);
         }
