@@ -58,11 +58,11 @@ namespace Altar
         public string File        ;
         public float  VolumeMod   ;
         public float  PitchMod    ;
-        public int    GroupID     ;
+        public string Group       ;
         /// <summary>
         /// -1 if unused? Only makes sense when embedded or compressed?
         /// </summary>
-        public int    AudioID     ;
+        public int    AudioID;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo

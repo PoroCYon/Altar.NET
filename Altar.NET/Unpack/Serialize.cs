@@ -300,7 +300,7 @@ namespace Altar.Unpack
             r["file"      ] = sond.File;
             r["volume"    ] = sond.VolumeMod;
             r["pitch"     ] = sond.PitchMod;
-            r["groupid"   ] = sond.GroupID;
+            r["group"     ] = sond.Group;
 
             return r;
         }
@@ -431,9 +431,10 @@ namespace Altar.Unpack
             return r;
         }
 
-        public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
-        public static JsonData SerializeVars   (GMFile f) => SerializeArray(f.RefData.Variables, v => v.Name);
-        public static JsonData SerializeFuncs  (GMFile f) => SerializeArray(f.RefData.Functions, n => n.Name);
+        public static JsonData SerializeStrings    (GMFile f) => SerializeArray(f.Strings    , Utils.Identity);
+        public static JsonData SerializeAudioGroups(GMFile f) => SerializeArray(f.AudioGroups, Utils.Identity);
+        public static JsonData SerializeVars       (GMFile f) => SerializeArray(f.RefData.Variables, v => v.Name);
+        public static JsonData SerializeFuncs      (GMFile f) => SerializeArray(f.RefData.Functions, n => n.Name);
 
         public unsafe static JsonData SerializeProject(GMFile f, List<IntPtr> chunks = null)
         {
