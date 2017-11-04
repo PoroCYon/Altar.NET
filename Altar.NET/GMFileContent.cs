@@ -31,7 +31,7 @@ namespace Altar
         Strings     = 0x47525453, // STRG
         Textures    = 0x52545854, // TXTR
         Audio       = 0x4F445541, // AUDO
-        GNAL_Unk    = 0x4C414E47, // GNAL
+        Language    = 0x474E414C, // LANG
 
         Count = 24
     }
@@ -110,11 +110,10 @@ namespace Altar
         public SectionOptions* Options;
 
         public SectionUnknown* Extensions; // empty
-        public SectionUnknown* AudioGroup; // empty
         public SectionUnknown* Shaders   ; // empty
         public SectionUnknown* Timelines ; // empty
         public SectionUnknown* DataFiles ; // empty
-        public SectionUnknown* GNAL_Unk  ; // empty?
+        public SectionUnknown* Language  ; // empty
 
         public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
@@ -129,6 +128,7 @@ namespace Altar
         public SectionCountOffsets* Strings     ;
         public SectionCountOffsets* Textures    ;
         public SectionCountOffsets* Audio       ;
+        public SectionCountOffsets* AudioGroup  ;
 
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
@@ -162,16 +162,14 @@ namespace Altar
 
                 case SectionHeaders.Extensions:
                     return (SectionHeader*)Extensions;
-                case SectionHeaders.AudioGroup:
-                    return (SectionHeader*)AudioGroup;
                 case SectionHeaders.Shaders:
                     return (SectionHeader*)Shaders;
                 case SectionHeaders.Timelines:
                     return (SectionHeader*)Timelines;
                 case SectionHeaders.DataFiles:
                     return (SectionHeader*)DataFiles;
-                case SectionHeaders.GNAL_Unk:
-                    return (SectionHeader*)GNAL_Unk;
+                case SectionHeaders.Language:
+                    return (SectionHeader*)Language;
 
                 case SectionHeaders.Sounds:
                     return (SectionHeader*)Sounds;
@@ -199,6 +197,8 @@ namespace Altar
                     return (SectionHeader*)Textures;
                 case SectionHeaders.Audio:
                     return (SectionHeader*)Audio;
+                case SectionHeaders.AudioGroup:
+                    return (SectionHeader*)AudioGroup;
 
                 case SectionHeaders.Functions:
                     return (SectionHeader*)Functions;

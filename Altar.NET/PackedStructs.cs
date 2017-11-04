@@ -247,6 +247,29 @@ namespace Altar
         // SpriteCollisionMask
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct SpriteEntry2
+    {
+        public uint Name;
+        public Point Size;
+
+        public BoundingBox2 Bounding;
+
+        fixed uint _pad[3]; // type? coltolerance? htile? vtile? for3D?
+        public uint BBoxMode;
+        public DwordBool SeparateColMasks;
+
+        public Point Origin;
+
+        // unknown stuff
+        fixed int _pad2[3];
+        float funk;
+        uint _pad3;
+
+        public CountOffsetsPair Textures;
+
+        // SpriteCollisionMask
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
     {
         public uint Name;
@@ -372,6 +395,12 @@ namespace Altar
     public unsafe struct TextureEntry
     {
         uint _pad; // unknown, a low int value
+        public uint Offset;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TextureEntry2
+    {
+        fixed uint _pad[2];
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

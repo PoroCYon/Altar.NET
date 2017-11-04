@@ -262,7 +262,7 @@ namespace Altar.Repack
             File         = j.file      ,
             VolumeMod    = j.volume    ,
             PitchMod     = j.pitch     ,
-            GroupID      = j.groupid
+            Group        = j.group
         };
         #endregion
         #region public static SpriteInfo     DeserializeSprite(dynamic j)

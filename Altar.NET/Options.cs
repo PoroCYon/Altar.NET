@@ -8,6 +8,8 @@ namespace Altar
 {
     class ExportOptions
     {
+        // free short flags: lvxyz
+
         [Option('g', HelpText = "Export manifest file.", MutuallyExclusiveSet = "EXPORT")]
         public bool General
         {
@@ -112,6 +114,12 @@ namespace Altar
         }
         [Option('h', HelpText = "Dump function names.", MutuallyExclusiveSet = "EXPORT")]
         public bool Functions
+        {
+            get;
+            set;
+        }
+        [Option('e', HelpText = "Dump audiogroups.", MutuallyExclusiveSet = "EXPORT")]
+        public bool AudioGroups
         {
             get;
             set;

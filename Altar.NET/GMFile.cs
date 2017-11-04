@@ -29,7 +29,7 @@ namespace Altar
             internal set;
         }
 
-        // Extensions, AudioGroups, Shaders, Timelines, DataFiles: empty
+        // Extensions, Shaders, Timelines, DataFiles, Languages: empty
 
         public SoundInfo      [] Sound
         {
@@ -83,6 +83,10 @@ namespace Altar
         {
             get;
         }
+        public string         [] AudioGroups
+        {
+            get;
+        }
 
         public IDictionary<uint, uint> AudioSoundMap
         {
@@ -125,6 +129,7 @@ namespace Altar
             Strings      = new string         [0];
             Textures     = new TextureInfo    [0];
             Audio        = new AudioInfo      [0];
+            AudioGroups  = new string         [0];
         }
         internal GMFile(GMFileContent f)
         {
@@ -136,8 +141,9 @@ namespace Altar
 
             if (!f.Sounds->Header.IsEmpty())
                 Sound        = Utils.UintRange(0, f.Sounds      ->Count).Select(i => SectionReader.GetSoundInfo   (f, i)).ToArray();
+            var toil = SectionReader.BuildTPAGOffsetIndexLUT(f);
             if (!f.Sprites->Header.IsEmpty())
-                Sprites      = Utils.UintRange(0, f.Sprites     ->Count).Select(i => SectionReader.GetSpriteInfo  (f, i)).ToArray();
+                Sprites      = Utils.UintRange(0, f.Sprites     ->Count).Select(i => SectionReader.GetSpriteInfo  (f, i, toil)).ToArray();
             if (!f.Backgrounds->Header.IsEmpty())
                 Backgrounds  = Utils.UintRange(0, f.Backgrounds ->Count).Select(i => SectionReader.GetBgInfo      (f, i)).ToArray();
             if (!f.Paths->Header.IsEmpty())
@@ -160,6 +166,8 @@ namespace Altar
                 Textures     = Utils.UintRange(0, f.Textures    ->Count).Select(i => SectionReader.GetTextureInfo (f, i)).ToArray();
             if (!f.Audio->Header.IsEmpty())
                 Audio        = Utils.UintRange(0, f.Audio       ->Count).Select(i => SectionReader.GetAudioInfo   (f, i)).ToArray();
+            if (!f.AudioGroup->Header.IsEmpty())
+                AudioGroups  = Utils.UintRange(0, f.AudioGroup  ->Count).Select(i => SectionReader.GetAudioGroupInfo(f, i)).ToArray();
 
             AudioSoundMap = new Dictionary<uint, uint>();
             if (Sound != null)
@@ -293,16 +301,13 @@ namespace Altar
                         ret.Audio = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.AudioGroup:
-                        ret.AudioGroup = (SectionUnknown*)hdr;
-
-                        if (!ret.AudioGroup->IsEmpty())
-                            Console.WriteLine("Warning: AGRP chunk is not empty, its content will not be exported!");
+                        ret.AudioGroup = (SectionCountOffsets*)hdr;
                         break;
-                    case SectionHeaders.GNAL_Unk:
-                        ret.GNAL_Unk = (SectionUnknown*)hdr;
+                    case SectionHeaders.Language:
+                        ret.Language = (SectionUnknown*)hdr;
 
-                        if (!ret.GNAL_Unk->IsEmpty())
-                            Console.WriteLine("Warning: GNAL chunk is not empty, its content will not be exported!");
+                        if (!ret.Language->IsEmpty())
+                            Console.WriteLine("Warning: LANG chunk is not empty, its content will not be exported!");
                         break;
                     default:
                         var unk = (SectionUnknown*)hdr;
