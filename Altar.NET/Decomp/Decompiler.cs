@@ -478,7 +478,7 @@ namespace Altar.Decomp
                             ReturnType   = se.Types.Type2,
                             Type         = se.DestVar.Type,
                             OwnerType    = se.Instance,
-                            OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance).Name : null,
+                            OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name : null,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                             Value        = Pop(),
                             ArrayIndices = ind ?? TryGetIndices(se.DestVar.Type)
@@ -499,7 +499,7 @@ namespace Altar.Decomp
                                         ReturnType   = ps.Type,
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
-                                        OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance).Name : null,
+                                        OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name : null,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                                         ArrayIndices = TryGetIndices(vt)
                                     }

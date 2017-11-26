@@ -428,10 +428,12 @@ namespace Altar
 
                         WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
 
-                        byte[] buf = new byte[unk->Header.Size];
+                        var len = unk->Header.Size;
+                        byte[] buf = new byte[len];
                         uint* src = &unk->Unknown;
 
-                        ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
+                        if (len != 0)
+                            ILHacks.Cpblk<byte>((void*)src, buf, 0, (int)len);
 
                         File.WriteAllBytes(od + unk->Header.MagicString() + EXT_BIN, buf);
                     };

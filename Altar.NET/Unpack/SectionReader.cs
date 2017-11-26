@@ -435,7 +435,7 @@ namespace Altar.Unpack
 
             return ret;
         }
-        public static ObjectInfo      GetObjectInfo (GMFileContent content, uint id)
+        public static ObjectInfo      GetObjectInfo (GMFileContent content, uint id, bool nameonly = false)
         {
             if (id >= content.Objects->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -460,6 +460,9 @@ namespace Altar.Unpack
 
             var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
+
+            if (nameonly)
+                return ret;
 
             if (hasMore)
             {
