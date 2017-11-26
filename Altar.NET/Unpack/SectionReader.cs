@@ -492,7 +492,7 @@ namespace Altar.Unpack
                          yptr = (int*)GMFile.PtrFromOffset(content, yoff);
 
                   //Console.WriteLine(((IntPtr)xoff).ToString(SR.HEX_FM8) + SR.SPACE_S + ((IntPtr)yoff).ToString(SR.HEX_FM8));
-                    if (((xoff | yoff) & 0xFFF00000) != 0 || xptr == null || yptr == null)
+                    if (((xoff | yoff) & 0xFF000000) != 0 || xptr == null || yptr == null)
                     {
                         Console.WriteLine($"Warning: shape point coord {i} of object {id} is bogus, ignoring...");
 
