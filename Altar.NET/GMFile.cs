@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Altar.Decomp;
+using Altar.Repack;
 using Altar.Unpack;
 
 using static Altar.SR;
@@ -34,54 +35,67 @@ namespace Altar
         public SoundInfo      [] Sound
         {
             get;
+            internal set;
         }
         public SpriteInfo     [] Sprites
         {
             get;
+            internal set;
         }
         public BackgroundInfo [] Backgrounds
         {
             get;
+            internal set;
         }
         public PathInfo       [] Paths
         {
             get;
+            internal set;
         }
         public ScriptInfo     [] Scripts
         {
             get;
+            internal set;
         }
         public FontInfo       [] Fonts
         {
             get;
+            internal set;
         }
         public ObjectInfo     [] Objects
         {
             get;
+            internal set;
         }
         public RoomInfo       [] Rooms
         {
             get;
+            internal set;
         }
         public TexturePageInfo[] TexturePages
         {
             get;
+            internal set;
         }
         public CodeInfo       [] Code
         {
             get;
+            internal set;
         }
         public string         [] Strings
         {
             get;
+            internal set;
         }
         public TextureInfo    [] Textures
         {
             get;
+            internal set;
         }
         public AudioInfo      [] Audio
         {
             get;
+            internal set;
         }
 
         public IDictionary<uint, uint> AudioSoundMap
@@ -92,7 +106,10 @@ namespace Altar
         public RefData RefData
         {
             get;
+            internal set;
         }
+
+        public FunctionLocalsInfo[] FunctionLocals;
 
         internal GMFile()
         {
@@ -180,6 +197,11 @@ namespace Altar
                  VarAccessors = Disassembler.GetReferenceTable(f, vars),
                 FuncAccessors = Disassembler.GetReferenceTable(f, fns )
             };
+
+            if (f.Functions->Entries.NameOffset * 12 < f.Functions->Header.Size)
+            {
+                FunctionLocals = SectionReader.GetFunctionLocals(f, f.Functions);
+            }
         }
 
         public void Dispose()
@@ -301,6 +323,18 @@ namespace Altar
 
                         if (!ret.GNAL_Unk->IsEmpty())
                             Console.WriteLine("Warning: GNAL chunk is not empty, its content will not be exported!");
+                        break;
+                    case SectionHeaders.LANG_Unk:
+                        ret.LANG_Unk = (SectionUnknown*)hdr;
+
+                        if (!ret.LANG_Unk->IsEmpty())
+                            Console.WriteLine("Warning: LANG chunk is not empty, its content will not be exported!");
+                        break;
+                    case SectionHeaders.GLOB_Unk:
+                        ret.GLOB_Unk = (SectionUnknown*)hdr;
+
+                        if (!ret.GLOB_Unk->IsEmpty())
+                            Console.WriteLine("Warning: GLOB chunk is not empty, its content will not be exported!");
                         break;
                     default:
                         var unk = (SectionUnknown*)hdr;

@@ -258,22 +258,24 @@ namespace Altar.Unpack
             var r = CreateObj();
 
             r["debug"   ] = gen8.IsDebug;
+            r["bytecodeversion"] = gen8.BytecodeVersion;
             r["filename"] = gen8.FileName;
             r["config"  ] = gen8.Configuration;
             r["gameid"  ] = gen8.GameID;
+            r["name"]     = gen8.Name;
             r["version" ] = gen8.Version.ToString();
-
             r["windowsize"] = SerializeSize(gen8.WindowSize);
-
             r["licensemd5"] = SerializeArray(gen8.LicenseMD5Hash, Utils.Identity);
-
             r["licensecrc32"] = gen8.LicenceCRC32;
             r["displayname" ] = gen8.DisplayName;
             r["timestamp"   ] = gen8.Timestamp.ToString(SR.SHORT_L /* 's': sortable */);
 
-            r["flags"  ] = gen8.InfoFlags    .ToString();
-            r["appid"  ] = gen8.SteamAppID              ;
             r["targets"] = gen8.ActiveTargets.ToString();
+            r["unknown"] = SerializeArray(gen8.unknown, Utils.Identity);
+            r["appid"  ] = gen8.SteamAppID              ;
+            r["flags"  ] = gen8.InfoFlags    .ToString();
+
+            r["numbers"] = SerializeArray(gen8.WeirdNumbers, Utils.Identity);
 
             return r;
         }
@@ -282,6 +284,9 @@ namespace Altar.Unpack
             var r = CreateObj();
 
             r["flags"] = optn.InfoFlags.ToString();
+
+            r["pad0"] = SerializeArray(optn._pad0, Utils.Identity);
+            r["pad1"] = SerializeArray(optn._pad1, Utils.Identity);
 
             r["constants"] = CreateObj();
             foreach (var kvp in optn.Constants)
@@ -301,6 +306,7 @@ namespace Altar.Unpack
             r["volume"    ] = sond.VolumeMod;
             r["pitch"     ] = sond.PitchMod;
             r["groupid"   ] = sond.GroupID;
+            r["audioid"   ] = sond.AudioID;
 
             return r;
         }
@@ -313,7 +319,7 @@ namespace Altar.Unpack
             r["bboxmode"] = sprt.BBoxMode;
             r["sepmasks"] = sprt.SeparateColMasks;
             r["origin"  ] = SerializePoint(sprt.Origin);
-            r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
+            if (sprt.TextureIndices != null) r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
 
             if (sprt.CollisionMasks != null)
                 r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);
@@ -324,7 +330,7 @@ namespace Altar.Unpack
         {
             var r = CreateObj();
 
-            r["texture"] = bgnd.TexPageIndex;
+            if (bgnd.TexPageIndex.HasValue) r["texture"] = bgnd.TexPageIndex.Value;
 
             return r;
         }
@@ -350,8 +356,9 @@ namespace Altar.Unpack
         public static JsonData SerializeFont  (FontInfo       font)
         {
             var r = CreateObj();
-
+            
             r["sysname"  ] = font.SystemName;
+            r["emsize"   ] = font.EmSize;
             r["bold"     ] = font.IsBold;
             r["italic"   ] = font.IsItalic;
             r["antialias"] = font.AntiAliasing.ToString().ToLowerInvariant();
@@ -410,6 +417,7 @@ namespace Altar.Unpack
             r["metresperpx"] = room.MetresPerPixel;
 
             r["drawbgcol"] = room.DrawBackgroundColour;
+            r["unknown"] = room._unknown;
 
             r["bgs"  ] = SerializeArray(room.Backgrounds, b => SerializeRoomBg  (b, bgs ));
             r["views"] = SerializeArray(room.Views      , v => SerializeRoomView(v, objs));
@@ -431,9 +439,39 @@ namespace Altar.Unpack
             return r;
         }
 
+        private static JsonData SerializeFuncLocalsInfo(FunctionLocalsInfo fli)
+        {
+            var r = CreateObj();
+
+            r["name"] = fli.FunctionName;
+            r["locals"] = SerializeArray(fli.LocalNames, Utils.Identity);
+
+            return r;
+        }
+
         public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
-        public static JsonData SerializeVars   (GMFile f) => SerializeArray(f.RefData.Variables, v => v.Name);
-        public static JsonData SerializeFuncs  (GMFile f) => SerializeArray(f.RefData.Functions, n => n.Name);
+
+        private static JsonData SerializeReferenceDef(ReferenceDef rd)
+        {
+            var r = CreateObj();
+
+            r["name"] = rd.Name;
+            r["occurrences"] = rd.Occurrences;
+            r["firstoffset"] = rd.FirstOffset;
+
+            return r;
+        }
+
+        public static JsonData SerializeVars   (GMFile f) => SerializeArray(f.RefData.Variables, SerializeReferenceDef);
+
+        public static JsonData SerializeFuncs(GMFile f) {
+            var r = CreateObj();
+
+            r["functions"] = SerializeArray(f.RefData.Functions, SerializeReferenceDef);
+            r["locals"] = SerializeArray(f.FunctionLocals, SerializeFuncLocalsInfo);
+
+            return r;
+        }
 
         public unsafe static JsonData SerializeProject(GMFile f, List<IntPtr> chunks = null)
         {
@@ -441,6 +479,10 @@ namespace Altar.Unpack
 
             r["general"] = "general.json";
             r["options"] = "options.json";
+
+            r["strings"] = "strings.json";
+            r["variables"] = "variables.json";
+            r["functions"] = "functions.json";
 
             // ---
 
@@ -466,18 +508,18 @@ namespace Altar.Unpack
 
             r["code"] = CreateArr();
             for (int i = 0; i < f.Code.Length; i++)
-                r["code"].Add(SR.DIR_CODE + f.Code[i].Name + SR.EXT_GML_LSP);
+                r["code"].Add(SR.DIR_CODE + f.Code[i].Name + /*SR.EXT_GML_LSP*/SR.EXT_GML_ASM);
 
             // ---
 
-            r["sounds" ] = SerializeArray(f.Sound      , s => SR.DIR_SND  + s.Name     + SR.EXT_JSON);
-            r["sprites"] = SerializeArray(f.Sprites    , s => SR.DIR_SPR  + s.Name     + SR.EXT_JSON);
-            r["bg"     ] = SerializeArray(f.Backgrounds, s => SR.DIR_BG   + s.Name     + SR.EXT_JSON);
-            r["paths"  ] = SerializeArray(f.Paths      , s => SR.DIR_PATH + s.Name     + SR.EXT_JSON);
-            r["scripts"] = SerializeArray(f.Scripts    , s => SR.DIR_SCR  + s.Name     + SR.EXT_JSON);
-            r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
-            r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
-            r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
+            if (f.Sound       != null) r["sounds" ] = SerializeArray(f.Sound      , s => SR.DIR_SND  + s.Name     + SR.EXT_JSON);
+            if (f.Sprites     != null) r["sprites"] = SerializeArray(f.Sprites    , s => SR.DIR_SPR  + s.Name     + SR.EXT_JSON);
+            if (f.Backgrounds != null) r["bg"     ] = SerializeArray(f.Backgrounds, s => SR.DIR_BG   + s.Name     + SR.EXT_JSON);
+            if (f.Paths       != null) r["paths"  ] = SerializeArray(f.Paths      , s => SR.DIR_PATH + s.Name     + SR.EXT_JSON);
+            if (f.Scripts     != null) r["scripts"] = SerializeArray(f.Scripts    , s => SR.DIR_SCR  + s.Name     + SR.EXT_JSON);
+            if (f.Fonts       != null) r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
+            if (f.Objects     != null) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
+            if (f.Rooms       != null) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
 
             if (chunks != null && chunks.Count > 0)
             {
@@ -487,7 +529,7 @@ namespace Altar.Unpack
                 {
                     var hdr = (SectionHeader*)chunks[i];
 
-                    r["chunks"][i] = hdr->MagicString() + SR.EXT_BIN;
+                    r["chunks"].Add(hdr->MagicString() + SR.EXT_BIN);
                 }
             }
 

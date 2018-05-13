@@ -34,6 +34,7 @@ namespace Altar
 
         public GameTargets ActiveTargets;
         public uint SteamAppID;
+        public uint[] unknown;
         public InfoFlags InfoFlags;
 
         public uint[] WeirdNumbers;
@@ -46,6 +47,9 @@ namespace Altar
         public IDictionary<string, string> Constants;
 
         public InfoFlags InfoFlags;
+
+        public uint[] _pad0;
+        public uint[] _pad1;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -81,7 +85,7 @@ namespace Altar
     public struct BackgroundInfo
     {
         public string Name;
-        public uint TexPageIndex;
+        public uint? TexPageIndex;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct PathInfo
@@ -148,6 +152,7 @@ namespace Altar
         public Colour Colour;
 
         public bool DrawBackgroundColour;
+        public uint _unknown;
 
         public bool EnableViews;
         public bool ShowColour;
@@ -250,5 +255,12 @@ namespace Altar
         public Rectangle16 TPagFrame;
         public ushort Shift;
         public uint Offset;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FunctionLocalsInfo
+    {
+        public string FunctionName;
+        public string[] LocalNames;
     }
 }

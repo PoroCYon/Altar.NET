@@ -379,7 +379,7 @@ namespace LitJson
         public static explicit operator long  (JsonData data)
         {
             if (data == null) return default(long);
-            if (data.type != JsonType.Long || data.type != JsonType.Int) throw new InvalidCastException("Instance of JsonData doesn't hold a long");
+            if (data.type != JsonType.Long && data.type != JsonType.Int) throw new InvalidCastException("Instance of JsonData doesn't hold a long");
             return data.type == JsonType.Long ? data.inst_long : data.inst_int;
         }
         public static explicit operator string(JsonData data)
