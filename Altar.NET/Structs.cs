@@ -62,11 +62,11 @@ namespace Altar
         public string File        ;
         public float  VolumeMod   ;
         public float  PitchMod    ;
-        public int    GroupID     ;
+        public string Group       ;
         /// <summary>
         /// -1 if unused? Only makes sense when embedded or compressed?
         /// </summary>
-        public int    AudioID     ;
+        public int    AudioID;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo
@@ -171,10 +171,9 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct TexturePageInfo
     {
-        public Point16 Position;
+        public Rectangle16 Source;
+        public Rectangle16 Destination;
         public Point16 Size;
-        public Point16 RenderOffset;
-        public Rectangle16 BoundingBox;
         public uint SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential)]

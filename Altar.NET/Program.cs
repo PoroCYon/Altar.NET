@@ -21,9 +21,65 @@ namespace Altar
 
     unsafe static class Program
     {
+        static ExportOptions eos;
+
+        static void Write    (string s) { if (!eos.Quiet) Console.Write    (s); }
+        static void WriteLine(string s) { if (!eos.Quiet) Console.WriteLine(s); }
+        static void GetCurPos(out int l, out int t)
+        {
+            if (eos.NoPrecProg)
+            {
+                l = t = 0;
+                return;
+            }
+
+            l = Console.CursorLeft;
+            t = Console.CursorTop ;
+        }
+        static void SetCurPos(int l, int t)
+        {
+            if (!eos.NoPrecProg)
+                Console.SetCursorPosition(l, t);
+        }
+        static void SetCAndWr(int l, int t, string s)
+        {
+            if (!eos.Quiet && !eos.NoPrecProg)
+            {
+                Console.SetCursorPosition(l, t);
+                Console.Write(s);
+            }
+        }
+        static void WrAndGetC(string s, out int l, out int t)
+        {
+            if (!eos.Quiet)
+            {
+                Console.Write(s);
+
+                if (eos.NoPrecProg)
+                {
+                    l = t = 0;
+                    return;
+                }
+
+                l = Console.CursorLeft;
+                t = Console.CursorTop ;
+            }
+            else l = t = 0;
+        }
+
         static void Export(ExportOptions eo)
         {
             var file = Path.GetFullPath(String.IsNullOrEmpty(eo.File) ? DATA_WIN : eo.File);
+
+            try // see #17
+            {
+                int i = Console.CursorLeft;
+                i = i-- + 1;
+            }
+            catch
+            {
+                eo.NoPrecProg = true;
+            }
 
             if (Directory.Exists(file) && !File.Exists(file))
                 file += Path.DirectorySeparatorChar + DATA_WIN;
@@ -43,7 +99,7 @@ namespace Altar
                 if (!(eo.Disassemble || eo.String  || eo.Variables || eo.Functions
                         || eo.Audio  || eo.Background || eo.Decompile || eo.Font || eo.General
                         || eo.Object || eo.Options || eo.Path || eo.Room || eo.Script
-                        || eo.Sound  || eo.Sprite  || eo.Texture || eo.TPag
+                        || eo.Sound  || eo.Sprite  || eo.Texture || eo.TPag || eo.AudioGroups
                         || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks))
                     eo.Any = true;
 
@@ -54,7 +110,7 @@ namespace Altar
                     eo.Audio = eo.Background /*= eo.Decompile*/   = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
                         = eo.String = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
-                        = true;
+                        = eo.AudioGroups = true;
                 }
                 if (eo.Any)
                 {
@@ -64,15 +120,17 @@ namespace Altar
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
                         = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag
                         = eo.String = eo.Variables = eo.Functions = eo.DumpUnknownChunks
-                        = true;
+                        = eo.AudioGroups = true;
                 }
                 #endregion
+
+                eos = eo;
 
                 // ---
                 #region GEN8
                 if (eo.General)
                 {
-                    Console.WriteLine("Exporting manifest file...");
+                    WriteLine("Exporting manifest file...");
 
                     File.WriteAllText(od + "general.json", JsonMapper.ToJson(Serialize.SerializeGeneral(f.General)));
                 }
@@ -80,7 +138,7 @@ namespace Altar
                 #region OPTN
                 if (eo.Options)
                 {
-                    Console.WriteLine("Exporting options...");
+                    WriteLine("Exporting options...");
 
                     File.WriteAllText(od + "options.json", JsonMapper.ToJson(Serialize.SerializeOptions(f.Options)));
                 }
@@ -89,7 +147,7 @@ namespace Altar
                 #region STRG
                 if (eo.String && f.Strings != null)
                 {
-                    Console.WriteLine("Dumping strings...");
+                    WriteLine("Dumping strings...");
 
                     File.WriteAllText(od + "strings.json", JsonMapper.ToJson(Serialize.SerializeStrings(f)));
                 }
@@ -97,7 +155,7 @@ namespace Altar
                 #region VARI
                 if (eo.Variables && f.RefData.Variables != null)
                 {
-                    Console.WriteLine("Dumping variables...");
+                    WriteLine("Dumping variables...");
 
                     File.WriteAllText(od + "variables.json", JsonMapper.ToJson(Serialize.SerializeVars(f)));
                 }
@@ -105,18 +163,25 @@ namespace Altar
                 #region FUNC
                 if (eo.Functions && f.RefData.Functions != null)
                 {
-                    Console.WriteLine("Dumping functions...");
+                    WriteLine("Dumping functions...");
 
                     File.WriteAllText(od + "functions.json", JsonMapper.ToJson(Serialize.SerializeFuncs(f)));
                 }
                 #endregion
+                #region AGRP
+                if (eo.AudioGroups && f.AudioGroups != null && f.AudioGroups.Length != 0)
+                {
+                    WriteLine("Dumping audio groups...");
 
+                    File.WriteAllText(od+"audiogroups.json", JsonMapper.ToJson(Serialize.SerializeAudioGroups(f)));
+                }
+                #endregion
+
+                int cl = 0, ct = 0;
                 #region TXTR
                 if (eo.Texture && f.Textures != null)
                 {
-                    Console.Write("Exporting texture sheets... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting texture sheets... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_TEX))
                         Directory.CreateDirectory(od + DIR_TEX);
@@ -125,20 +190,18 @@ namespace Altar
                     {
                         if (f.Textures[i].PngData == null)
                             continue;
-
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Textures.Length + C_PAREN);
+                        
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Textures.Length + C_PAREN);
 
                         File.WriteAllBytes(od + DIR_TEX + i + EXT_PNG, f.Textures[i].PngData);
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region AUDO
                 if (eo.Audio && f.Audio != null)
                 {
-                    Console.Write("Exporting audio files... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting audio files... ", out cl, out ct);
 
                     var infoTable = new Dictionary<int, SoundInfo>();
 
@@ -151,27 +214,24 @@ namespace Altar
 
                     for (int i = 0; i < f.Audio.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Audio.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Audio.Length + C_PAREN);
 
                         File.WriteAllBytes(od + DIR_WAV + infoTable[i].Name + SR.EXT_WAV, f.Audio[i].Wave);
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region CODE
                 if (eo.Decompile && f.Code != null)
                 {
-                    Console.Write("Decompiling code... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Decompiling code... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_CODE))
                         Directory.CreateDirectory(od + DIR_CODE);
 
                     for (int i = 0; i < f.Code.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
 
                         try
                         {
@@ -180,199 +240,183 @@ namespace Altar
                         catch (Exception e)
                         {
                             Console.Error.WriteLine($"Error: Failed to decompile {f.Code[i].Name}, ignoring...");
+#if DEBUG
+                            Console.Error.WriteLine(e);
+#endif
                         }
                     }
+                    Console.WriteLine();
                 }
                 if (eo.Disassemble && f.Code != null)
                 {
-                    Console.Write("Disassembling bytecode... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Disassembling bytecode... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_CODE))
                         Directory.CreateDirectory(od + DIR_CODE);
 
                     for (int i = 0; i < f.Code.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_ASM, Disassembler.DisplayInstructions(f, i, eo.AbsoluteAddresses));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
 
                 #region SCPT
                 if (eo.Script && f.Scripts != null && f.Code != null)
                 {
-                    Console.Write("Exporting scripts... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting scripts... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_SCR))
                         Directory.CreateDirectory(od + DIR_SCR);
 
                     for (int i = 0; i < f.Scripts.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Scripts.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Scripts.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_SCR + f.Scripts[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeScript(f.Scripts[i], f.Code)));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region TPAG
                 if (eo.TPag && f.TexturePages != null)
                 {
-                    Console.Write("Exporting texture maps... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting texture maps... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_TXP))
                         Directory.CreateDirectory(od + DIR_TXP);
 
                     for (int i = 0; i < f.TexturePages.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.TexturePages.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.TexturePages.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeTPag(f.TexturePages[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region SPRT
                 if (eo.Sprite && f.Sprites != null)
                 {
-                    Console.Write("Exporting sprites... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting sprites... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_SPR))
                         Directory.CreateDirectory(od + DIR_SPR);
 
                     for (int i = 0; i < f.Sprites.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Sprites.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Sprites.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSprite(f.Sprites[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region SOND
                 if (eo.Sound && f.Sound != null)
                 {
-                    Console.Write("Exporting sounds... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting sounds... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_SND))
                         Directory.CreateDirectory(od + DIR_SND);
 
                     for (int i = 0; i < f.Sound.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Sound.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Sound.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_SND + f.Sound[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSound(f.Sound[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
 
                 #region OBJT
                 if (eo.Object && f.Objects != null && f.Sprites != null)
                 {
-                    Console.Write("Exporting objects... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting objects... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_OBJ))
                         Directory.CreateDirectory(od + DIR_OBJ);
 
                     for (int i = 0; i < f.Objects.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Objects.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Objects.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_OBJ + f.Objects[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeObj(f.Objects[i], f.Sprites, f.Objects)));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region BGND
                 if (eo.Background && f.Backgrounds != null)
                 {
-                    Console.Write("Exporting backgrounds... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting backgrounds... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_BG))
                         Directory.CreateDirectory(od + DIR_BG);
 
                     for (int i = 0; i < f.Backgrounds.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Backgrounds.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Backgrounds.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_BG + f.Backgrounds[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeBg(f.Backgrounds[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region ROOM
                 if (eo.Room && f.Rooms != null)
                 {
-                    Console.Write("Exporting rooms... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting rooms... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_ROOM))
                         Directory.CreateDirectory(od + DIR_ROOM);
 
                     for (int i = 0; i < f.Rooms.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Rooms.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Rooms.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_ROOM + f.Rooms[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeRoom(f.Rooms[i], f.Backgrounds, f.Objects)));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
 
                 #region FONT
                 if (eo.Font && f.Fonts != null)
                 {
-                    Console.Write("Exporting fonts... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting fonts... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_FNT))
                         Directory.CreateDirectory(od + DIR_FNT);
 
                     for (int i = 0; i < f.Fonts.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Fonts.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Fonts.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_FNT + f.Fonts[i].CodeName + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeFont(f.Fonts[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 #region PATH
                 if (eo.Path && f.Paths != null)
                 {
-                    Console.Write("Exporting paths... ");
-                    var cl = Console.CursorLeft;
-                    var ct = Console.CursorTop;
+                    WrAndGetC("Exporting paths... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_PATH))
                         Directory.CreateDirectory(od + DIR_PATH);
 
                     for (int i = 0; i < f.Paths.Length; i++)
                     {
-                        Console.SetCursorPosition(cl, ct);
-                        Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Paths.Length + C_PAREN);
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Paths.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_PATH + f.Paths[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializePath(f.Paths[i])));
                     }
+                    Console.WriteLine();
                 }
                 #endregion
                 List<IntPtr> chunks = new List<IntPtr>(6);
@@ -383,60 +427,54 @@ namespace Altar
                     {
                         var unk = (SectionUnknown*)_unk;
 
-                        if (unk->IsEmpty() && !eo.DumpEmptyChunks)
+                        if (unk == null || unk->IsEmpty() && !eo.DumpEmptyChunks)
                             return;
 
-                        Console.WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
+                        WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
 
-                        byte[] buf = new byte[unk->Header.Size];
+                        var len = unk->Header.Size;
+                        byte[] buf = new byte[len];
                         uint* src = &unk->Unknown;
-
-                        if (!unk->IsEmpty())
-                        {
-                            ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
-                        }
+                        
+                        if (len != 0)
+                            ILHacks.Cpblk<byte>((void*)src, buf, 0, (int)len);
 
                         File.WriteAllBytes(od + unk->Header.MagicString() + EXT_BIN, buf);
                     };
 
                     var c = f.Content;
 
-                    if (eo.DumpUnknownChunks)
-                    {
-                        foreach (IntPtr unk in c.UnknownChunks.Values)
-                        {
-                            chunks.Add(unk);
-                        }
-                    }
-
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.General);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Options);
-
-                    chunks.Add((IntPtr)c.GNAL_Unk  );
-                    chunks.Add((IntPtr)c.LANG_Unk  );
                     chunks.Add((IntPtr)c.Extensions);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sounds      );
-                    chunks.Add((IntPtr)c.AudioGroup);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sprites     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Backgrounds );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Paths       );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Scripts     );
-                    chunks.Add((IntPtr)c.GLOB_Unk );
-                    chunks.Add((IntPtr)c.Shaders  );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Fonts       );
-                    chunks.Add((IntPtr)c.Timelines);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Objects     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Rooms       );
-                    chunks.Add((IntPtr)c.DataFiles);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.TexturePages);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Code        );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables   );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Functions   );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Strings     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Textures    );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Audio       );
-                    
-                    chunks = chunks.Where(cc => cc != IntPtr.Zero).ToList();
+                    chunks.Add((IntPtr)c.Shaders   );
+                    chunks.Add((IntPtr)c.Timelines );
+                    chunks.Add((IntPtr)c.DataFiles );
+                    chunks.Add((IntPtr)c.Language  );
+
+                    chunks.AddRange(c.UnknownChunks.Values);
+
+                    if (eo.DumpAllChunks)
+                    {
+                        chunks.Add((IntPtr)c.General);
+                        chunks.Add((IntPtr)c.Options);
+
+                        chunks.Add((IntPtr)c.Sounds      );
+                        chunks.Add((IntPtr)c.Sprites     );
+                        chunks.Add((IntPtr)c.Backgrounds );
+                        chunks.Add((IntPtr)c.Paths       );
+                        chunks.Add((IntPtr)c.Scripts     );
+                        chunks.Add((IntPtr)c.Fonts       );
+                        chunks.Add((IntPtr)c.Objects     );
+                        chunks.Add((IntPtr)c.Rooms       );
+                        chunks.Add((IntPtr)c.TexturePages);
+                        chunks.Add((IntPtr)c.Code        );
+                        chunks.Add((IntPtr)c.Strings     );
+                        chunks.Add((IntPtr)c.Textures    );
+                        chunks.Add((IntPtr)c.Audio       );
+                        chunks.Add((IntPtr)c.AudioGroup);
+
+                        chunks.Add((IntPtr)c.Functions);
+                        chunks.Add((IntPtr)c.Variables);
+                    }
 
                     for (int i = 0; i < chunks.Count; i++)
                         DumpUnk(chunks[i]);
@@ -444,7 +482,7 @@ namespace Altar
 
                 if (eo.ExportToProject)
                 {
-                    Console.WriteLine("Emitting project file...");
+                    WriteLine("Emitting project file...");
 
                     File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f, chunks)));
                 }

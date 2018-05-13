@@ -58,14 +58,7 @@ namespace Altar
 
         public string MagicString()
         {
-            char[] str = new char[4];
-
-            str[0] = (char)((long)Identity & 0x000000FF);
-            str[1] = (char)(((long)Identity & 0x0000FF00) >> 8);
-            str[2] = (char)(((long)Identity & 0x00FF0000) >> 16);
-            str[3] = (char)(((long)Identity & 0xFF000000) >> 24);
-
-            return new string(str);
+            return Identity.ToChunkName();
         }
 
         internal string DebugDisplay() => Identity.ToString() + SR.SPACE_S + SR.O_PAREN + MagicString() + SR.C_PAREN + SR.SPACE_S + SR.COLON_S + SR.HEX_PRE + Size.ToString(SR.HEX_FM8);
@@ -254,6 +247,29 @@ namespace Altar
         // SpriteCollisionMask
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct SpriteEntry2
+    {
+        public uint Name;
+        public Point Size;
+
+        public BoundingBox2 Bounding;
+
+        fixed uint _pad[3]; // type? coltolerance? htile? vtile? for3D?
+        public uint BBoxMode;
+        public DwordBool SeparateColMasks;
+
+        public Point Origin;
+
+        // unknown stuff
+        fixed int _pad2[3];
+        float funk;
+        uint _pad3;
+
+        public CountOffsetsPair Textures;
+
+        // SpriteCollisionMask
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct BgEntry
     {
         public uint Name;
@@ -349,8 +365,8 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry
     {
-        public Point16 Position, Size, RenderOffset;
-        public Rectangle16 BoundingBox;
+        public Rectangle16 Source, Dest;
+        public Point16 Size;
         public ushort SpritesheetId;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -379,6 +395,12 @@ namespace Altar
     public unsafe struct TextureEntry
     {
         uint _pad; // unknown, a low int value
+        public uint Offset;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TextureEntry2
+    {
+        fixed uint _pad[2];
         public uint Offset;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

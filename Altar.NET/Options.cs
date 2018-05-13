@@ -8,6 +8,8 @@ namespace Altar
 {
     class ExportOptions
     {
+        // free short flags: lvxyz
+
         [Option('g', HelpText = "Export manifest file.", MutuallyExclusiveSet = "EXPORT")]
         public bool General
         {
@@ -116,6 +118,12 @@ namespace Altar
             get;
             set;
         }
+        [Option('e', HelpText = "Dump audiogroups.", MutuallyExclusiveSet = "EXPORT")]
+        public bool AudioGroups
+        {
+            get;
+            set;
+        }
         [Option('*', "any", HelpText = "Export everything (except -d, --dumpempty, --dumpall).", MutuallyExclusiveSet = "EXPORT")]
         public bool Any
         {
@@ -164,6 +172,19 @@ namespace Altar
         }
         [Option("dumpall", HelpText = "Dumps *ALL* chunks, does not imply --dumpempty. (NOTE: see note of --dumpunk)", MutuallyExclusiveSet = "EXPORT")]
         public bool DumpAllChunks
+        {
+            get;
+            set;
+        }
+
+        [Option('q', "quiet", HelpText = "Does not output any info on progress.")]
+        public bool Quiet
+        {
+            get;
+            set;
+        }
+        [Option("noprecprog", HelpText = "Doesn't output precise progress on large chunks.")]
+        public bool NoPrecProg
         {
             get;
             set;

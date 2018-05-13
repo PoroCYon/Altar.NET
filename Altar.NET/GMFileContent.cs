@@ -31,8 +31,7 @@ namespace Altar
         Strings     = 0x47525453, // STRG
         Textures    = 0x52545854, // TXTR
         Audio       = 0x4F445541, // AUDO
-        GNAL_Unk    = 0x4C414E47, // GNAL
-        LANG_Unk    = 0x474E414C, // LANG
+        Language    = 0x474E414C, // LANG
         GLOB_Unk    = 0x424F4C47, // GLOB
 
         Count = 24
@@ -47,10 +46,10 @@ namespace Altar
 
             var u = (uint)h;
 
-            var c0 = (char)((u & 0xFF000000) >> 24);
-            var c1 = (char)((u & 0x00FF0000) >> 16);
-            var c2 = (char)((u & 0x0000FF00) >>  8);
-            var c3 = (char)((u & 0X000000FF)      );
+            var c3 = (char)((u & 0xFF000000) >> 24);
+            var c2 = (char)((u & 0x00FF0000) >> 16);
+            var c1 = (char)((u & 0x0000FF00) >>  8);
+            var c0 = (char)((u & 0x000000FF)      );
 
             return sb
                 .Append(c0).Append(c1).Append(c2).Append(c3)
@@ -124,12 +123,10 @@ namespace Altar
         public SectionOptions* Options;
 
         public SectionUnknown* Extensions; // empty
-        public SectionUnknown* AudioGroup; // empty
         public SectionUnknown* Shaders   ; // empty
         public SectionUnknown* Timelines ; // empty
         public SectionUnknown* DataFiles ; // empty
-        public SectionUnknown* GNAL_Unk; // empty?
-        public SectionUnknown* LANG_Unk; // empty?
+        public SectionUnknown* Language  ; // empty
         public SectionUnknown* GLOB_Unk; // empty?
 
         public SectionCountOffsets* Sounds      ;
@@ -145,6 +142,7 @@ namespace Altar
         public SectionCountOffsets* Strings     ;
         public SectionCountOffsets* Textures    ;
         public SectionCountOffsets* Audio       ;
+        public SectionCountOffsets* AudioGroup  ;
 
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
@@ -152,6 +150,17 @@ namespace Altar
         public Dictionary<SectionHeaders, IntPtr> UnknownChunks = new Dictionary<SectionHeaders, IntPtr>();
 
         internal long[] HeaderOffsets = new long[(int)SectionHeaders.Count];
+
+        public void DumpChunkOffs()
+        {
+            for (int i = 0; i < HeaderOffsets.Length; ++i)
+            {
+                var l = HeaderOffsets[i];
+                var p = *(SectionHeader*)GMFile.PtrFromOffset(this, l);
+
+                Console.Error.WriteLine(p.MagicString() + ": " + l.ToString("X8") + "-" + (l+p.Size).ToString("X8") + " (" + p.Size.ToString("X8") + ")");
+            }
+        }
 
         public SectionHeader* GetChunk(SectionHeaders ident)
         {
@@ -167,18 +176,14 @@ namespace Altar
 
                 case SectionHeaders.Extensions:
                     return (SectionHeader*)Extensions;
-                case SectionHeaders.AudioGroup:
-                    return (SectionHeader*)AudioGroup;
                 case SectionHeaders.Shaders:
                     return (SectionHeader*)Shaders;
                 case SectionHeaders.Timelines:
                     return (SectionHeader*)Timelines;
                 case SectionHeaders.DataFiles:
                     return (SectionHeader*)DataFiles;
-                case SectionHeaders.GNAL_Unk:
-                    return (SectionHeader*)GNAL_Unk;
-                case SectionHeaders.LANG_Unk:
-                    return (SectionHeader*)LANG_Unk;
+                case SectionHeaders.Language:
+                    return (SectionHeader*)Language;
                 case SectionHeaders.GLOB_Unk:
                     return (SectionHeader*)GLOB_Unk;
 
@@ -208,6 +213,8 @@ namespace Altar
                     return (SectionHeader*)Textures;
                 case SectionHeaders.Audio:
                     return (SectionHeader*)Audio;
+                case SectionHeaders.AudioGroup:
+                    return (SectionHeader*)AudioGroup;
 
                 case SectionHeaders.Functions:
                     return (SectionHeader*)Functions;
