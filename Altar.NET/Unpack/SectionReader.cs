@@ -46,7 +46,8 @@ namespace Altar.Unpack
         }
         internal static string StringFromOffset(GMFileContent content, long off)
         {
-            if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00)
+            if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00 /* avoid crashes due
+                                                                to bogus offsets */)
                 return String.Empty;
 
             return ReadString((byte*)GMFile.PtrFromOffset(content, off-4));
@@ -191,9 +192,17 @@ namespace Altar.Unpack
 
             ret.InfoFlags = oe->GEN8FlagsDup;
 
-            ret.Constants = new Dictionary<string, string>((int)oe->ConstMap.Count);
+            ret.Constants    = new Dictionary<string, string>((int)oe->ConstMap.Count);
             for (uint i = 0; i < oe->ConstMap.Count; i++)
-                ret.Constants.Add(StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2]), StringFromOffset(content, (&oe->ConstMap.Offsets)[i * 2 + 1]));
+            {
+                uint inoff = (&oe->ConstMap.Offsets)[ i << 1   ];
+                uint ouoff = (&oe->ConstMap.Offsets)[(i << 1)|1];
+                //Console.Error.Write(inoff.ToString("X") + " -> " + ouoff.ToString("X"));
+                string instr = StringFromOffset(content, inoff);
+                string oustr = StringFromOffset(content, ouoff);
+                //Console.Error.WriteLine(": " + instr + " -> " + oustr);
+                ret.Constants   [instr] = oustr;
+            }
 
             ret._pad0 = new uint[2] { oe->_pad0[0], oe->_pad0[1] };
             ret._pad1 = new uint[12] { oe->_pad1[0], oe->_pad1[1], oe->_pad1[2], oe->_pad1[3],
@@ -219,7 +228,10 @@ namespace Altar.Unpack
             ret.VolumeMod = se->Volume;
             ret.PitchMod  = se->Pitch ;
 
-            ret.GroupID = se->GroupID;
+            ret.Group =
+                ~se->GroupID < 0
+                    ? String.Empty
+                    : GetAudioGroupInfo(content, (uint)se->GroupID);
 
             ret.AudioID      =  se->AudioID;
             ret.IsEmbedded   = (se->Flags & SoundEntryFlags.Embedded  ) != 0;
@@ -227,8 +239,16 @@ namespace Altar.Unpack
 
             return ret;
         }
+        public static Dictionary<uint, uint> BuildTPAGOffsetIndexLUT(GMFileContent content)
+        {
+            var r = new Dictionary<uint, uint>((int)content.TexturePages->Count);
 
-        public static SpriteInfo      GetSpriteInfo (GMFileContent content, uint id)
+            for (uint i = 0; i < content.TexturePages->Count; ++i)
+                r.Add((&content.TexturePages->Offsets)[i], i);
+
+            return r;
+        }
+        public static SpriteInfo      GetSpriteInfo (GMFileContent content, uint id, Dictionary<uint, uint> toil = null)
         {
             if (id >= content.Sprites->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -245,62 +265,75 @@ namespace Altar.Unpack
 
             ret.SeparateColMasks = se->SeparateColMasks.IsTrue();
 
-            if (se->Textures.Count != 0xFFFFFFFF)
+            var tex = &se->Textures;
+            if (tex->Count == ~(uint)0)
             {
-                ret.TextureIndices = new uint[se->Textures.Count];
+                var se2 = (SpriteEntry2*)GMFile.PtrFromOffset(content, (&content.Sprites->Offsets)[id]);
+                tex = &se2->Textures;
+            }
+            if (tex->Count == ~(uint)0)
+            {
+                Console.Error.WriteLine($"Warning: texture count of sprite {id} ({((ulong)se-(ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is -1.");
+                return ret;
+            }
 
-                for (uint i = 0; i < se->Textures.Count; i++)
+            ret.TextureIndices = new uint[tex->Count];
+
+            for (uint i = 0; i < tex->Count; i++)
+                if (toil == null)
+                {
                     for (uint j = 0; j < content.TexturePages->Count; j++)
-                        if ((&se->Textures.Offsets)[i] == (&content.TexturePages->Offsets)[j])
+                        if ((&tex->Offsets)[i] == (&content.TexturePages->Offsets)[j])
                         {
                             ret.TextureIndices[i] = j;
                             break;
                         }
-
-                SpriteCollisionMask* masks =
-                    (SpriteCollisionMask*)((uint)&se->Textures.Offsets + sizeof(uint) * se->Textures.Count);
-
-                uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
-                //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
-
-                if (amt < 0x100) // guesstimate
-                {
-                    ret.CollisionMasks = new bool[amt][,];
-                    byte* maskData = &masks->MaskData;
-
-                    uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
-                    uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
-
-                    uint wPad = (((w & 7) == 0) ? w : (w - (w & 7) + 8))/8;
-
-                    for (uint i = 0; i < amt; i++)
-                    {
-                        bool[,] stuff = new bool[wPad*8, h];
-
-                        for (uint y = 0; y < h; y++)
-                        {
-                            for (uint x = 0; x < wPad*8; x++)
-                            {
-                                uint rown = y * wPad;
-
-                                uint byten = x >> 3;
-                                byte bitn = (byte)(x & 7);
-
-                                byte* curptr = maskData + rown + byten;
-                                byte curbyte = *curptr;
-                                byte curbit = (byte)(curbyte & (byte)(1 << bitn));
-
-                                stuff[x, y] = curbit != 0;
-                            }
-                        }
-
-                        ret.CollisionMasks[i] = stuff;
-                        maskData += wPad * h;
-                    }
                 }
-                else
-                    Console.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
+                else ret.TextureIndices[i] = toil[(&tex->Offsets)[i]];
+
+            SpriteCollisionMask* masks =
+                (SpriteCollisionMask*)((ulong)&tex->Offsets + sizeof(uint) * tex->Count);
+
+            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+            //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
+
+            if (amt < 0x100) // guesstimate
+            {
+                ret.CollisionMasks = new bool[amt][,];
+                byte* maskData = &masks->MaskData;
+
+                uint w = (uint)(ret.Size.X & 0x7FFFFFFF);
+                uint h = (uint)(ret.Size.Y & 0x7FFFFFFF);
+
+                uint wPad = (((w & 7) == 0) ? w : (w - (w & 7) + 8))/8;
+
+                for (uint i = 0; i < amt; i++)
+                {
+                    bool[,] stuff = new bool[wPad*8, h];
+
+                    for (uint y = 0; y < h; y++)
+                    {
+                        for (uint x = 0; x < wPad*8; x++)
+                        {
+                            uint rown = y * wPad;
+
+                            uint byten = x >> 3;
+                            byte bitn = (byte)(x & 7);
+
+                            byte* curptr = maskData + rown + byten;
+                            byte curbyte = *curptr;
+                            byte curbit = (byte)(curbyte & (byte)(1 << bitn));
+
+                            stuff[x, y] = curbit != 0;
+                        }
+                    }
+
+                    ret.CollisionMasks[i] = stuff;
+                    maskData += wPad * h;
+                }
             }
+            else
+                Console.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
 
             return ret;
         }
@@ -400,7 +433,7 @@ namespace Altar.Unpack
 
             return ret;
         }
-        public static ObjectInfo      GetObjectInfo (GMFileContent content, uint id)
+        public static ObjectInfo      GetObjectInfo (GMFileContent content, uint id, bool nameonly = false)
         {
             if (id >= content.Objects->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
@@ -425,6 +458,9 @@ namespace Altar.Unpack
 
             var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
+
+            if (nameonly)
+                return ret;
 
             if (hasMore)
             {
@@ -516,10 +552,9 @@ namespace Altar.Unpack
 
             var ret = new TexturePageInfo();
 
-            ret.Position      = tpe->Position     ;
-            ret.RenderOffset  = tpe->RenderOffset ;
+            ret.Source        = tpe->Source       ;
+            ret.Destination   = tpe->Dest         ;
             ret.Size          = tpe->Size         ;
-            ret.BoundingBox   = tpe->BoundingBox  ;
             ret.SpritesheetId = tpe->SpritesheetId;
 
             return ret;
@@ -532,13 +567,22 @@ namespace Altar.Unpack
             var teOffs = (&content.Textures->Offsets)[id];
             //teOffs += 4; // this showed up in a newer version, _pad was 1. extra offset table? how to detect this?
             var te = (TextureEntry*)GMFile.PtrFromOffset(content, teOffs);
+            uint off = te->Offset;
+            if (off == 0)
+            {
+                var te2 = (TextureEntry2*)GMFile.PtrFromOffset(content,
+                        teOffs);
+                off = te2->Offset;
+            }
+            if (off == 0)
+            {
+                Console.Error.WriteLine($"Warning: texture {id} has no PNG data.");
+                return default(TextureInfo);
+            }
 
             var ret = new TextureInfo();
 
-            if (te->Offset == 0)
-                return ret;
-
-            var png = (PngHeader*)GMFile.PtrFromOffset(content, te->Offset);
+            var png = (PngHeader*)GMFile.PtrFromOffset(content, off);
 
             ret.Width  = Utils.SwapEnd32(png->IHDR.Width );
             ret.Height = Utils.SwapEnd32(png->IHDR.Height);
@@ -572,6 +616,16 @@ namespace Altar.Unpack
             var se = (StringEntry*)GMFile.PtrFromOffset(content, (&content.Strings->Offsets)[id]-4);
 
             return ReadString(&se->Data);
+        }
+        public static string GetAudioGroupInfo(GMFileContent content, uint id)
+        {
+            if (id >= content.AudioGroup->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var ag = GMFile.PtrFromOffset(content, (&content.AudioGroup->Offsets)[id]);
+            ag = GMFile.PtrFromOffset(content, *(uint*)ag);
+
+            return ReadString((byte*)ag); // it's just a name
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)

@@ -305,7 +305,7 @@ namespace Altar.Unpack
             r["file"      ] = sond.File;
             r["volume"    ] = sond.VolumeMod;
             r["pitch"     ] = sond.PitchMod;
-            r["groupid"   ] = sond.GroupID;
+            r["group"     ] = sond.Group;
             r["audioid"   ] = sond.AudioID;
 
             return r;
@@ -319,7 +319,8 @@ namespace Altar.Unpack
             r["bboxmode"] = sprt.BBoxMode;
             r["sepmasks"] = sprt.SeparateColMasks;
             r["origin"  ] = SerializePoint(sprt.Origin);
-            if (sprt.TextureIndices != null) r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
+            if (sprt.TextureIndices != null)
+                r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
 
             if (sprt.CollisionMasks != null)
                 r["colmasks"] = SerializeArray(sprt.CollisionMasks, SerializeColMask);
@@ -430,14 +431,16 @@ namespace Altar.Unpack
         {
             var r = CreateObj();
 
-            r["pos"     ] = SerializePoint(tpag.Position);
-            r["size"    ] = SerializeSize(tpag.Size);
-            r["offset"  ] = SerializePoint(tpag.RenderOffset);
-            r["bounding"] = SerializeRect(tpag.BoundingBox);
-            r["sheetid" ] = tpag.SpritesheetId;
+            r["src"    ] = SerializeRect(tpag.Source     );
+            r["dest"   ] = SerializeRect(tpag.Destination);
+            r["size"   ] = SerializeSize(tpag.Size       );
+            r["sheetid"] = tpag.SpritesheetId;
 
             return r;
         }
+
+        public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
+        public static JsonData SerializeAudioGroups(GMFile f) => SerializeArray(f.AudioGroups, Utils.Identity);
 
         private static JsonData SerializeFuncLocalsInfo(FunctionLocalsInfo fli)
         {
@@ -448,8 +451,6 @@ namespace Altar.Unpack
 
             return r;
         }
-
-        public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
 
         private static JsonData SerializeReferenceDef(ReferenceDef rd)
         {

@@ -9,7 +9,8 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Altar</RootNamespace>
     <AssemblyName>altar</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <!-- change this to v4.0 if you dislike this restriction -->
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -32,6 +33,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFrameworkVersion)' == 'v4.6'">
+    <DefineConstants>$(DefineConstants);NET46</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
@@ -102,7 +106,7 @@
     </PostBuildEvent>
     <PostBuildEvent Condition="'$(OS)' == 'Unix'">
       cd "$(SolutionDir)ILRepack"
-      mkdir "$(SolutionDir)$(OutDir)"
+      mkdir -p "$(SolutionDir)$(OutDir)"
       mono ILRepack.exe /union /target:exe "/out:$(SolutionDir)$(OutDir)$(TargetFileName)" "$(TargetPath)" "$(TargetDir)Altar.NET.Util.dll" "$(TargetDir)CommandLine.dll"
     </PostBuildEvent>
   </PropertyGroup>

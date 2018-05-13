@@ -147,7 +147,7 @@ namespace Altar.Decomp
                             sb.Append(s.Instance.ToPrettyString());
                         else
                         {
-                            var o = SectionReader.GetObjectInfo(content, (uint)s.Instance);
+                            var o = SectionReader.GetObjectInfo(content, (uint)s.Instance, true);
 
                             sb.Append('[').Append(o.Name).Append(']');
                         }
@@ -181,7 +181,7 @@ namespace Altar.Decomp
                                     sb.Append(inst.ToPrettyString());
                                 else
                                 {
-                                    var o = SectionReader.GetObjectInfo(content, (uint)inst);
+                                    var o = SectionReader.GetObjectInfo(content, (uint)inst, true);
 
                                     sb.Append('[').Append(o.Name).Append(']');
                                 }
