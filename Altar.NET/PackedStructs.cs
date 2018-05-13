@@ -42,7 +42,7 @@ namespace Altar
     public unsafe struct RefDefEntryWithOthers
     {
         public uint NameOffset;
-        uint _pad0; // unknown, some flags?
+        public uint _pad0; // unknown, some flags?
         uint _pad1; // unknown
         public uint Occurrences;
         public uint FirstAddress;
@@ -60,8 +60,8 @@ namespace Altar
         {
             char[] str = new char[4];
 
-            str[0] = (char)( (long)Identity & 0x000000FF       );
-            str[1] = (char)(((long)Identity & 0x0000FF00) >>  8);
+            str[0] = (char)((long)Identity & 0x000000FF);
+            str[1] = (char)(((long)Identity & 0x0000FF00) >> 8);
             str[2] = (char)(((long)Identity & 0x00FF0000) >> 16);
             str[3] = (char)(((long)Identity & 0xFF000000) >> 24);
 
@@ -93,22 +93,22 @@ namespace Altar
     [Flags]
     public enum InfoFlags : uint
     {
-        Fullscreen        = 0x0001,
-        SyncVertex1       = 0x0002,
-        SyncVertex2       = 0x0004,
-        Interpolate       = 0x0008,
-        Unknown           = 0x0010, // seems to be 1 all the time...
-        ShowCursor        = 0x0020,
-        Sizeable          = 0x0040,
-        ScreenKey         = 0x0080,
-        SyncVertex3       = 0x0100,
-        StudioVersionB1   = 0x0200,
-        StudioVersionB2   = 0x0400,
-        StudioVersionB3   = 0x0800,
+        Fullscreen = 0x0001,
+        SyncVertex1 = 0x0002,
+        SyncVertex2 = 0x0004,
+        Interpolate = 0x0008,
+        Unknown = 0x0010, // seems to be 1 all the time...
+        ShowCursor = 0x0020,
+        Sizeable = 0x0040,
+        ScreenKey = 0x0080,
+        SyncVertex3 = 0x0100,
+        StudioVersionB1 = 0x0200,
+        StudioVersionB2 = 0x0400,
+        StudioVersionB3 = 0x0800,
         StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
-        SteamEnabled      = 0x1000,
-        LocalDataEnabled  = 0x2000,
-        BorderlessWindow  = 0x4000
+        SteamEnabled = 0x1000,
+        LocalDataEnabled = 0x2000,
+        BorderlessWindow = 0x4000
 
         // others...?
     }
@@ -144,7 +144,7 @@ namespace Altar
         public ulong Timestamp; // UNIX time (64-bit, luckily)
         public uint DisplayNameOffset;
         public GameTargets ActiveTargets;
-        fixed uint _pad[4]; // unknown, more flags?
+        public fixed uint _unknown[4]; // unknown, more flags?
         public uint AppID;
         public uint NumberCount;
         public uint Numbers;
@@ -154,9 +154,9 @@ namespace Altar
     {
         public SectionHeader Header;
 
-        fixed uint _pad0[2]; // flags?
+        public fixed uint _pad0[2]; // flags?
         public InfoFlags GEN8FlagsDup;
-        fixed uint _pad1[0xC];
+        public fixed uint _pad1[0xC];
         public CountOffsetsPair ConstMap;
     }
 
@@ -169,7 +169,7 @@ namespace Altar
 
         public bool IsEmpty() => Header.Size == 0 || (Header.Size == sizeof(uint) && Unknown == 0);
     }
-    [StructLayout(LayoutKind.Explicit  , Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
+    [StructLayout(LayoutKind.Explicit, Pack = 1), DebuggerDisplay("{DebugDisplay()}")]
     public unsafe struct SectionCountOffsets
     {
         [FieldOffset(0)]
@@ -201,15 +201,15 @@ namespace Altar
     [Flags]
     public enum SoundEntryFlags : uint
     {
-        Embedded   = 0x01, // NotStreamed?
+        Embedded = 0x01, // NotStreamed?
         Compressed = 0x02,
-        Normal     = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
+        Normal = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
     }
     [Flags]
     public enum RoomEntryFlags
     {
-        EnableViews        = 1,
-        ShowColour         = 2,
+        EnableViews = 1,
+        ShowColour = 2,
         ClearDisplayBuffer = 4 // clear display buffer with window colour
 
         // isometric?
@@ -224,10 +224,10 @@ namespace Altar
         public uint TypeOffset;
         public uint FileOffset;
         uint _pad; // effects?
-        public float Volume   ;
-        public float Pitch    ;
-        public int   GroupID  ;
-        public int   AudioID  ;
+        public float Volume;
+        public float Pitch;
+        public int GroupID;
+        public int AudioID;
     }
 
     public struct SpriteCollisionMask
@@ -285,10 +285,10 @@ namespace Altar
         public DwordBool Bold;
         public DwordBool Italic;
         // renderhq? includettf? ttfname? WHERE?
-        ushort _ignore0; // ascii range start (probably, only one) -> use Chars
+        public ushort _ignore0; // ascii range start (probably, only one) -> use Chars
         public byte Charset;
         public FontAntiAliasing AntiAliasing;
-        uint _ignore1; // ascii range end (probably, only one) -> use Chars
+        public uint _ignore1; // ascii range end (probably, only one) -> use Chars
         public uint TPagOffset;
 
         public PointF Scale;
@@ -299,7 +299,7 @@ namespace Altar
     public enum CollisionShape : uint
     {
         Circle = 0,
-        Box    = 1,
+        Box = 1,
         Custom = 2
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -314,7 +314,7 @@ namespace Altar
         public DwordBool Persistent;
 
         public int ParentId; // OBJT
-        public int MaskId  ; // SPRT
+        public int MaskId; // SPRT
 
         public DwordBool HasPhysics;
         public DwordBool IsSensor;
@@ -335,7 +335,7 @@ namespace Altar
         public Colour Colour;
 
         public DwordBool DrawBackgroundColour;
-        uint _pad; // unknown (can be -1 -> option?)
+        public uint _unknown; // unknown (can be -1 -> option?)
 
         public RoomEntryFlags Flags;
 
@@ -373,7 +373,7 @@ namespace Altar
     public unsafe struct StringEntry
     {
         public uint Length;
-        public byte Data  ;
+        public byte Data;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TextureEntry
@@ -392,15 +392,15 @@ namespace Altar
     public struct ObjectPhysics
     {
         public float
-            Density       ,
-            Restitution   ,
-            Group         ,
-            LinearDamping ,
+            Density,
+            Restitution,
+            Group,
+            LinearDamping,
             AngularDamping,
-            Unknown0      ,
-            Friction      ,
-            Unknown1      ,
-            Kinematic     ;
+            Unknown0,
+            Friction,
+            Unknown1,
+            Kinematic;
     }
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public unsafe struct ObjectRest
@@ -492,5 +492,20 @@ namespace Altar
     {
         ulong _pad; // <0x89>PNG <uint length?>
         public PngIhdr IHDR;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct FunctionLocalEntry
+    {
+        public uint Index;
+        public uint Name;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct FunctionLocalsEntry
+    {
+        public uint LocalsCount;
+        public uint FunctionName;
+        public FunctionLocalEntry Locals;
     }
 }

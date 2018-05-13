@@ -32,6 +32,8 @@ namespace Altar
         Textures    = 0x52545854, // TXTR
         Audio       = 0x4F445541, // AUDO
         GNAL_Unk    = 0x4C414E47, // GNAL
+        LANG_Unk    = 0x474E414C, // LANG
+        GLOB_Unk    = 0x424F4C47, // GLOB
 
         Count = 24
     }
@@ -53,6 +55,18 @@ namespace Altar
             return sb
                 .Append(c0).Append(c1).Append(c2).Append(c3)
                 .ToString();
+        }
+
+        public static SectionHeaders FromChunkName(string s)
+        {
+            uint u;
+
+            u  = ((uint)s[0]      ) & 0x000000FF;
+            u |= ((uint)s[1] <<  8) & 0x0000FF00;
+            u |= ((uint)s[2] << 16) & 0x00FF0000;
+            u |= ((uint)s[3] << 24) & 0xFF000000;
+
+            return (SectionHeaders)u;
         }
     }
 
@@ -114,7 +128,9 @@ namespace Altar
         public SectionUnknown* Shaders   ; // empty
         public SectionUnknown* Timelines ; // empty
         public SectionUnknown* DataFiles ; // empty
-        public SectionUnknown* GNAL_Unk  ; // empty?
+        public SectionUnknown* GNAL_Unk; // empty?
+        public SectionUnknown* LANG_Unk; // empty?
+        public SectionUnknown* GLOB_Unk; // empty?
 
         public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
@@ -161,6 +177,10 @@ namespace Altar
                     return (SectionHeader*)DataFiles;
                 case SectionHeaders.GNAL_Unk:
                     return (SectionHeader*)GNAL_Unk;
+                case SectionHeaders.LANG_Unk:
+                    return (SectionHeader*)LANG_Unk;
+                case SectionHeaders.GLOB_Unk:
+                    return (SectionHeader*)GLOB_Unk;
 
                 case SectionHeaders.Sounds:
                     return (SectionHeader*)Sounds;

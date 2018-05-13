@@ -10,6 +10,7 @@ using Altar.Decomp;
 using Altar.Unpack;
 
 using static Altar.SR;
+using Altar.Repack;
 
 namespace Altar
 {
@@ -31,6 +32,11 @@ namespace Altar
 
             var od = (String.IsNullOrEmpty(eo.OutputDirectory) ? Path.GetDirectoryName(file) : eo.OutputDirectory) + Path.DirectorySeparatorChar;
 
+            if (!Directory.Exists(od))
+            {
+                Directory.CreateDirectory(od);
+            }
+
             using (var f = GMFile.GetFile(file))
             {
                 #region defaults
@@ -43,11 +49,11 @@ namespace Altar
 
                 if (eo.ExportToProject)
                 {
-                    eo.Disassemble = eo.String = eo.Variables = eo.Functions = false;
+                    //eo.Disassemble = eo.String = eo.Variables = eo.Functions = false;
 
-                    eo.Audio = eo.Background = eo.Decompile   = eo.Font = eo.General
+                    eo.Audio = eo.Background /*= eo.Decompile*/   = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
-                        = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
+                        = eo.String = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
                         = true;
                 }
                 if (eo.Any)
@@ -63,7 +69,6 @@ namespace Altar
                 #endregion
 
                 // ---
-
                 #region GEN8
                 if (eo.General)
                 {
@@ -118,6 +123,9 @@ namespace Altar
 
                     for (int i = 0; i < f.Textures.Length; i++)
                     {
+                        if (f.Textures[i].PngData == null)
+                            continue;
+
                         Console.SetCursorPosition(cl, ct);
                         Console.WriteLine(O_PAREN + (i + 1) + SLASH + f.Textures.Length + C_PAREN);
 
@@ -330,7 +338,7 @@ namespace Altar
                 #endregion
 
                 #region FONT
-                if (eo.Background && f.Fonts != null)
+                if (eo.Font && f.Fonts != null)
                 {
                     Console.Write("Exporting fonts... ");
                     var cl = Console.CursorLeft;
@@ -367,7 +375,6 @@ namespace Altar
                     }
                 }
                 #endregion
-
                 List<IntPtr> chunks = new List<IntPtr>(6);
 
                 if (eo.DumpUnknownChunks || eo.DumpAllChunks)
@@ -384,44 +391,52 @@ namespace Altar
                         byte[] buf = new byte[unk->Header.Size];
                         uint* src = &unk->Unknown;
 
-                        ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
+                        if (!unk->IsEmpty())
+                        {
+                            ILHacks.Cpblk<byte>((void*)src, buf, 0, buf.Length);
+                        }
 
                         File.WriteAllBytes(od + unk->Header.MagicString() + EXT_BIN, buf);
                     };
 
                     var c = f.Content;
 
-                    chunks.Add((IntPtr)c.Extensions);
-                    chunks.Add((IntPtr)c.AudioGroup);
-                    chunks.Add((IntPtr)c.Shaders   );
-                    chunks.Add((IntPtr)c.Timelines );
-                    chunks.Add((IntPtr)c.DataFiles );
-                    chunks.Add((IntPtr)c.GNAL_Unk  );
-
-                    if (eo.DumpAllChunks)
+                    if (eo.DumpUnknownChunks)
                     {
-                        chunks.Add((IntPtr)c.General);
-                        chunks.Add((IntPtr)c.Options);
-
-                        chunks.Add((IntPtr)c.Sounds      );
-                        chunks.Add((IntPtr)c.Sprites     );
-                        chunks.Add((IntPtr)c.Backgrounds );
-                        chunks.Add((IntPtr)c.Paths       );
-                        chunks.Add((IntPtr)c.Scripts     );
-                        chunks.Add((IntPtr)c.Fonts       );
-                        chunks.Add((IntPtr)c.Objects     );
-                        chunks.Add((IntPtr)c.Rooms       );
-                        chunks.Add((IntPtr)c.TexturePages);
-                        chunks.Add((IntPtr)c.Code        );
-                        chunks.Add((IntPtr)c.Strings     );
-                        chunks.Add((IntPtr)c.Textures    );
-                        chunks.Add((IntPtr)c.Audio       );
-
-                        chunks.Add((IntPtr)c.Functions);
-                        chunks.Add((IntPtr)c.Variables);
+                        foreach (IntPtr unk in c.UnknownChunks.Values)
+                        {
+                            chunks.Add(unk);
+                        }
                     }
 
-                    chunks = chunks.Where(cc => cc != IntPtr.Zero && !((SectionUnknown*)cc)->IsEmpty()).ToList();
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.General);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Options);
+
+                    chunks.Add((IntPtr)c.GNAL_Unk  );
+                    chunks.Add((IntPtr)c.LANG_Unk  );
+                    chunks.Add((IntPtr)c.Extensions);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sounds      );
+                    chunks.Add((IntPtr)c.AudioGroup);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sprites     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Backgrounds );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Paths       );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Scripts     );
+                    chunks.Add((IntPtr)c.GLOB_Unk );
+                    chunks.Add((IntPtr)c.Shaders  );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Fonts       );
+                    chunks.Add((IntPtr)c.Timelines);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Objects     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Rooms       );
+                    chunks.Add((IntPtr)c.DataFiles);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.TexturePages);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Code        );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables   );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Functions   );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Strings     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Textures    );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Audio       );
+                    
+                    chunks = chunks.Where(cc => cc != IntPtr.Zero).ToList();
 
                     for (int i = 0; i < chunks.Count; i++)
                         DumpUnk(chunks[i]);
@@ -494,6 +509,152 @@ namespace Altar
         //     int32[4] 66 82 4C A8  69 1E 7C 85  5B 70 AC 11  67 C0 D2 D5 // WTF? hash?
         // }
 
+        static void Import(ImportOptions opt)
+        {
+            var file = Path.GetFullPath(opt.File);
+            
+            if (!File.Exists(file))
+                throw new ParserException("File \"" + file + "\" not found.");
+
+            var baseDir = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar;
+
+            JsonData projFile = JsonMapper.ToObject(File.OpenText(file));
+            GMFile f = Deserialize.ReadFile(baseDir, projFile);
+
+            var stringsChunk = new BBData(new BinBuffer(), new int[0]);
+            IDictionary<string, int> stringOffsets = SectionWriter.WriteStrings(stringsChunk, f.Strings);
+
+            var texpChunk = new BBData(new BinBuffer(), new int[0]);
+            int[] texPagOffsets = SectionWriter.WriteTexturePages(texpChunk, f.TexturePages);
+
+            var output = Path.GetFullPath(opt.OutputFile);
+
+            var offsets = new int[0];
+            BBData writer = new BBData(new BinBuffer(), offsets);
+            writer.Buffer.Write(SectionHeaders.Form);
+            writer.Buffer.Write(0);
+
+            var stringOffsetOffsets = new List<int>();
+            int stringsChunkPosition = 0;
+            var texpOffsetOffsets = new List<int>();
+            int texpChunkPosition = 0;
+
+            foreach (var chunkFile in projFile["chunks"])
+            {
+                var chunkName = chunkFile.ToString().Substring(0, 4);
+                Console.WriteLine($"Writing {chunkName}...");
+                var chunkId = SectionHeadersExtensions.FromChunkName(chunkName);
+                BBData chunk = new BBData(new BinBuffer(), new int[0]);
+                int[] chunkStringOffsetOffsets = null;
+                int[] chunkTexpOffsetOffsets = null;
+                switch (chunkId)
+                {
+                    case SectionHeaders.General:
+                        chunkStringOffsetOffsets = SectionWriter.WriteGeneral(chunk, f.General, stringOffsets);
+                        break;
+                    case SectionHeaders.Options:
+                        chunkStringOffsetOffsets = SectionWriter.WriteOptions(chunk, f.Options, stringOffsets);
+                        break;
+                    case SectionHeaders.Sounds:
+                        chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringOffsets);
+                        break;
+                    case SectionHeaders.Sprites:
+                        SectionWriter.WriteSprites(chunk, f.Sprites, stringOffsets, texPagOffsets,
+                            out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
+                        break;
+                    case SectionHeaders.Backgrounds:
+                        SectionWriter.WriteBackgrounds(chunk, f.Backgrounds, stringOffsets, texPagOffsets,
+                            out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
+                        break;
+                    case SectionHeaders.Paths:
+                        chunkStringOffsetOffsets = SectionWriter.WritePaths(chunk, f.Paths, stringOffsets);
+                        break;
+                    case SectionHeaders.Scripts:
+                        chunkStringOffsetOffsets = SectionWriter.WriteScripts(chunk, f.Scripts, stringOffsets);
+                        break;
+                    case SectionHeaders.Fonts:
+                        SectionWriter.WriteFonts(chunk, f.Fonts, stringOffsets, texPagOffsets,
+                            out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
+                        break;
+                    /*case SectionHeaders.Objects:
+                        chunkStringOffsetOffsets = SectionWriter.WriteObjects(chunk, f.Objects, stringOffsets);
+                        break;*/
+                    case SectionHeaders.Rooms:
+                        chunkStringOffsetOffsets = SectionWriter.WriteRooms(chunk, f.Rooms, stringOffsets);
+                        break;
+                    case SectionHeaders.TexturePage:
+                        chunk = texpChunk;
+                        texpChunkPosition = writer.Buffer.Position + 8;
+                        break;
+                    // Code
+                    case SectionHeaders.Variables:
+                        chunkStringOffsetOffsets = SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringOffsets, f.General.IsOldBCVersion, false);
+                        break;
+                    case SectionHeaders.Functions:
+                        chunkStringOffsetOffsets = SectionWriter.WriteRefDefs(chunk, f.RefData.Functions, stringOffsets, f.General.IsOldBCVersion, true);
+                        chunkStringOffsetOffsets = chunkStringOffsetOffsets.Concat(SectionWriter.WriteFunctionLocals(chunk, f.FunctionLocals, stringOffsets)).ToArray();
+                        break;
+                    case SectionHeaders.Strings:
+                        // for Textures chunk up next
+                        SectionWriter.Pad(stringsChunk, 0x100, writer.Buffer.Position + 8);
+                        chunk = stringsChunk;
+                        stringsChunkPosition = writer.Buffer.Position + 12;
+                        break;
+                    case SectionHeaders.Textures:
+                        SectionWriter.WriteTextures(chunk, f.Textures);
+                        break;
+                    case SectionHeaders.Audio:
+                        SectionWriter.WriteAudio(chunk, f.Audio, writer.Buffer.Position);
+                        break;
+                    default:
+                        Console.WriteLine("Don't know how to handle, loading from dump");
+                        BinBuffer chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile.ToString())));
+                        chunk = new BBData(chunkData, new int[0]);
+                        break;
+                }
+                if (chunkStringOffsetOffsets != null)
+                {
+                    foreach (var stringOffset in chunkStringOffsetOffsets)
+                    {
+                        stringOffsetOffsets.Add(stringOffset + writer.Buffer.Position);
+                    }
+                }
+                chunkStringOffsetOffsets = null;
+                if (chunkTexpOffsetOffsets != null)
+                {
+                    foreach (var texpOffset in chunkTexpOffsetOffsets)
+                    {
+                        texpOffsetOffsets.Add(texpOffset + writer.Buffer.Position);
+                    }
+                }
+                chunkTexpOffsetOffsets = null;
+                SectionWriter.WriteChunk(writer, chunkId, chunk);
+            }
+
+            writer.Buffer.Position = 4;
+            writer.Buffer.Write(writer.Buffer.Size - 8);
+            writer.Buffer.Position = writer.Buffer.Size;
+
+            foreach (var stringOffset in stringOffsetOffsets)
+            {
+                writer.Buffer.Position = stringOffset;
+                var o = writer.Buffer.ReadInt32();
+                //bb.Position -= sizeof(int);
+                writer.Buffer.Write(o + stringsChunkPosition);
+            }
+
+            foreach (var texpOffset in texpOffsetOffsets)
+            {
+                writer.Buffer.Position = texpOffset;
+                var o = writer.Buffer.ReadInt32();
+                //bb.Position -= sizeof(int);
+                writer.Buffer.Write(o + texpChunkPosition);
+            }
+
+            writer.Buffer.Position = 0;
+            File.WriteAllBytes(output, writer.Buffer.ReadBytes(writer.Buffer.Size));
+        }
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -509,7 +670,6 @@ namespace Altar
             //var recons = String.Join(Environment.NewLine, p.Select(i => i.ToString()));
 
             var o = new Options();
-
             CLParser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>
             {
                 if (vo == null)
@@ -518,17 +678,29 @@ namespace Altar
                 switch (verb)
                 {
                     case "export":
-                        try
-                        {
+                        //try
+                        //{
                             Export((ExportOptions)vo);
-                        }
+                        /*}
                         catch (Exception e)
                         {
                             Console.WriteLine("An error occured:");
                             Console.WriteLine(e);
-                        }
+                        }*/
+                        break;
+                    case "import":
+                        //try
+                        //{
+                            Import((ImportOptions)vo);
+                        /*}
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("An error occured:");
+                            Console.WriteLine(e);
+                        }*/
                         break;
                 }
+                Console.Out.WriteLine("Done");
             });
         }
     }

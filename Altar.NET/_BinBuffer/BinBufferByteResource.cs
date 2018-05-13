@@ -98,7 +98,7 @@ namespace Altar
         public override void Write(IntPtr data, int size)
         {
             if (pos + size > buffer.Length)
-                throw new EndOfStreamException();
+                ResizeBuffer(buffer.Length + size);
             if (pos + size > this.size)
                 this.size += size;
 
@@ -179,7 +179,7 @@ namespace Altar
             if (requiredLength <= buffer.Length)
                 return;
 
-            var pow = requiredLength == 0 ? 2048 : FastLog2(requiredLength);
+            var pow = requiredLength == 0 ? 11 : (FastLog2(requiredLength)+1);
 
             Array.Resize(ref buffer, 1 << Math.Max(pow, 1));
         }

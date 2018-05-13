@@ -156,13 +156,13 @@ namespace Altar
             get;
             set;
         }
-        [Option("dumpepty", HelpText = "Dumps the contents of unknown empty chunks, too.", MutuallyExclusiveSet = "EXPORT")]
+        [Option("dumpempty", HelpText = "Dumps the contents of unknown empty chunks, too.", MutuallyExclusiveSet = "EXPORT")]
         public bool DumpEmptyChunks
         {
             get;
             set;
         }
-        [Option("dumpall", HelpText = "Dumps *ALL* chunks, does not imply --dumpempty. (NOTE: <see note of --dumpunk)", MutuallyExclusiveSet = "EXPORT")]
+        [Option("dumpall", HelpText = "Dumps *ALL* chunks, does not imply --dumpempty. (NOTE: see note of --dumpunk)", MutuallyExclusiveSet = "EXPORT")]
         public bool DumpAllChunks
         {
             get;
@@ -172,10 +172,32 @@ namespace Altar
         [HelpOption]
         public string GetUsage() => HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
     }
+    class ImportOptions
+    {
+        [Option("file", Required = true, HelpText = "Specifies the project file to import.")]
+        public string File
+        {
+            get;
+            set;
+        }
+        [Option("out", Required = true, HelpText = "Specifies the output data.win file.")]
+        public string OutputFile
+        {
+            get;
+            set;
+        }
+    }
     class Options
     {
         [VerbOption("export", HelpText = "Export contents of a data.win file. See export --help for more info.")]
         public ExportOptions Export
+        {
+            get;
+            set;
+        }
+
+        [VerbOption("import", HelpText = "")]
+        public ImportOptions Import
         {
             get;
             set;

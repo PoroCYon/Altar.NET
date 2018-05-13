@@ -271,10 +271,10 @@ namespace Altar
         {
             Write(bb, 0, bb.Size);
         }
-        public void Write(BinBuffer bb, int startPos, int count)
+        public void Write(BinBuffer bb, int startPos, int count, int offset=0)
         {
             var p = bb.Position;
-            bb.Position = 0;
+            bb.Position = offset;
             Write(bb.ReadBytes(count), startPos, count);
             bb.Position = p;
         }

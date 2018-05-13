@@ -2,8 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using LitJson;
+using static Altar.SR;
 
 namespace Altar.Repack
 {
@@ -25,7 +27,7 @@ namespace Altar.Repack
 
             return r;
         }
-        static T[] DeserializeArray<T>(dynamic  jArr, Func<dynamic , T> converter)
+        /*static T[] DeserializeArray<T>(dynamic  jArr, Func<dynamic , T> converter)
         {
             if (jArr      == null)
                 throw new ArgumentNullException(nameof(jArr     ));
@@ -40,7 +42,7 @@ namespace Altar.Repack
                 r[i] = converter(jArr[i]);
 
             return r;
-        }
+        }*/
 
         static Colour ParseColour(JsonData j)
         {
@@ -54,7 +56,7 @@ namespace Altar.Repack
                     {
                         var s = (string)j;
 
-                        if (s.Length != 9 || s.Length != 7 /* (AA)RRGGBB + a '#' */ || (s.Length > 0 && !s.StartsWith(SR.HASH, StringComparison.Ordinal)))
+                        if (s.Length != 9 && s.Length != 7 /* (AA)RRGGBB + a '#' */ && (s.Length > 0 && !s.StartsWith(SR.HASH, StringComparison.Ordinal)))
                             throw new FormatException("Invalid colour format: string must be of format '#(AA)RRGGBB'.");
 
                         var i = UInt32.Parse(s.Substring(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -82,59 +84,59 @@ namespace Altar.Repack
             throw new FormatException($"Invalid colour format: invalid type {j.JsonType}");
         }
 
-        static Point        DeserializePoint  (dynamic j) => new Point  (j.x, j.y);
-        static PointF       DeserializePointF (dynamic j) => new PointF (j.x, j.y);
-        static Point16      DeserializePoint16(dynamic j) => new Point16(j.x, j.y);
-        static Point        DeserializeSize   (dynamic j) => new Point  (j.width, j.height);
-        static PointF       DeserializeSizeF  (dynamic j) => new PointF (j.width, j.height);
-        static Point16      DeserializeSize16 (dynamic j) => new Point16(j.width, j.height);
-        static Rectangle    DeserializeRect   (dynamic j) => new Rectangle   (j.x, j.y, j.width, j.height);
-        static Rectangle16  DeserializeRect16 (dynamic j) => new Rectangle16 (j.x, j.y, j.width, j.height);
-        static BoundingBox  DeserializeBBox   (dynamic j) => new BoundingBox (j.x, j.y, j.width, j.height);
-        static BoundingBox2 DeserializeBBox2  (dynamic j) => new BoundingBox2(j.x, j.y, j.width, j.height);
-        static PathPoint    DeserializePathPt (dynamic j) => new PathPoint { Position = DeserializePointF(j.pos), Speed = j.speed };
+        static Point DeserializePoint(JsonData j) => new Point((int)j["x"], (int)j["y"]);
+        static PointF DeserializePointF(JsonData j) => new PointF((float)j["x"], (float)j["y"]);
+        static Point16 DeserializePoint16(JsonData j) => new Point16((ushort)j["x"], (ushort)j["y"]);
+        static Point DeserializeSize(JsonData j) => new Point((int)j["width"], (int)j["height"]);
+        static PointF DeserializeSizeF(JsonData j) => new PointF((float)j["width"], (float)j["height"]);
+        static Point16 DeserializeSize16(JsonData j) => new Point16((ushort)j["width"], (ushort)j["height"]);
+        static Rectangle DeserializeRect(JsonData j) => new Rectangle((int)j["x"], (int)j["y"], (int)j["width"], (int)j["height"]);
+        static Rectangle16 DeserializeRect16(JsonData j) => new Rectangle16((ushort)j["x"], (ushort)j["y"], (ushort)j["width"], (ushort)j["height"]);
+        static BoundingBox DeserializeBBox(JsonData j) => new BoundingBox((uint)j["top"], (uint)j["left"], (uint)j["right"], (uint)j["bottom"]);
+        static BoundingBox2 DeserializeBBox2(JsonData j) => new BoundingBox2((uint)j["left"], (uint)j["right"], (uint)j["bottom"], (uint)j["top"]);
+        static PathPoint DeserializePathPt(JsonData j) => new PathPoint { Position = DeserializePointF(j["pos"]), Speed = (float)j["speed"] };
 
-        #region static FontCharacter DeserializeFontChar  (dynamic j)
-        static FontCharacter DeserializeFontChar  (dynamic j) => new FontCharacter
+        #region static FontCharacter DeserializeFontChar  (JsonData j)
+        static FontCharacter DeserializeFontChar(JsonData j) => new FontCharacter
         {
             Character = (char)j["char"],
-            TPagFrame = DeserializeRect16(j.frame),
-            Shift     = j.shift ,
-            Offset    = j.offset
+            TPagFrame = DeserializeRect16(j["frame"]),
+            Shift = (ushort)j["shift"],
+            Offset = (uint)j["offset"]
         };
         #endregion
-        #region static ObjectPhysics DeserializeObjPhysics(dynamic j)
-        static ObjectPhysics DeserializeObjPhysics(dynamic j) => new ObjectPhysics
+        #region static ObjectPhysics DeserializeObjPhysics(JsonData j)
+        static ObjectPhysics DeserializeObjPhysics(JsonData j) => new ObjectPhysics
         {
-            Density        = j.density    ,
-            Restitution    = j.restitution,
-            Group          = j.group      ,
-            LinearDamping  = j.lineardamp ,
-            AngularDamping = j.angulardamp,
-            Friction       = j.friction   ,
-            Kinematic      = j.kinematic  ,
-            Unknown0       = j.unk0       ,
-            Unknown1       = j.unk1
+            Density = (float)j["density"],
+            Restitution = (float)j["restitution"],
+            Group = (float)j["group"],
+            LinearDamping = (float)j["lineardamp"],
+            AngularDamping = (float)j["angulardamp"],
+            Friction = (float)j["friction"],
+            Kinematic = (float)j["kinematic"],
+            Unknown0 = (float)j["unk0"],
+            Unknown1 = (float)j["unk1"]
         };
         #endregion
 
-        static RoomBackground DeserializeRoomBg  (dynamic j, BackgroundInfo[] bgs )
+        static RoomBackground DeserializeRoomBg(JsonData j, BackgroundInfo[] bgs)
         {
             var r = new RoomBackground
             {
-                IsEnabled     = j.enabled   ,
-                IsForeground  = j.foreground,
-                TileX         = j.tilex     ,
-                TileY         = j.tiley     ,
-                StretchSprite = j.stretch   ,
+                IsEnabled = (bool)j["enabled"],
+                IsForeground = (bool)j["foreground"],
+                TileX = (bool)j["tilex"],
+                TileY = (bool)j["tiley"],
+                StretchSprite = (bool)j["stretch"],
 
-                Position = DeserializePoint(j.pos  ),
-                Speed    = DeserializePoint(j.speed)
+                Position = DeserializePoint(j["pos"]),
+                Speed = DeserializePoint(j["speed"])
             };
 
             if (((JsonData)j).Has("bg"))
             {
-                var i = Array.FindIndex(bgs, b => b.Name == (string)j.bg);
+                var i = Array.FindIndex(bgs, b => b.Name == (string)j["bg"]);
 
                 if (i > -1)
                     r.BgIndex = (uint)i;
@@ -143,20 +145,20 @@ namespace Altar.Repack
 
             return r;
         }
-        static RoomView       DeserializeRoomView(dynamic j, ObjectInfo    [] objs)
+        static RoomView DeserializeRoomView(JsonData j, ObjectInfo[] objs)
         {
             var r = new RoomView
             {
-                IsEnabled = j.enabled,
-                View      = DeserializeRect (j.view  ),
-                Port      = DeserializeRect (j.port  ),
-                Border    = DeserializePoint(j.border),
-                Speed     = DeserializePoint(j.speed )
+                IsEnabled = (bool)j["enabled"],
+                View = DeserializeRect(j["view"]),
+                Port = DeserializeRect(j["port"]),
+                Border = DeserializePoint(j["border"]),
+                Speed = DeserializePoint(j["speed"])
             };
 
             if (((JsonData)j).Has("obj"))
             {
-                var i = Array.FindIndex(objs, oi => oi.Name == (string)j.obj);
+                var i = Array.FindIndex(objs, oi => oi.Name == (string)j["obj"]);
 
                 if (i > -1)
                     r.ObjectId = (uint)i;
@@ -165,39 +167,39 @@ namespace Altar.Repack
 
             return r;
         }
-        static RoomObject     DeserializeRoomObj (dynamic j, ObjectInfo    [] objs)
+        static RoomObject DeserializeRoomObj(JsonData j, ObjectInfo[] objs)
         {
             var r = new RoomObject
             {
-                Position     = DeserializePoint (j.pos  )     ,
-                Scale        = DeserializePointF(j.scale)     ,
-                Colour       = ParseColour((JsonData)j.colour),
-                Rotation     = j.rotation                     ,
-                InstanceID   = j.instanceid                   ,
-                CreateCodeID = j.createcodeid
+                Position = DeserializePoint(j["pos"]),
+                Scale = DeserializePointF(j["scale"]),
+                Colour = ParseColour((JsonData)j["colour"]),
+                Rotation = (float)j["rotation"],
+                InstanceID = (uint)j["instanceid"],
+                CreateCodeID = (uint)j["createcodeid"]
             };
 
-            var i = Array.FindIndex(objs, o => o.Name == (string)j.obj);
+            var i = Array.FindIndex(objs, o => o.Name == (string)j["obj"]);
             if (i > -1)
                 r.DefIndex = (uint)i;
             //TODO: emit warning instead
 
             return r;
         }
-        static RoomTile       DeserializeRoomTile(dynamic j, BackgroundInfo[] bgs )
+        static RoomTile DeserializeRoomTile(JsonData j, BackgroundInfo[] bgs)
         {
             var r = new RoomTile
             {
-                Position       = DeserializePoint (j.pos      ) ,
-                SourcePosition = DeserializePoint (j.sourcepos) ,
-                Size           = DeserializeSize  (j.size     ) ,
-                Scale          = DeserializePointF(j.scale    ) ,
-                Colour         = ParseColour((JsonData)j.colour),
-                Depth          = j.tiledepth                    ,
-                InstanceID     = j.instanceid
+                Position = DeserializePoint(j["pos"]),
+                SourcePosition = DeserializePoint(j["sourcepos"]),
+                Size = DeserializeSize(j["size"]),
+                Scale = DeserializePointF(j["scale"]),
+                Colour = ParseColour((JsonData)j["colour"]),
+                Depth = (uint)j["tiledepth"],
+                InstanceID = (uint)j["instanceid"]
             };
 
-            var i = Array.FindIndex(bgs, b => b.Name == (string)j.bg);
+            var i = Array.FindIndex(bgs, b => b.Name == (string)j["bg"]);
             if (i > -1)
                 r.DefIndex = (uint)i;
             //TODO: emit warning instead
@@ -205,33 +207,40 @@ namespace Altar.Repack
             return r;
         }
 
-        #region public static GeneralInfo DeserializeGeneral(dynamic j)
-        public static GeneralInfo DeserializeGeneral(dynamic j) => new GeneralInfo
+        #region public static GeneralInfo DeserializeGeneral(JsonData j)
+        public static GeneralInfo DeserializeGeneral(JsonData j) => new GeneralInfo
         {
-            IsDebug        = j.debug,
-            FileName       = j.filename,
-            Configuration  = j.config,
-            GameID         = j.gameid,
-            Version        = new Version(j.version),
-            WindowSize     = DeserializeSize(j.size),
-            LicenceCRC32   = j.licensecrc32,
-            DisplayName    = j.displayname,
-            Timestamp      = DateTime.Parse(j.timestamp, CultureInfo.InvariantCulture),
-            LicenseMD5Hash = DeserializeArray(j.licensemd5, (Func<dynamic, byte>)(jd => (byte)jd)),
+            IsDebug = (bool)j["debug"],
+            BytecodeVersion = (uint)j["bytecodeversion"],
+            FileName = (string)j["filename"],
+            Configuration = (string)j["config"],
+            GameID = (uint)j["gameid"],
+            Name = (string)j["name"],
+            Version = new Version((string)j["version"]),
+            WindowSize = DeserializeSize(j["windowsize"]),
+            LicenseMD5Hash = DeserializeArray(j["licensemd5"], (Func<dynamic, byte>)(jd => (byte)jd)),
+            LicenceCRC32 = (uint)j["licensecrc32"],
+            DisplayName = (string)j["displayname"],
+            Timestamp = DateTime.Parse((string)j["timestamp"], CultureInfo.InvariantCulture),
 
-            InfoFlags     = (InfoFlags  )Enum.Parse(typeof(InfoFlags  ), (string)j.flags  , true),
-            ActiveTargets = (GameTargets)Enum.Parse(typeof(GameTargets), (string)j.targets, true),
+            ActiveTargets = (GameTargets)Enum.Parse(typeof(GameTargets), (string)j["targets"], true),
+            unknown = DeserializeArray(j["unknown"], (Func<dynamic, uint>)(jd => (uint)jd)),
+            SteamAppID = (uint)j["appid"],
+            InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
 
-            SteamAppID = j.appid
+            WeirdNumbers = DeserializeArray(j["numbers"], (Func<dynamic, uint>)(jd => (uint)jd))
         };
         #endregion
-        #region public static OptionInfo  DeserializeOptions(dynamic j)
-        public static OptionInfo  DeserializeOptions(dynamic j) => new OptionInfo
+        #region public static OptionInfo  DeserializeOptions(JsonData j)
+        public static OptionInfo DeserializeOptions(JsonData j) => new OptionInfo
         {
-            Constants = ((JsonData)j.constants).ToDictionary()
+            Constants = ((JsonData)j["constants"]).ToDictionary()
                 .ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value),
 
-            InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j.flags, true)
+            InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
+
+            _pad0 = DeserializeArray(j["pad0"], jd=>(uint)jd),
+            _pad1 = DeserializeArray(j["pad1"], jd => (uint)jd)
         };
         #endregion
 
@@ -253,137 +262,357 @@ namespace Altar.Repack
             return ret;
         }
 
-        #region public static SoundInfo      DeserializeSound (dynamic j)
-        public static SoundInfo DeserializeSound(dynamic j) => new SoundInfo
+        #region public static SoundInfo      DeserializeSound (JsonData j)
+        public static SoundInfo DeserializeSound(JsonData j) => new SoundInfo
         {
-            IsEmbedded   = j.embedded  ,
-            IsCompressed = j.compressed,
-            Type         = j.type      ,
-            File         = j.file      ,
-            VolumeMod    = j.volume    ,
-            PitchMod     = j.pitch     ,
-            GroupID      = j.groupid
+            IsEmbedded = (bool)j["embedded"],
+            IsCompressed = (bool)j["compressed"],
+            Type = (string)j["type"],
+            File = (string)j["file"],
+            VolumeMod = (float)j["volume"],
+            PitchMod = (float)j["pitch"],
+            GroupID = (int)j["groupid"],
+            AudioID = (int)j["audioid"]
         };
         #endregion
-        #region public static SpriteInfo     DeserializeSprite(dynamic j)
-        public static SpriteInfo DeserializeSprite(dynamic j) => new SpriteInfo
+        #region public static SpriteInfo     DeserializeSprite(JsonData j)
+        public static SpriteInfo DeserializeSprite(JsonData j) => new SpriteInfo
         {
-            BBoxMode         = j.bboxmode,
-            SeparateColMasks = j.sepmasks,
-            Size             = DeserializeSize (j.size    ),
-            Bounding         = DeserializeBBox2(j.bounding),
-            Origin           = DeserializePoint(j.origin  ),
-            TextureIndices   = DeserializeArray(j.textures, (Func<dynamic, uint>)(jd => (uint)jd)),
-            CollisionMasks   = DeserializeArray(j.colmasks, (Func<JsonData, bool[,]>)DeserializeColMask)
+            BBoxMode = (uint)j["bboxmode"],
+            SeparateColMasks = (bool)j["sepmasks"],
+            Size = DeserializeSize(j["size"]),
+            Bounding = DeserializeBBox2(j["bounding"]),
+            Origin = DeserializePoint(j["origin"]),
+            TextureIndices = j.Has("textures") ? DeserializeArray(j["textures"], (Func<dynamic, uint>)(jd => (uint)jd)) : null,
+            CollisionMasks = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null
         };
         #endregion
-        #region public static BackgroundInfo DeserializeBg    (dynamic j)
-        public static BackgroundInfo DeserializeBg(dynamic j) => new BackgroundInfo
+        #region public static BackgroundInfo DeserializeBg    (JsonData j)
+        public static BackgroundInfo DeserializeBg(JsonData j) => new BackgroundInfo
         {
-            TexPageIndex = j.texture
+            TexPageIndex = j.Has("texture") ? (uint?)j["texture"] : null
         };
         #endregion
-        #region public static PathInfo       DeserializePath  (dynamic j)
-        public static PathInfo DeserializePath(dynamic j) => new PathInfo
+        #region public static PathInfo       DeserializePath  (JsonData j)
+        public static PathInfo DeserializePath(JsonData j) => new PathInfo
         {
-            IsSmooth  = j.smooth   ,
-            IsClosed  = j.closed   ,
-            Precision = j.precision,
-            Points    = DeserializeArray(j.points, (Func<dynamic, PathPoint>)(d => DeserializePathPt(d)))
+            IsSmooth = (bool)j["smooth"],
+            IsClosed = (bool)j["closed"],
+            Precision = (uint)j["precision"],
+            Points = DeserializeArray(j["points"], (Func<dynamic, PathPoint>)(d => DeserializePathPt(d)))
         };
         #endregion
-        public static ScriptInfo     DeserializeScript(dynamic j, CodeInfo[] code)
+        public static ScriptInfo DeserializeScript(JsonData j, CodeInfo[] code)
         {
-            var i = String.IsNullOrEmpty(j.code) ? -1 : Array.FindIndex(code, c => c.Name == (string)j.code);
+            var i = String.IsNullOrEmpty((string)j["code"]) ? -1 : Array.FindIndex(code, c => c.Name == (string)j["code"]);
 
             return new ScriptInfo { CodeId = i < 0 ? UInt32.MaxValue : (uint)i };
         }
-        #region public static FontInfo       DeserializeFont  (dynamic j)
-        public static FontInfo DeserializeFont(dynamic j) => new FontInfo
+        #region public static FontInfo       DeserializeFont  (JsonData j)
+        public static FontInfo DeserializeFont(JsonData j) => new FontInfo
         {
-            SystemName   = j.sysname,
-            IsBold       = j.bold,
-            IsItalic     = j.italic,
-            AntiAliasing = Enum.Parse(typeof(FontAntiAliasing), j.antialias),
-            Charset      = j.charset,
-            TexPagId     = j.texture,
-            Scale        = DeserializePointF(j.scale),
-            Characters   = DeserializeArray(j.chars, (Func<dynamic, FontCharacter>)(d => DeserializeFontChar(d)))
+            SystemName = (string)j["sysname"],
+            EmSize = (uint)j["emsize"],
+            IsBold = (bool)j["bold"],
+            IsItalic = (bool)j["italic"],
+            AntiAliasing = (FontAntiAliasing)Enum.Parse(typeof(FontAntiAliasing), (string)j["antialias"], true),
+            Charset = (byte)j["charset"],
+            TexPagId = (uint)j["texture"],
+            Scale = DeserializePointF(j["scale"]),
+            Characters = DeserializeArray(j["chars"], (Func<dynamic, FontCharacter>)(d => DeserializeFontChar(d)))
         };
         #endregion
 
-        public static ObjectInfo      DeserializeObj (dynamic j, SpriteInfo[] sprites, Func<string, uint> objNameToId)
+        public static ObjectInfo DeserializeObj(JsonData j, SpriteInfo[] sprites, Func<string, uint> objNameToId)
         {
-            var spr = String.IsNullOrEmpty(j.sprite) ? -1 : Array.FindIndex(sprites, s => s.Name == (string)j.sprite);
+            var spr = String.IsNullOrEmpty((string)j["sprite"]) ? -1 : Array.FindIndex(sprites, s => s.Name == (string)j["sprite"]);
 
             return new ObjectInfo
             {
-                SpriteIndex  = spr < 0 ? UInt32.MaxValue : (uint)spr,
-                IsVisible    = j.visible,
-                IsSolid      = j.solid,
-                Depth        = j.depth,
-                IsPersistent = j.persist,
+                SpriteIndex = spr < 0 ? UInt32.MaxValue : (uint)spr,
+                IsVisible = (bool)j["visible"],
+                IsSolid = (bool)j["solid"],
+                Depth = (int)j["depth"],
+                IsPersistent = (bool)j["persist"],
 
-                ParentId   = ((JsonData)j).Has("parent" ) ? (uint?)objNameToId(j.parent) : null,
-                TexMaskId  = ((JsonData)j).Has("texmask") ? (uint?)j.texmask             : null,
+                ParentId = ((JsonData)j).Has("parent") ? (uint?)objNameToId((string)j["parent"]) : null,
+                TexMaskId = ((JsonData)j).Has("texmask") ? (uint?)j["texmask"] : null,
 
-                Physics     = ((JsonData)j).Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j.physics) : null,
+                Physics = ((JsonData)j).Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j["physics"]) : null,
 
-                IsSensor       = j.sensor,
-                CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j.colshape, true),
+                IsSensor = (bool)j["sensor"],
+                CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j["colshape"], true),
 
-                OtherFloats = DeserializeArray(j.data  , (Func<dynamic, float>)(d => (float)d)),
-                ShapePoints = DeserializeArray(j.points, (Func<dynamic, Point>)(d => DeserializePoint(d)))
+                OtherFloats = DeserializeArray(j["data"], (Func<dynamic, float>)(d => (float)d)),
+                ShapePoints = DeserializeArray(j["points"], (Func<dynamic, Point>)(d => DeserializePoint(d)))
             };
         }
-        #region public static RoomInfo        DeserializeRoom(dynamic j, BackgroundInfo[] bgs, ObjectInfo[] objs)
-        public static RoomInfo DeserializeRoom(dynamic j, BackgroundInfo[] bgs, ObjectInfo[] objs) => new RoomInfo
+        #region public static RoomInfo        DeserializeRoom(JsonData j, BackgroundInfo[] bgs, ObjectInfo[] objs)
+        public static RoomInfo DeserializeRoom(JsonData j, BackgroundInfo[] bgs, ObjectInfo[] objs) => new RoomInfo
         {
-            Caption              = j.caption    ,
-            Speed                = j.speed      ,
-            IsPersistent         = j.persist    ,
-            EnableViews          = j.enableviews,
-            ShowColour           = j.showcolour ,
-            ClearDisplayBuffer   = j.clearbuf   ,
-            World                = j.world      ,
-            MetresPerPixel       = j.metresperpx,
-            DrawBackgroundColour = j.drawbgcol  ,
+            Caption = (string)j["caption"],
+            Speed = (uint)j["speed"],
+            IsPersistent = (bool)j["persist"],
+            EnableViews = (bool)j["enableviews"],
+            ShowColour = (bool)j["showcolour"],
+            ClearDisplayBuffer = (bool)j["clearbuf"],
+            World = (uint)j["world"],
+            MetresPerPixel = (float)j["metresperpx"],
+            DrawBackgroundColour = (bool)j["drawbgcol"],
+            _unknown = (uint)j["unknown"],
 
-            Size               = DeserializeSize  (j.size    ),
-            Colour             = ParseColour      (j.colour  ),
-            Bounding           = DeserializeBBox  (j.bounding),
-            Gravity            = DeserializePointF(j.gravity ),
+            Size = DeserializeSize(j["size"]),
+            Colour = ParseColour(j["colour"]),
+            Bounding = DeserializeBBox(j["bounding"]),
+            Gravity = DeserializePointF(j["gravity"]),
 
-            Backgrounds        = DeserializeArray(j.bgs, (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg  (d, bgs ))),
-            Views              = DeserializeArray(j.bgs, (Func<dynamic, RoomView      >)(d => DeserializeRoomView(d, objs))),
-            Objects            = DeserializeArray(j.bgs, (Func<dynamic, RoomObject    >)(d => DeserializeRoomObj (d, objs))),
-            Tiles              = DeserializeArray(j.bgs, (Func<dynamic, RoomTile      >)(d => DeserializeRoomTile(d, bgs )))
+            Backgrounds = DeserializeArray(j["bgs"], (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg(d, bgs))),
+            Views = DeserializeArray(j["views"], (Func<dynamic, RoomView>)(d => DeserializeRoomView(d, objs))),
+            Objects = DeserializeArray(j["objs"], (Func<dynamic, RoomObject>)(d => DeserializeRoomObj(d, objs))),
+            Tiles = DeserializeArray(j["tiles"], (Func<dynamic, RoomTile>)(d => DeserializeRoomTile(d, bgs)))
         };
         #endregion
-        #region public static TexturePageInfo DeserializeTPag(dynamic j)
-        public static TexturePageInfo DeserializeTPag(dynamic j) => new TexturePageInfo
+        #region public static TexturePageInfo DeserializeTPag(JsonData j)
+        public static TexturePageInfo DeserializeTPag(JsonData j) => new TexturePageInfo
         {
-            Position      = DeserializePoint16(j.pos     ),
-            Size          = DeserializeSize16 (j.size    ),
-            RenderOffset  = DeserializePoint16(j.offset  ),
-            BoundingBox   = DeserializeRect16 (j.bounding),
-            SpritesheetId = j.sheetid
+            Position = DeserializePoint16(j["pos"]),
+            Size = DeserializeSize16(j["size"]),
+            RenderOffset = DeserializePoint16(j["offset"]),
+            BoundingBox = DeserializeRect16(j["bounding"]),
+            SpritesheetId = (uint)j["sheetid"]
         };
         #endregion
+
+        public static FunctionLocalsInfo DeserializeFuncLocals(JsonData j) => new FunctionLocalsInfo
+        {
+            FunctionName = (string)j["name"],
+            LocalNames = DeserializeArray(j["locals"], jd => jd.ToString())
+        };
+
+        private static ReferenceDef DeserializeReferenceDef(JsonData j) =>
+            j.IsString ? new ReferenceDef { Name = j.ToString(), FirstOffset = 0xFFFFFFFF } : new ReferenceDef
+        {
+            Name = (string)j["name"],
+            Occurrences = (uint)j["occurrences"],
+            FirstOffset = (uint)j["firstoffset"]
+        };
 
         // strings, vars and funcs are compiled using the other things
 
         public static GMFile /* errors: different return type? */ ReadFile(string baseDir, JsonData projFile)
         {
+            var f = new GMFile();
             // OBJT: depends on SPRT, obj<->id map
             // ROOM: depends on OBJT, BGND
             // SCPT: depends on CODE
 
             //TODO: implement, emit error if field is not found -> intercept exns from dynamic stuff
             //TODO: (-> surround every call PER FILE with a try/catch)
-#pragma warning disable RECS0083
-            throw new NotImplementedException();
-#pragma warning restore RECS0083
+
+            if (projFile.Has("general"))
+            {
+                Console.WriteLine("Loading general...");
+                f.General = DeserializeGeneral(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["general"])))));
+            }
+            if (projFile.Has("options"))
+            {
+                Console.WriteLine("Loading options...");
+                f.Options = DeserializeOptions(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["options"])))));
+            }
+            if (projFile.Has("strings"))
+            {
+                Console.WriteLine("Loading strings...");
+                f.Strings = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["strings"])))), jd => (string)jd.ToString());
+            }
+
+            ReferenceDef[] variables=null, functions=null;
+            if (projFile.Has("variables"))
+            {
+                Console.WriteLine("Loading variables...");
+                variables = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["variables"])))),
+                    DeserializeReferenceDef);
+            }
+            if (projFile.Has("functions"))
+            {
+                Console.WriteLine("Loading functions...");
+                var funcdata = JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["functions"]))));
+                functions = DeserializeArray(funcdata.IsArray ? funcdata : funcdata["functions"], DeserializeReferenceDef);
+                if (funcdata.Has("locals"))
+                {
+                    f.FunctionLocals = DeserializeArray(funcdata["locals"], DeserializeFuncLocals);
+                }
+            }
+            f.RefData = new Decomp.RefData { Variables = variables, Functions = functions };
+
+            if (projFile.Has("textures"))
+            {
+                Console.WriteLine("Loading textures...");
+                var textures = projFile["textures"].ToArray();
+                f.Textures = new TextureInfo[textures.Length];
+                for (int i = 0; i < textures.Length; i++)
+                {
+                    var texinfo = new TextureInfo();
+                    texinfo.PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])));
+
+                    var bp = new UniquePtr(texinfo.PngData);
+
+                    unsafe
+                    {
+                        var png = (PngHeader*)bp.BPtr;
+
+                        texinfo.Width = Utils.SwapEnd32(png->IHDR.Width);
+                        texinfo.Height = Utils.SwapEnd32(png->IHDR.Height);
+                    }
+
+                    f.Textures[i] = texinfo;
+                }
+            }
+            if (projFile.Has("tpags"))
+            {
+                Console.Write("Loading texture pages... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+                
+                var tpags = projFile["tpags"].ToArray();
+                f.TexturePages = new TexturePageInfo[tpags.Length];
+                for (int i = 0; i < tpags.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + tpags.Length + C_PAREN);
+                    f.TexturePages[i] = DeserializeTPag(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(tpags[i])))));
+                }
+            }
+            if (projFile.Has("audio"))
+            {
+                Console.WriteLine("Loading audio...");
+                var audio = projFile["audio"].ToArray();
+                f.Audio = new AudioInfo[audio.Length];
+                for (int i = 0; i < audio.Length; i++)
+                {
+                    var audioinfo = new AudioInfo();
+                    audioinfo.Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])));
+                    f.Audio[i] = audioinfo;
+                }
+            }
+            if (projFile.Has("code"))
+            {
+                Console.WriteLine("Loading code...");
+                var code = projFile["code"].ToArray();
+                f.Code = new CodeInfo[code.Length];
+                for (int i = 0; i < code.Length; i++)
+                {
+                    //f.Code[i] = DeserializeCode(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(code[i])))));
+                    f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                }
+            }
+            if (projFile.Has("sounds"))
+            {
+                Console.WriteLine("Loading sounds...");
+                var sounds = projFile["sounds"].ToArray();
+                f.Sound = new SoundInfo[sounds.Length];
+                for (int i = 0; i < sounds.Length; i++)
+                {
+                    f.Sound[i] = DeserializeSound(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sounds[i])))));
+                    f.Sound[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
+                }
+            }
+            if (projFile.Has("sprites"))
+            {
+                Console.Write("Loading sprites... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+
+                var sprites = projFile["sprites"].ToArray();
+                f.Sprites = new SpriteInfo[sprites.Length];
+                for (int i = 0; i < sprites.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + sprites.Length + C_PAREN);
+                    f.Sprites[i] = DeserializeSprite(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sprites[i])))));
+                    f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
+                }
+            }
+            if (projFile.Has("bg"))
+            {
+                Console.WriteLine("Loading backgrounds...");
+                var bg = projFile["bg"].ToArray();
+                f.Backgrounds = new BackgroundInfo[bg.Length];
+                for (int i = 0; i < bg.Length; i++)
+                {
+                    f.Backgrounds[i] = DeserializeBg(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(bg[i])))));
+                    f.Backgrounds[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
+                }
+            }
+            if (projFile.Has("paths"))
+            {
+                Console.WriteLine("Loading paths...");
+                var paths = projFile["paths"].ToArray();
+                f.Paths = new PathInfo[paths.Length];
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    f.Paths[i] = DeserializePath(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(paths[i])))));
+                    f.Paths[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
+                }
+            }
+            if (projFile.Has("scripts"))
+            {
+                Console.WriteLine("Loading scripts...");
+                var scripts = projFile["scripts"].ToArray();
+                f.Scripts = new ScriptInfo[scripts.Length];
+                for (int i = 0; i < scripts.Length; i++)
+                {
+                    f.Scripts[i] = DeserializeScript(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(scripts[i])))), f.Code);
+                    f.Scripts[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
+                }
+            }
+            if (projFile.Has("fonts"))
+            {
+                Console.WriteLine("Loading fonts...");
+                var fonts = projFile["fonts"].ToArray();
+                f.Fonts = new FontInfo[fonts.Length];
+                for (int i = 0; i < fonts.Length; i++)
+                {
+                    f.Fonts[i] = DeserializeFont(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(fonts[i])))));
+                    f.Fonts[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
+                }
+            }
+            if (projFile.Has("objs"))
+            {
+                Console.Write("Loading objects... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+
+                var objs = projFile["objs"].ToArray();
+                var objNames = objs.Select(o => Path.GetFileNameWithoutExtension((string)o)).ToArray();
+                f.Objects = new ObjectInfo[objs.Length];
+                for (int i = 0; i < objs.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + objs.Length + C_PAREN);
+                    f.Objects[i] = DeserializeObj(
+                        JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(objs[i])))),
+                        f.Sprites,
+                        s => (uint)Array.IndexOf(objNames, s));
+                    f.Objects[i].Name = objNames[i];
+                }
+            }
+            if (projFile.Has("rooms"))
+            {
+                Console.Write("Loading rooms... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+
+                var rooms = projFile["rooms"].ToArray();
+                f.Rooms = new RoomInfo[rooms.Length];
+                for (int i = 0; i < rooms.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + rooms.Length + C_PAREN);
+                    f.Rooms[i] = DeserializeRoom(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(rooms[i])))), f.Backgrounds, f.Objects);
+                    f.Rooms[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
+                }
+            }
+            return f;
         }
     }
 }
