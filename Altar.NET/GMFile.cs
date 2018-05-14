@@ -100,6 +100,7 @@ namespace Altar
         public string         [] AudioGroups
         {
             get;
+            internal set;
         }
 
         public IDictionary<uint, uint> AudioSoundMap

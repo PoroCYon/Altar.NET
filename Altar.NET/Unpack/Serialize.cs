@@ -522,6 +522,8 @@ namespace Altar.Unpack
             if (f.Objects     != null) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
             if (f.Rooms       != null) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
 
+            if (f.AudioGroups != null && f.AudioGroups.Length > 0) r["audiogroups"] = "audiogroups.json";
+
             if (chunks != null && chunks.Count > 0)
             {
                 r["chunks"] = CreateArr();
