@@ -611,6 +611,11 @@ namespace Altar.Repack
                     f.Rooms[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
                 }
             }
+            if (projFile.Has("audiogroups"))
+            {
+                Console.WriteLine("Loading audio groups...");
+                f.AudioGroups = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["audiogroups"])))), jd => (string)jd.ToString());
+            }
             return f;
         }
     }
