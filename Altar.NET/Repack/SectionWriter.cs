@@ -134,15 +134,14 @@ namespace Altar.Repack
         }
 
         public static int[] WriteList<T>(BBData data, T[] things,
-            Action<BBData, T, IDictionary<string, int>, int[]> writeThing,
-            IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+            Action<BBData, T> writeThing)
         {
             BBData[] datas = new BBData[things.Length];
 
             for (int i = 0; i < things.Length; i++)
             {
                 BBData thingdata = new BBData(new BinBuffer(), new int[0]);
-                writeThing(thingdata, things[i], stringOffsets, texPagOffsets);
+                writeThing(thingdata, things[i]);
                 datas[i] = thingdata;
             }
 
@@ -150,16 +149,17 @@ namespace Altar.Repack
         }
 
         public static int[] WriteList<T>(BBData data, T[] things,
-            Action<BBData, T> writeThing)
-        {
-            return WriteList(data, things, (thingdata, thing, stringOffsets, texPagOffsets) => writeThing(thingdata, thing), null, null);
-        }
-
-        public static int[] WriteList<T>(BBData data, T[] things,
             Action<BBData, T, IDictionary<string, int>> writeThing,
             IDictionary<string, int> stringOffsets)
         {
-            return WriteList(data, things, (thingdata, thing, so, texPagOffsets) => writeThing(thingdata, thing, so), stringOffsets, null);
+            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, stringOffsets));
+        }
+
+        public static int[] WriteList<T>(BBData data, T[] things,
+            Action<BBData, T, IDictionary<string, int>, int[]> writeThing,
+            IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+        {
+            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, stringOffsets, texPagOffsets));
         }
 
         public static void WriteChunk(BBData data, SectionHeaders chunk, BBData inner)
@@ -430,10 +430,9 @@ namespace Altar.Repack
         private static void WriteTexturePage(BBData data, TexturePageInfo tpi)
         {
             var tpe = new TexPageEntry();
-            tpe.Position = tpi.Position;
-            tpe.RenderOffset = tpi.RenderOffset;
+            tpe.Source = tpi.Source;
+            tpe.Dest = tpi.Destination;
             tpe.Size = tpi.Size;
-            tpe.BoundingBox = tpi.BoundingBox;
             tpe.SpritesheetId = (ushort)tpi.SpritesheetId;
             data.Buffer.Write(tpe);
         }
@@ -551,7 +550,7 @@ namespace Altar.Repack
             return stringOffsetOffsets;
         }
 
-        private static void WriteSound(BBData data, SoundInfo si, IDictionary<string, int> stringOffsets)
+        private static void WriteSound(BBData data, SoundInfo si, IDictionary<string, int> stringOffsets, string[] audioGroups)
         {
             var se = new SoundEntry();
 
@@ -562,7 +561,14 @@ namespace Altar.Repack
             se.Volume = si.VolumeMod;
             se.Pitch = si.PitchMod;
 
-            se.GroupID = si.GroupID;
+            if (si.Group == null || si.Group.Length == 0)
+            {
+                se.GroupID = 0;
+            }
+            else
+            {
+                se.GroupID = Array.IndexOf(audioGroups, si.Group);
+            }
 
             se.AudioID = si.AudioID;
             se.Flags = SoundEntryFlags.Normal;
@@ -572,9 +578,9 @@ namespace Altar.Repack
             data.Buffer.Write(se);
         }
 
-        public static int[] WriteSounds(BBData data, SoundInfo[] sounds, IDictionary<string, int> stringOffsets)
+        public static int[] WriteSounds(BBData data, SoundInfo[] sounds, IDictionary<string, int> stringOffsets, string[] audioGroups)
         {
-            int[] offsets = WriteList(data, sounds, WriteSound, stringOffsets);
+            int[] offsets = WriteList(data, sounds, (sounddata, sound) => WriteSound(sounddata, sound, stringOffsets, audioGroups));
             var stringOffsetOffsets = new int[sounds.Length*3];
 
             for (int i = 0; i < sounds.Length; i++)

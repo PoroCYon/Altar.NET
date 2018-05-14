@@ -444,37 +444,33 @@ namespace Altar
 
                     var c = f.Content;
 
-                    chunks.Add((IntPtr)c.Extensions);
-                    chunks.Add((IntPtr)c.Shaders   );
-                    chunks.Add((IntPtr)c.Timelines );
-                    chunks.Add((IntPtr)c.DataFiles );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.General     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Options     );
                     chunks.Add((IntPtr)c.Language  );
+                    chunks.Add((IntPtr)c.Extensions);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sounds      );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.AudioGroup  );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sprites     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Backgrounds );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Paths       );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Scripts     );
+                    chunks.Add((IntPtr)c.GLOB_Unk  );
+                    chunks.Add((IntPtr)c.Shaders   );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Fonts       );
+                    chunks.Add((IntPtr)c.Timelines );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Objects     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Rooms       );
+                    chunks.Add((IntPtr)c.DataFiles );
+                    
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.TexturePages);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Code        );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Functions   );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Strings     );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Textures    );
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Audio       );
 
                     chunks.AddRange(c.UnknownChunks.Values);
-
-                    if (eo.DumpAllChunks)
-                    {
-                        chunks.Add((IntPtr)c.General);
-                        chunks.Add((IntPtr)c.Options);
-
-                        chunks.Add((IntPtr)c.Sounds      );
-                        chunks.Add((IntPtr)c.Sprites     );
-                        chunks.Add((IntPtr)c.Backgrounds );
-                        chunks.Add((IntPtr)c.Paths       );
-                        chunks.Add((IntPtr)c.Scripts     );
-                        chunks.Add((IntPtr)c.Fonts       );
-                        chunks.Add((IntPtr)c.Objects     );
-                        chunks.Add((IntPtr)c.Rooms       );
-                        chunks.Add((IntPtr)c.TexturePages);
-                        chunks.Add((IntPtr)c.Code        );
-                        chunks.Add((IntPtr)c.Strings     );
-                        chunks.Add((IntPtr)c.Textures    );
-                        chunks.Add((IntPtr)c.Audio       );
-                        chunks.Add((IntPtr)c.AudioGroup);
-
-                        chunks.Add((IntPtr)c.Functions);
-                        chunks.Add((IntPtr)c.Variables);
-                    }
 
                     for (int i = 0; i < chunks.Count; i++)
                         DumpUnk(chunks[i]);
@@ -594,7 +590,7 @@ namespace Altar
                         chunkStringOffsetOffsets = SectionWriter.WriteOptions(chunk, f.Options, stringOffsets);
                         break;
                     case SectionHeaders.Sounds:
-                        chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringOffsets, f.AudioGroups);
                         break;
                     case SectionHeaders.Sprites:
                         SectionWriter.WriteSprites(chunk, f.Sprites, stringOffsets, texPagOffsets,
