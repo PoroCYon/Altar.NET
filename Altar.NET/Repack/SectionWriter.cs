@@ -899,7 +899,8 @@ namespace Altar.Repack
             var rde = new RefDefEntryWithOthers();
 
             rde.NameOffset = (uint)stringOffsets[rd.Name];
-            rde._pad0 = 0xFFFFFFFF;
+            rde._pad0 = rd.unknown1;
+            rde._pad1 = rd.unknown2;
             rde.Occurrences = rd.Occurrences;
             rde.FirstAddress = rd.FirstOffset;
 
@@ -908,18 +909,9 @@ namespace Altar.Repack
 
         public static int[] WriteRefDefs(BBData data, ReferenceDef[] variables, IDictionary<string, int> stringOffsets, bool IsOldBCVersion, bool isFunction)
         {
-            if (!IsOldBCVersion)
+            if (!IsOldBCVersion && isFunction)
             {
-                if (isFunction)
-                {
-                    data.Buffer.Write(variables.Length);
-                }
-                else
-                {
-                    data.Buffer.Write(0);
-                    data.Buffer.Write(0);
-                    data.Buffer.Write(0);
-                }
+                data.Buffer.Write(variables.Length);
             }
             var stringOffsetOffsets = new int[variables.Length];
             for (int i = 0; i < variables.Length; i++)

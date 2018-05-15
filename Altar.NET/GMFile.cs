@@ -115,6 +115,7 @@ namespace Altar
         }
 
         public FunctionLocalsInfo[] FunctionLocals;
+        public uint[] VariableExtra;
 
         internal GMFile()
         {
@@ -212,6 +213,14 @@ namespace Altar
             if (f.Functions->Entries.NameOffset * 12 < f.Functions->Header.Size)
             {
                 FunctionLocals = SectionReader.GetFunctionLocals(f, f.Functions);
+            }
+            if (f.Variables != null && !General.IsOldBCVersion)
+            {
+                VariableExtra = new uint[] {
+                    ((uint*)&f.Variables->Entries)[0],
+                    ((uint*)&f.Variables->Entries)[1],
+                    ((uint*)&f.Variables->Entries)[2]
+                };
             }
         }
 

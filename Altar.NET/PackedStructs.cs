@@ -43,7 +43,7 @@ namespace Altar
     {
         public uint NameOffset;
         public uint _pad0; // unknown, some flags?
-        uint _pad1; // unknown
+        public uint _pad1; // unknown
         public uint Occurrences;
         public uint FirstAddress;
     }
