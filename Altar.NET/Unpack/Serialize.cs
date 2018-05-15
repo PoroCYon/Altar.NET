@@ -458,18 +458,32 @@ namespace Altar.Unpack
 
             r["name"] = rd.Name;
             r["occurrences"] = rd.Occurrences;
-            r["firstoffset"] = rd.FirstOffset;
+            if (rd.FirstOffset != 0xFFFFFFFF)
+                r["firstoffset"] = rd.FirstOffset;
+            if (rd.HasExtra)
+            {
+                r["unknown1"] = rd.unknown1;
+                r["unknown2"] = rd.unknown2;
+            }
 
             return r;
         }
 
-        public static JsonData SerializeVars   (GMFile f) => SerializeArray(f.RefData.Variables, SerializeReferenceDef);
+        public static JsonData SerializeVars(GMFile f)
+        {
+            var r = CreateObj();
+
+            if (f.VariableExtra != null) r["extra"] = SerializeArray(f.VariableExtra, Utils.Identity);
+            r["variables"] = SerializeArray(f.RefData.Variables, SerializeReferenceDef);
+
+            return r;
+        }
 
         public static JsonData SerializeFuncs(GMFile f) {
             var r = CreateObj();
 
             r["functions"] = SerializeArray(f.RefData.Functions, SerializeReferenceDef);
-            r["locals"] = SerializeArray(f.FunctionLocals, SerializeFuncLocalsInfo);
+            if (f.FunctionLocals != null) r["locals"] = SerializeArray(f.FunctionLocals, SerializeFuncLocalsInfo);
 
             return r;
         }

@@ -12,6 +12,9 @@ namespace Altar
         public string Name;
         public uint Occurrences;
         public uint FirstOffset;
+        public bool HasExtra;
+        public uint unknown1;
+        public uint unknown2;
     }
 
     // ---

@@ -393,8 +393,11 @@ namespace Altar.Repack
         {
             Name = (string)j["name"],
             Occurrences = (uint)j["occurrences"],
-            FirstOffset = (uint)j["firstoffset"]
-        };
+            FirstOffset = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
+            HasExtra = j.Has("unknown1") || j.Has("unknown2"),
+            unknown1 = j.Has("unknown1") ? (uint)j["unknown1"] : 0xFFFFFFFF,
+            unknown2 = j.Has("unknown2") ? (uint)j["unknown2"] : 0
+            };
 
         // strings, vars and funcs are compiled using the other things
 
@@ -428,8 +431,12 @@ namespace Altar.Repack
             if (projFile.Has("variables"))
             {
                 Console.WriteLine("Loading variables...");
-                variables = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["variables"])))),
-                    DeserializeReferenceDef);
+                var vardata = JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["variables"]))));
+                variables = DeserializeArray(vardata.IsArray ? vardata : vardata["variables"], DeserializeReferenceDef);
+                if (vardata.Has("extra"))
+                {
+                    f.VariableExtra = DeserializeArray(vardata["extra"], jd=>(uint)jd);
+                }
             }
             if (projFile.Has("functions"))
             {

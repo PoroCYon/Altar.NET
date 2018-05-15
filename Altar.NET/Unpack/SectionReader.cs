@@ -565,7 +565,6 @@ namespace Altar.Unpack
                 throw new ArgumentOutOfRangeException(nameof(id));
 
             var teOffs = (&content.Textures->Offsets)[id];
-            //teOffs += 4; // this showed up in a newer version, _pad was 1. extra offset table? how to detect this?
             var te = (TextureEntry*)GMFile.PtrFromOffset(content, teOffs);
             uint off = te->Offset;
             if (off == 0)
@@ -728,6 +727,9 @@ namespace Altar.Unpack
                 ret.Name = StringFromOffset(content, rde->NameOffset);
                 ret.Occurrences = rde->Occurrences;
                 ret.FirstOffset = rde->FirstAddress;
+                ret.HasExtra = true;
+                ret.unknown1 = rde->_pad0;
+                ret.unknown2 = rde->_pad1;
 
                 return ret;
             });

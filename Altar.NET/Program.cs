@@ -622,6 +622,9 @@ namespace Altar
                         break;
                     // Code
                     case SectionHeaders.Variables:
+                        if (f.VariableExtra != null)
+                            foreach (var e in f.VariableExtra)
+                                chunk.Buffer.Write(e);
                         chunkStringOffsetOffsets = SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringOffsets, f.General.IsOldBCVersion, false);
                         break;
                     case SectionHeaders.Functions:
