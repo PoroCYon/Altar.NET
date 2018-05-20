@@ -420,7 +420,11 @@ namespace Altar.Repack
             {
                 throw new InvalidDataException("Unknown code format for '" + filename + "'");
             }
+            return DeserializeAssembly(instructions, bcv, strings);
+        }
 
+        private static CodeInfo DeserializeAssembly(IEnumerable<Instruction> instructions, uint bcv, string[] strings)
+        {
             IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(strings.Length);
             for (uint i = 0; i < strings.Length; i++) stringIndices[strings[i]] = i;
 
@@ -471,16 +475,12 @@ namespace Altar.Repack
                                     bp.ValueRest = (uint)(long)p.Value;
                                     break;
                                 case DataType.Double:
-                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToDouble(p.Value)), 0);
-                                    break;
                                 case DataType.Single:
-                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes((float)Convert.ToDouble(p.Value)), 0);
+                                    bp.ValueRest = BitConverter.ToUInt64(BitConverter.GetBytes(Convert.ToDouble(p.Value)), 0);
                                     break;
                                 case DataType.Int32:
-                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes((int)unchecked((long)(p.Value))), 0);
-                                    break;
                                 case DataType.Int64:
-                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes(unchecked((long)(p.Value))), 0);
+                                    bp.ValueRest = BitConverter.ToUInt64(BitConverter.GetBytes(unchecked((long)(p.Value))), 0);
                                     break;
                                 case DataType.String:
                                     bp.ValueRest = stringIndices[(string)p.Value];
@@ -515,6 +515,11 @@ namespace Altar.Repack
                             OpCode = op,
                             Types = new TypePair(doubleinst.Type1, doubleinst.Type2)
                         };
+                        if (inst is Compare)
+                        {
+                            var cmpinst = (Compare)inst;
+                            bininst.DoubleType.ComparisonType = cmpinst.ComparisonType;
+                        }
                         break;
                     case InstructionKind.SingleType:
                         var singleinst = (SingleType)inst;

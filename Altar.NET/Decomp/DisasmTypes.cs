@@ -290,7 +290,7 @@ namespace Altar.Decomp
         public DataType Type;
         public OpCodes OpCode;
 
-        public uint ValueRest;
+        public UInt64 ValueRest;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct CallInstruction

@@ -206,7 +206,7 @@ namespace Altar.Decomp
                                 sb.Append(((long*)&pp->ValueRest)->ToString(CultureInfo.InvariantCulture));
                                 break;
                             case DataType.String:
-                                sb.Append(SectionReader.GetStringInfo(content, p.ValueRest).Escape());
+                                sb.Append(SectionReader.GetStringInfo(content, (uint)p.ValueRest).Escape());
                                 break;
                         }
                         break;

@@ -540,7 +540,7 @@ namespace Altar.Decomp
                                         v = *(long*)rest;
                                         break;
                                     case DataType.String:
-                                        v = SectionReader.GetStringInfo(content, ps.ValueRest);
+                                        v = SectionReader.GetStringInfo(content, (uint)ps.ValueRest);
                                         break;
                                 }
                                 #endregion

@@ -953,7 +953,7 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
-        public static void Reassemble(BBData data, Decomp.AnyInstruction[] instructions, uint bytecodeVersion)
+        public static void WriteCodeBlock(BBData data, Decomp.AnyInstruction[] instructions, uint bytecodeVersion)
         {
             foreach (var inst in instructions)
             {
@@ -968,7 +968,7 @@ namespace Altar.Repack
             }
         }
 
-        private static void WriteCode(BBData data, CodeInfo ci, IDictionary<string, int> stringOffsets, uint bytecodeVersion)
+        private static void WriteCodeInfo(BBData data, CodeInfo ci, IDictionary<string, int> stringOffsets, uint bytecodeVersion)
         {
             data.Buffer.Write(stringOffsets[ci.Name]);
             data.Buffer.Write(ci.Size);
@@ -978,12 +978,12 @@ namespace Altar.Repack
                 data.Buffer.Write(8);
                 data.Buffer.Write(0);
             }
-            Reassemble(data, ci.InstructionsCopy, bytecodeVersion);
+            WriteCodeBlock(data, ci.InstructionsCopy, bytecodeVersion);
         }
 
         public static int[] WriteCodes(BBData data, GMFile f, IDictionary<string, int> stringOffsets)
         {
-            var offsets = WriteList(data, f.Code, (fd, ci) => WriteCode(fd, ci, stringOffsets, f.General.BytecodeVersion));
+            var offsets = WriteList(data, f.Code, (fd, ci) => WriteCodeInfo(fd, ci, stringOffsets, f.General.BytecodeVersion));
             var stringOffsetOffsets = new int[f.Code.Length];
             for (int i = 0; i < f.Code.Length; i++)
             {
