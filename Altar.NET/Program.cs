@@ -107,10 +107,10 @@ namespace Altar
                 {
                     //eo.Disassemble = eo.String = eo.Variables = eo.Functions = false;
 
-                    eo.Audio = eo.Background /*= eo.Decompile*/   = eo.Font = eo.General
+                    eo.Audio = eo.Background /*= eo.Decompile*/= eo.Disassemble = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
                         = eo.String = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
-                        = eo.AudioGroups = true;
+                        = eo.AudioGroups = eo.Functions = eo.Variables = true;
                 }
                 if (eo.Any)
                 {
@@ -620,7 +620,9 @@ namespace Altar
                         chunk = texpChunk;
                         texpChunkPosition = writer.Buffer.Position + 8;
                         break;
-                    // Code
+                    case SectionHeaders.Code:
+                        chunkStringOffsetOffsets = SectionWriter.WriteCodes(chunk, f, stringOffsets);
+                        break;
                     case SectionHeaders.Variables:
                         if (f.VariableExtra != null)
                             foreach (var e in f.VariableExtra)
@@ -699,7 +701,7 @@ namespace Altar
                 CultureInfo.InvariantCulture;
 
             //var t =
-            //    Tokenizer.Tokenize(
+            //    Recomp.Tokenizer.Tokenize(
             //        File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_TEXT.gml.asm")
             //    );
             //var p = AsmParser.Parse(t);

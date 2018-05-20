@@ -37,7 +37,7 @@ namespace Altar.Recomp
             if (type <= TokenType.Inst)
                 return TokenKind.DataType;
 #pragma warning restore 618
-            if (type <= TokenType.Global)
+            if (type <= TokenType.Local)
                 return TokenKind.InstanceType;
             if (type <= TokenType.StackTop)
                 return TokenKind.VariableType;
@@ -282,7 +282,7 @@ namespace Altar.Recomp
                         if (Utils.TryParseEnum(w, true, false, false, ref type))
                         {
                             // ignore
-                            if ((type <= TokenType.PushI16 && type > TokenType.Cmp) || type > TokenType.Global)
+                            if ((type <= TokenType.PushI16 && type > TokenType.Cmp) || type > TokenType.Local)
                                 type = NullTokenType;
                                 //throw new FormatException($"Unexpected token '{type}' at line {line} and column {col}.");
                         }
@@ -304,7 +304,7 @@ namespace Altar.Recomp
                                 type = TokenType.Whitespace;
                             else if (Int64.TryParse(w, NumberStyles.Integer, CultureInfo.InvariantCulture, out lval)
                                     || (w.StartsWith(SR.HEX_PRE, StringComparison.OrdinalIgnoreCase)
-                                        && Int64.TryParse(w, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lval)))
+                                        && Int64.TryParse(w.Substring(2, w.Length - 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lval)))
                                 yield return new IntToken { OrigString = w, Value = lval, Line = line, Column = col };
                             else if (Double.TryParse(w, NumberStyles.Float, CultureInfo.InvariantCulture, out fval))
                                 yield return new FloatToken { OrigString = w, Value = fval, Line = line, Column = col };

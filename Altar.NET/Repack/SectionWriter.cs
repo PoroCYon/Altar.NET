@@ -198,29 +198,32 @@ namespace Altar.Repack
 
         public static int[] WriteGeneral(BBData data, GeneralInfo ge, IDictionary<string, int> stringOffsets)
         {
-            var ret = new SectionGeneral();
-            var stringOffsetOffsets = new int[4];
+            var ret = new SectionGeneral
+            {
+                Debug = ge.IsDebug,
+                FilenameOffset = (uint)stringOffsets[ge.FileName],
+                ConfigOffset = (uint)stringOffsets[ge.Configuration],
+                NameOffset = (uint)stringOffsets[ge.Name],
+                DisplayNameOffset = (uint)stringOffsets[ge.DisplayName],
+                GameID = ge.GameID,
+                WindowSize = ge.WindowSize,
+                BytecodeVersion = (Int24)ge.BytecodeVersion,
+                Major = ge.Version.Major,
+                Minor = ge.Version.Minor,
+                Release = ge.Version.Build,
+                Build = ge.Version.Revision,
 
-            ret.Debug = ge.IsDebug;
-            ret.FilenameOffset = (uint)stringOffsets[ge.FileName];
-            stringOffsetOffsets[0] = (int)Marshal.OffsetOf(typeof(SectionGeneral), "FilenameOffset") - 3;
-            ret.ConfigOffset = (uint)stringOffsets[ge.Configuration];
-            stringOffsetOffsets[1] = (int)Marshal.OffsetOf(typeof(SectionGeneral), "ConfigOffset") - 3;
-            ret.NameOffset = (uint)stringOffsets[ge.Name];
-            stringOffsetOffsets[2] = (int)Marshal.OffsetOf(typeof(SectionGeneral), "NameOffset") - 3;
-            ret.DisplayNameOffset = (uint)stringOffsets[ge.DisplayName];
-            stringOffsetOffsets[3] = (int)Marshal.OffsetOf(typeof(SectionGeneral), "DisplayNameOffset") - 3;
-            ret.GameID = ge.GameID;
-            ret.WindowSize = ge.WindowSize;
-            ret.BytecodeVersion = (Int24)ge.BytecodeVersion;
-            ret.Major = ge.Version.Major;
-            ret.Minor = ge.Version.Minor;
-            ret.Release = ge.Version.Build;
-            ret.Build = ge.Version.Revision;
-
-            ret.Info = ge.InfoFlags;
-            ret.ActiveTargets = ge.ActiveTargets;
-            ret.AppID = ge.SteamAppID;
+                Info = ge.InfoFlags,
+                ActiveTargets = ge.ActiveTargets,
+                AppID = ge.SteamAppID
+            };
+            var stringOffsetOffsets = new int[]
+            {
+                (int)Marshal.OffsetOf(typeof(SectionGeneral), "FilenameOffset") - 3,
+                (int)Marshal.OffsetOf(typeof(SectionGeneral), "ConfigOffset") - 3,
+                (int)Marshal.OffsetOf(typeof(SectionGeneral), "NameOffset") - 3,
+                (int)Marshal.OffsetOf(typeof(SectionGeneral), "DisplayNameOffset") - 3
+            };
 
             for (int i = 0; i < 4; i++)
                 unsafe
@@ -346,25 +349,30 @@ namespace Altar.Repack
 
         private static void WriteFontCharEntry(BBData data, FontCharacter fc)
         {
-            var ce = new FontCharEntry();
-            ce.Character = fc.Character;
-            ce.TexPagFrame = fc.TPagFrame;
-            ce.Shift = fc.Shift;
-            ce.Offset = fc.Offset;
-            data.Buffer.Write(ce);
+            data.Buffer.Write(new FontCharEntry
+            {
+                Character = fc.Character,
+                TexPagFrame = fc.TPagFrame,
+                Shift = fc.Shift,
+                Offset = fc.Offset
+            });
         }
 
         public static void WriteFont(BBData data, FontInfo fi, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
         {
-            var fe = new FontEntry();
-            fe.CodeName = fi.CodeName == null ? 0 : (uint)stringOffsets[fi.CodeName];
-            fe.SystemName = (uint)stringOffsets[fi.SystemName];
-            fe.EmSize = fi.EmSize;
-            fe.Bold = fi.IsBold ? DwordBool.True : DwordBool.False;
-            fe.Italic = fi.IsItalic ? DwordBool.True : DwordBool.False;
-            fe._ignore0 = fi.Characters[0].Character;
-            fe.Charset = fi.Charset;
-            fe.AntiAliasing = fi.AntiAliasing;
+            var fe = new FontEntry
+            {
+                CodeName = fi.CodeName == null ? 0 : (uint)stringOffsets[fi.CodeName],
+                SystemName = (uint)stringOffsets[fi.SystemName],
+                EmSize = fi.EmSize,
+                Bold = fi.IsBold ? DwordBool.True : DwordBool.False,
+                Italic = fi.IsItalic ? DwordBool.True : DwordBool.False,
+                _ignore0 = fi.Characters[0].Character,
+                Charset = fi.Charset,
+                AntiAliasing = fi.AntiAliasing,
+                TPagOffset = (uint)texPagOffsets[fi.TexPagId],
+                Scale = fi.Scale
+            };
             foreach (var character in fi.Characters)
             {
                 if (character.Character > fe._ignore1)
@@ -372,8 +380,6 @@ namespace Altar.Repack
                     fe._ignore1 = character.Character;
                 }
             }
-            fe.TPagOffset = (uint)texPagOffsets[fi.TexPagId];
-            fe.Scale = fi.Scale;
             data.Buffer.Write(fe);
 
             data.Buffer.Position -= 8;
@@ -429,11 +435,13 @@ namespace Altar.Repack
 
         private static void WriteTexturePage(BBData data, TexturePageInfo tpi)
         {
-            var tpe = new TexPageEntry();
-            tpe.Source = tpi.Source;
-            tpe.Dest = tpi.Destination;
-            tpe.Size = tpi.Size;
-            tpe.SpritesheetId = (ushort)tpi.SpritesheetId;
+            var tpe = new TexPageEntry
+            {
+                Source = tpi.Source,
+                Dest = tpi.Destination,
+                Size = tpi.Size,
+                SpritesheetId = (ushort)tpi.SpritesheetId
+            };
             data.Buffer.Write(tpe);
         }
 
@@ -444,21 +452,22 @@ namespace Altar.Repack
 
         private static void WriteObject(BBData data, ObjectInfo oi, IDictionary<string, int> stringOffsets)
         {
-            var oe = new ObjectEntry();
+            var oe = new ObjectEntry
+            {
+                Name = (uint)stringOffsets[oi.Name],
+                SpriteIndex = oi.SpriteIndex,
+                Visible = oi.IsVisible ? DwordBool.True : DwordBool.False,
+                Solid = oi.IsSolid ? DwordBool.True : DwordBool.False,
+                Depth = oi.Depth,
+                Persistent = oi.IsPersistent ? DwordBool.True : DwordBool.False,
 
-            oe.Name = (uint)stringOffsets[oi.Name];
-            oe.SpriteIndex = oi.SpriteIndex;
-            oe.Visible = oi.IsVisible ? DwordBool.True : DwordBool.False;
-            oe.Solid = oi.IsSolid ? DwordBool.True : DwordBool.False;
-            oe.Depth = oi.Depth;
-            oe.Persistent = oi.IsPersistent ? DwordBool.True : DwordBool.False;
+                ParentId = oi.ParentId == null ? -1 : (int)oi.ParentId,
+                MaskId = oi.TexMaskId == null ? -1 : (int)oi.TexMaskId,
 
-            oe.ParentId = oi.ParentId == null ? -1 : (int)oi.ParentId;
-            oe.MaskId = oi.TexMaskId == null ? -1 : (int)oi.TexMaskId;
-
-            oe.HasPhysics = oi.Physics != null ? DwordBool.True : DwordBool.False;
-            oe.IsSensor = oi.IsSensor ? DwordBool.True : DwordBool.False;
-            oe.CollisionShape = oi.CollisionShape;
+                HasPhysics = oi.Physics != null ? DwordBool.True : DwordBool.False,
+                IsSensor = oi.IsSensor ? DwordBool.True : DwordBool.False,
+                CollisionShape = oi.CollisionShape
+            };
 
             if (oi.Physics != null) oe.Physics = (ObjectPhysics)oi.Physics;
             
@@ -552,26 +561,20 @@ namespace Altar.Repack
 
         private static void WriteSound(BBData data, SoundInfo si, IDictionary<string, int> stringOffsets, string[] audioGroups)
         {
-            var se = new SoundEntry();
-
-            se.NameOffset = (uint)stringOffsets[si.Name];
-            se.TypeOffset = (uint)stringOffsets[si.Type];
-            se.FileOffset = (uint)stringOffsets[si.File];
-
-            se.Volume = si.VolumeMod;
-            se.Pitch = si.PitchMod;
-
-            if (si.Group == null || si.Group.Length == 0)
+            var se = new SoundEntry
             {
-                se.GroupID = 0;
-            }
-            else
-            {
-                se.GroupID = Array.IndexOf(audioGroups, si.Group);
-            }
+                NameOffset = (uint)stringOffsets[si.Name],
+                TypeOffset = (uint)stringOffsets[si.Type],
+                FileOffset = (uint)stringOffsets[si.File],
 
-            se.AudioID = si.AudioID;
-            se.Flags = SoundEntryFlags.Normal;
+                Volume = si.VolumeMod,
+                Pitch = si.PitchMod,
+
+                GroupID = (si.Group == null || si.Group.Length == 0) ? 0 : Array.IndexOf(audioGroups, si.Group),
+                AudioID = si.AudioID,
+                Flags = SoundEntryFlags.Normal
+            };
+
             if (si.IsEmbedded) se.Flags |= SoundEntryFlags.Embedded;
             if (si.IsCompressed) se.Flags |= SoundEntryFlags.Compressed;
 
@@ -594,15 +597,16 @@ namespace Altar.Repack
 
         private static void WriteSprite(BBData data, SpriteInfo si, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
         {
-            var se = new SpriteEntry();
+            var se = new SpriteEntry
+            {
+                Name = (uint)stringOffsets[si.Name],
+                Size = si.Size,
+                Bounding = si.Bounding,
+                BBoxMode = si.BBoxMode,
+                Origin = si.Origin,
 
-            se.Name = (uint)stringOffsets[si.Name];
-            se.Size = si.Size;
-            se.Bounding = si.Bounding;
-            se.BBoxMode = si.BBoxMode;
-            se.Origin = si.Origin;
-
-            se.SeparateColMasks = si.SeparateColMasks ? DwordBool.True : DwordBool.False;
+                SeparateColMasks = si.SeparateColMasks ? DwordBool.True : DwordBool.False
+            };
 
             se.Textures.Count = si.TextureIndices == null ? 0xFFFFFFFF : (uint)si.TextureIndices.Length;
             var tmp = new BinBuffer();
@@ -676,10 +680,11 @@ namespace Altar.Repack
 
         private static void WriteBackground(BBData data, BackgroundInfo bi, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
         {
-            var be = new BgEntry();
-            be.Name = (uint)stringOffsets[bi.Name];
-            be.TextureOffset = bi.TexPageIndex.HasValue ? (uint)texPagOffsets[bi.TexPageIndex.Value] : 0;
-            data.Buffer.Write(be);
+            data.Buffer.Write(new BgEntry
+            {
+                Name = (uint)stringOffsets[bi.Name],
+                TextureOffset = bi.TexPageIndex.HasValue ? (uint)texPagOffsets[bi.TexPageIndex.Value] : 0
+            });
         }
 
         public static void WriteBackgrounds(BBData data,
@@ -702,17 +707,16 @@ namespace Altar.Repack
 
         private static void WritePath(BBData data, PathInfo pi, IDictionary<string, int> stringOffsets)
         {
-            var pe = new PathEntry();
-
-            pe.Name = (uint)stringOffsets[pi.Name];
-            pe.IsSmooth = pi.IsSmooth ? DwordBool.True : DwordBool.False;
-            pe.IsClosed = pi.IsClosed ? DwordBool.True : DwordBool.False;
-            pe.Precision = pi.Precision;
-
-            pe.PointCount = (uint)pi.Points.Length;
-
             var tmp = new BinBuffer();
-            tmp.Write(pe);
+            tmp.Write(new PathEntry
+            {
+                Name = (uint)stringOffsets[pi.Name],
+                IsSmooth = pi.IsSmooth ? DwordBool.True : DwordBool.False,
+                IsClosed = pi.IsClosed ? DwordBool.True : DwordBool.False,
+                Precision = pi.Precision,
+
+                PointCount = (uint)pi.Points.Length
+            });
             data.Buffer.Write(tmp, 0, tmp.Size - 12, 0);
             
             foreach (var pt in pi.Points)
@@ -733,12 +737,11 @@ namespace Altar.Repack
 
         private static void WriteScript(BBData data, ScriptInfo si, IDictionary<string, int> stringOffsets)
         {
-            var se = new ScriptEntry();
-
-            se.Name = (uint)stringOffsets[si.Name];
-            se.CodeId = si.CodeId;
-
-            data.Buffer.Write(se);
+            data.Buffer.Write(new ScriptEntry
+            {
+                Name = (uint)stringOffsets[si.Name],
+                CodeId = si.CodeId
+            });
         }
 
         public static int[] WriteScripts(BBData data, ScriptInfo[] scripts, IDictionary<string, int> stringOffsets)
@@ -754,93 +757,90 @@ namespace Altar.Repack
 
         private static void WriteRoomBg(BBData data, RoomBackground rb)
         {
-            var rbe = new RoomBgEntry();
+            data.Buffer.Write(new RoomBgEntry
+            {
+                IsEnabled = rb.IsEnabled ? DwordBool.True : DwordBool.False,
+                IsForeground = rb.IsForeground ? DwordBool.True : DwordBool.False,
+                Position = rb.Position,
+                TileX = rb.TileX ? DwordBool.True : DwordBool.False,
+                TileY = rb.TileY ? DwordBool.True : DwordBool.False,
+                Speed = rb.Speed,
+                Stretch = rb.StretchSprite ? DwordBool.True : DwordBool.False,
 
-            rbe.IsEnabled    = rb.IsEnabled     ? DwordBool.True : DwordBool.False;
-            rbe.IsForeground = rb.IsForeground  ? DwordBool.True : DwordBool.False;
-            rbe.Position     = rb.Position;
-            rbe.TileX        = rb.TileX         ? DwordBool.True : DwordBool.False;
-            rbe.TileY        = rb.TileY         ? DwordBool.True : DwordBool.False;
-            rbe.Speed        = rb.Speed;
-            rbe.Stretch      = rb.StretchSprite ? DwordBool.True : DwordBool.False;
-
-            rbe.DefIndex  = rb.BgIndex.HasValue ? rb.BgIndex.Value : 0xFFFFFFFF;
-
-            data.Buffer.Write(rbe);
+                DefIndex = rb.BgIndex ?? 0xFFFFFFFF
+            });
         }
 
         private static void WriteRoomView(BBData data, RoomView rv)
         {
-            var rve = new RoomViewEntry();
+            data.Buffer.Write(new RoomViewEntry
+            {
+                IsEnabled = rv.IsEnabled ? DwordBool.True : DwordBool.False,
+                Port = rv.Port,
+                View = rv.View,
+                Border = rv.Border,
+                Speed = rv.Speed,
 
-            rve.IsEnabled = rv.IsEnabled ? DwordBool.True : DwordBool.False;
-            rve.Port      = rv.Port;
-            rve.View      = rv.View;
-            rve.Border    = rv.Border;
-            rve.Speed     = rv.Speed;
-
-            rve.ObjectId = rv.ObjectId.HasValue ? rv.ObjectId.Value : 0xFFFFFFFF;
-
-            data.Buffer.Write(rve);
+                ObjectId = rv.ObjectId ?? 0xFFFFFFFF
+            });
         }
 
         private static void WriteRoomObj(BBData data, RoomObject ro)
         {
-            var roe = new RoomObjEntry();
+            data.Buffer.Write(new RoomObjEntry
+            {
+                DefIndex = ro.DefIndex,
+                Position = ro.Position,
+                Scale = ro.Scale,
+                Colour = ro.Colour,
+                Rotation = ro.Rotation,
 
-            roe.DefIndex = ro.DefIndex;
-            roe.Position = ro.Position;
-            roe.Scale    = ro.Scale;
-            roe.Colour   = ro.Colour;
-            roe.Rotation = ro.Rotation;
-
-            roe.InstanceID   = ro.InstanceID;
-            roe.CreateCodeID = ro.CreateCodeID;
-
-            data.Buffer.Write(roe);
+                InstanceID = ro.InstanceID,
+                CreateCodeID = ro.CreateCodeID
+            });
             data.Buffer.Write(0xFFFFFFFF);
         }
 
         private static void WriteRoomTile(BBData data, RoomTile rt)
         {
-            var rte = new RoomTileEntry();
+            data.Buffer.Write(new RoomTileEntry
+            {
+                DefIndex = rt.DefIndex,
+                Position = rt.Position,
+                SourcePos = rt.SourcePosition,
+                Size = rt.Size,
+                Scale = rt.Scale,
+                Colour = rt.Colour,
 
-            rte.DefIndex  = rt.DefIndex;
-            rte.Position  = rt.Position;
-            rte.SourcePos = rt.SourcePosition;
-            rte.Size      = rt.Size;
-            rte.Scale     = rt.Scale;
-            rte.Colour    = rt.Colour;
-
-            rte.TileDepth  = rt.Depth;
-            rte.InstanceID = rt.InstanceID;
-
-            data.Buffer.Write(rte);
+                TileDepth = rt.Depth,
+                InstanceID = rt.InstanceID
+            });
         }
 
         private static void WriteRoom(BBData data, RoomInfo ri, IDictionary<string, int> stringOffsets)
         {
-            var re = new RoomEntry();
+            var re = new RoomEntry
+            {
+                Name = (uint)stringOffsets[ri.Name],
+                Caption = (uint)stringOffsets[ri.Caption],
+                Size = ri.Size,
+                Speed = ri.Speed,
+                Persistent = ri.IsPersistent ? DwordBool.True : DwordBool.False,
+                Colour = ri.Colour,
 
-            re.Name       = (uint)stringOffsets[ri.Name];
-            re.Caption    = (uint)stringOffsets[ri.Caption];
-            re.Size       = ri.Size;
-            re.Speed      = ri.Speed;
-            re.Persistent = ri.IsPersistent ? DwordBool.True : DwordBool.False;
-            re.Colour     = ri.Colour;
+                DrawBackgroundColour = ri.DrawBackgroundColour ? DwordBool.True : DwordBool.False,
+                _unknown = ri._unknown,
 
-            re.DrawBackgroundColour = ri.DrawBackgroundColour ? DwordBool.True : DwordBool.False;
-            re._unknown = ri._unknown;
-
-            re.Flags = 0;
+                Flags = 0,
+                
+                World = ri.World,
+                Bounding = ri.Bounding,
+                Gravity = ri.Gravity,
+                MetresPerPixel = ri.MetresPerPixel
+            };
             if (ri.EnableViews       ) re.Flags |= RoomEntryFlags.EnableViews;
             if (ri.ShowColour        ) re.Flags |= RoomEntryFlags.ShowColour;
             if (ri.ClearDisplayBuffer) re.Flags |= RoomEntryFlags.ClearDisplayBuffer;
-
-            re.World          = ri.World          ;
-            re.Bounding       = ri.Bounding       ;
-            re.Gravity        = ri.Gravity        ;
-            re.MetresPerPixel = ri.MetresPerPixel ;
 
             var bgOffsetOffset   = (int)Marshal.OffsetOf(typeof(RoomEntry), "BgOffset");
             var viewOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ViewOffset");
@@ -885,26 +885,24 @@ namespace Altar.Repack
 
         private static void WriteRefDef(BBData data, ReferenceDef rd, IDictionary<string, int> stringOffsets)
         {
-            var rde = new RefDefEntry();
-
-            rde.NameOffset = (uint)stringOffsets[rd.Name];
-            rde.Occurrences = rd.Occurrences;
-            rde.FirstAddress = rd.FirstOffset;
-
-            data.Buffer.Write(rde);
+            data.Buffer.Write(new RefDefEntry
+            {
+                NameOffset = (uint)stringOffsets[rd.Name],
+                Occurrences = rd.Occurrences,
+                FirstAddress = rd.FirstOffset
+            });
         }
 
         private static void WriteRefDefWithOthers(BBData data, ReferenceDef rd, IDictionary<string, int> stringOffsets)
         {
-            var rde = new RefDefEntryWithOthers();
-
-            rde.NameOffset = (uint)stringOffsets[rd.Name];
-            rde._pad0 = rd.unknown1;
-            rde._pad1 = rd.unknown2;
-            rde.Occurrences = rd.Occurrences;
-            rde.FirstAddress = rd.FirstOffset;
-
-            data.Buffer.Write(rde);
+            data.Buffer.Write(new RefDefEntryWithOthers
+            {
+                NameOffset = (uint)stringOffsets[rd.Name],
+                _pad0 = rd.unknown1,
+                _pad1 = rd.unknown2,
+                Occurrences = rd.Occurrences,
+                FirstAddress = rd.FirstOffset
+            });
         }
 
         public static int[] WriteRefDefs(BBData data, ReferenceDef[] variables, IDictionary<string, int> stringOffsets, bool IsOldBCVersion, bool isFunction)
@@ -944,14 +942,54 @@ namespace Altar.Repack
                 for (uint i = 0; i < func.LocalNames.Length; i++)
                 {
                     stringOffsetOffsets.Add(data.Buffer.Position + 12);
-                    var fle = new FunctionLocalEntry();
-                    fle.Index = i;
-                    fle.Name = (uint)stringOffsets[func.LocalNames[i]];
-                    data.Buffer.Write(fle);
+                    data.Buffer.Write(new FunctionLocalEntry
+                    {
+                        Index = i,
+                        Name = (uint)stringOffsets[func.LocalNames[i]]
+                    });
                 }
             }
 
             return stringOffsetOffsets.ToArray();
+        }
+
+        public static void Reassemble(BBData data, Decomp.AnyInstruction[] instructions, uint bytecodeVersion)
+        {
+            foreach (var inst in instructions)
+            {
+                var instdata = new BinBuffer();
+                instdata.Write(inst);
+                uint size;
+                unsafe
+                {
+                    size = Decomp.DisasmExt.Size(&inst, bytecodeVersion)*4;
+                }
+                data.Buffer.Write(instdata, 0, (int)size, 0);
+            }
+        }
+
+        private static void WriteCode(BBData data, CodeInfo ci, IDictionary<string, int> stringOffsets, uint bytecodeVersion)
+        {
+            data.Buffer.Write(stringOffsets[ci.Name]);
+            data.Buffer.Write(ci.Size);
+            if (bytecodeVersion > 0xE)
+            {
+                data.Buffer.Write(1);
+                data.Buffer.Write(8);
+                data.Buffer.Write(0);
+            }
+            Reassemble(data, ci.InstructionsCopy, bytecodeVersion);
+        }
+
+        public static int[] WriteCodes(BBData data, GMFile f, IDictionary<string, int> stringOffsets)
+        {
+            var offsets = WriteList(data, f.Code, (fd, ci) => WriteCode(fd, ci, stringOffsets, f.General.BytecodeVersion));
+            var stringOffsetOffsets = new int[f.Code.Length];
+            for (int i = 0; i < f.Code.Length; i++)
+            {
+                stringOffsetOffsets[i] = offsets[i] + 8;
+            }
+            return stringOffsetOffsets;
         }
     }
 }

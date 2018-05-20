@@ -4,11 +4,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Altar.Decomp;
+using Altar.Recomp;
 using LitJson;
 using static Altar.SR;
 
 namespace Altar.Repack
 {
+    using AsmParser = Altar.Recomp.Parser;
+
     public static class Deserialize
     {
         static T[] DeserializeArray<T>(JsonData jArr, Func<JsonData, T> converter)
@@ -397,7 +401,164 @@ namespace Altar.Repack
             HasExtra = j.Has("unknown1") || j.Has("unknown2"),
             unknown1 = j.Has("unknown1") ? (uint)j["unknown1"] : 0xFFFFFFFF,
             unknown2 = j.Has("unknown2") ? (uint)j["unknown2"] : 0
+        };
+
+        private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv, string[] strings)
+        {
+            IEnumerable<Instruction> instructions;
+            if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_ASM))
+            {
+                var t = Tokenizer.Tokenize(File.ReadAllText(filename));
+                instructions = AsmParser.Parse(t);
+            }
+            else if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_LSP))
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new InvalidDataException("Unknown code format for '" + filename + "'");
+            }
+
+            IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(strings.Length);
+            for (uint i = 0; i < strings.Length; i++) stringIndices[strings[i]] = i;
+
+            var binaryInstructions = new List<AnyInstruction>();
+            uint size = 0;
+            foreach (var inst in instructions)
+            {
+                if (inst is Label)
+                {
+                    continue;
+                }
+                var op = new OpCodes { VersionE = inst.OpCode.VersionE, VersionF = inst.OpCode.VersionF };
+                var type = DisasmExt.Kind(op, bcv);
+                AnyInstruction bininst = new AnyInstruction();
+                switch (type)
+                {
+                    case InstructionKind.Set:
+                        var setinst = (Set)inst;
+                        bininst.Set = new SetInstruction
+                        {
+                            DestVar = new Reference(setinst.VariableType, 0xFFFFFF), // TODO
+                            Instance = setinst.InstanceType,
+                            OpCode = op,
+                            Types = new TypePair(setinst.Type1, setinst.Type2)
+                        };
+                        break;
+                    case InstructionKind.Push:
+                        var bp = new PushInstruction
+                        {
+                            OpCode = op,
+                            Type = ((Push)inst).Type
+                        };
+                        if (bp.Type == DataType.Variable)
+                        {
+                            var p = (PushVariable)inst;
+                            bp.Value = (short)p.InstanceType;
+                            bp.ValueRest = new Reference(p.VariableType, 0xFFFFFF).val; // TODO
+                        }
+                        else
+                        {
+                            var p = (PushConst)inst;
+                            switch (p.Type)
+                            {
+                                case DataType.Int16:
+                                    bp.Value = (short)(long)p.Value;
+                                    break;
+                                case DataType.Boolean:
+                                    bp.ValueRest = (uint)(long)p.Value;
+                                    break;
+                                case DataType.Double:
+                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToDouble(p.Value)), 0);
+                                    break;
+                                case DataType.Single:
+                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes((float)Convert.ToDouble(p.Value)), 0);
+                                    break;
+                                case DataType.Int32:
+                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes((int)unchecked((long)(p.Value))), 0);
+                                    break;
+                                case DataType.Int64:
+                                    bp.ValueRest = BitConverter.ToUInt32(BitConverter.GetBytes(unchecked((long)(p.Value))), 0);
+                                    break;
+                                case DataType.String:
+                                    bp.ValueRest = stringIndices[(string)p.Value];
+                                    break;
+                            }
+                        }
+                        bininst.Push = bp;
+                        break;
+                    case InstructionKind.Call:
+                        var callinst = (Call)inst;
+                        bininst.Call = new CallInstruction
+                        {
+                            Arguments = (ushort)callinst.Arguments,
+                            Function = new Reference(callinst.FunctionType, 0xFFFFFF), // TODO
+                            OpCode = op,
+                            ReturnType = callinst.ReturnType
+                        };
+                        break;
+                    case InstructionKind.Break:
+                        var breakinst = (Break)inst;
+                        bininst.Break = new BreakInstruction
+                        {
+                            OpCode = op,
+                            Signal = (short)breakinst.Signal,
+                            Type = breakinst.Type
+                        };
+                        break;
+                    case InstructionKind.DoubleType:
+                        var doubleinst = (DoubleType)inst;
+                        bininst.DoubleType = new DoubleTypeInstruction
+                        {
+                            OpCode = op,
+                            Types = new TypePair(doubleinst.Type1, doubleinst.Type2)
+                        };
+                        break;
+                    case InstructionKind.SingleType:
+                        var singleinst = (SingleType)inst;
+                        bininst.SingleType = new SingleTypeInstruction
+                        {
+                            OpCode = op,
+                            Type = singleinst.Type
+                        };
+                        break;
+                    case InstructionKind.Goto:
+                        var gotoinst = (Branch)inst;
+                        uint absTarget = 0;
+                        if (gotoinst.Label is long)
+                        {
+                            absTarget = (uint)(long)(gotoinst.Label);
+                        }
+                        else if (gotoinst.Label is string)
+                        {
+                            var s = (string)(gotoinst.Label);
+                            // TODO
+                        }
+                        bininst.Goto = new BranchInstruction
+                        {
+                            Offset = (Int24)(absTarget - size) / 4,
+                            OpCode = op
+                        };
+                        break;
+                    default:
+                        Console.WriteLine("Unknown instruction type " + type + "!");
+                        continue;
+                }
+                binaryInstructions.Add(bininst);
+                unsafe
+                {
+                    size += DisasmExt.Size(&bininst, bcv)*4;
+                }
+            }
+
+            return new CodeInfo
+            {
+                Size = (int)size,
+                InstructionsCopy = binaryInstructions.ToArray()
             };
+        }
 
         // strings, vars and funcs are compiled using the other things
 
@@ -457,8 +618,10 @@ namespace Altar.Repack
                 f.Textures = new TextureInfo[textures.Length];
                 for (int i = 0; i < textures.Length; i++)
                 {
-                    var texinfo = new TextureInfo();
-                    texinfo.PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])));
+                    var texinfo = new TextureInfo
+                    {
+                        PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])))
+                    };
 
                     var bp = new UniquePtr(texinfo.PngData);
 
@@ -495,8 +658,10 @@ namespace Altar.Repack
                 f.Audio = new AudioInfo[audio.Length];
                 for (int i = 0; i < audio.Length; i++)
                 {
-                    var audioinfo = new AudioInfo();
-                    audioinfo.Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])));
+                    var audioinfo = new AudioInfo
+                    {
+                        Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])))
+                    };
                     f.Audio[i] = audioinfo;
                 }
             }
@@ -507,7 +672,8 @@ namespace Altar.Repack
                 f.Code = new CodeInfo[code.Length];
                 for (int i = 0; i < code.Length; i++)
                 {
-                    //f.Code[i] = DeserializeCode(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(code[i])))));
+                    Console.WriteLine((string)(code[i]));
+                    f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion, f.Strings);
                     f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
                 }
             }
