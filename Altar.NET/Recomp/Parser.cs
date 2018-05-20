@@ -207,6 +207,8 @@ namespace Altar.Recomp
                         return InstanceType.Noone;
                     case TokenType.Global:
                         return InstanceType.Global;
+                    case TokenType.Local:
+                        return InstanceType.Local;
                 }
             else if (t is IntToken)
                 return (InstanceType)((IntToken)t).Value;
@@ -383,6 +385,9 @@ namespace Altar.Recomp
                         case TokenType.Global:
                             inst = InstanceType.Global;
                             break;
+                        case TokenType.Local:
+                            inst = InstanceType.Local;
+                            break;
                         default:
                             throw new InvalidOperationException("Unexpected error, this shouldn't happen.");
                     }
@@ -445,7 +450,6 @@ namespace Altar.Recomp
                     case TokenType.And:
                     case TokenType.Or:
                     case TokenType.Xor:
-                    case TokenType.Neg:
                     case TokenType.Not:
                     case TokenType.Shl:
                     case TokenType.Shr:
@@ -496,14 +500,14 @@ namespace Altar.Recomp
                         {
                             var t1 = ExpectReadKind(TokenKind.DataType);
 
-                            var p = Peek();
+                            SkipWhitespace();
 
                             ushort nn = 0;
 
-                            if (!(p is IntToken))
+                            if (!(Peek() is IntToken))
                                 nn = 0;
                             else
-                                nn = (ushort)((IntToken)p).Value;
+                                nn = (ushort)((IntToken)Dequeue()).Value;
 
                             yield return new Dup { OpCode = TokenToOpCodes(nt), Type = TokenToData(t1), Extra = nn };
                         }
@@ -513,6 +517,7 @@ namespace Altar.Recomp
                     case TokenType.Ret:
                     case TokenType.Exit:
                     case TokenType.Pop:
+                    case TokenType.Neg:
                         yield return new SingleType { OpCode = TokenToOpCodes(nt), Type = TokenToData(ExpectReadKind(TokenKind.DataType)) };
                         break;
                     #endregion

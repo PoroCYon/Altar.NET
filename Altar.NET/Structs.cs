@@ -185,6 +185,8 @@ namespace Altar
         public string Name;
         public AnyInstruction*[] Instructions;
         public int Size;
+        internal AnyInstruction[] InstructionsCopy; // I ain't dealin' with no pointers
+        // (TODO: don't use pointers)
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureInfo

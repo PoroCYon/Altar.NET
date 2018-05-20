@@ -225,12 +225,21 @@ namespace Altar.Decomp
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Reference
     {
-        uint val;
+        public uint val;
 
         public VariableType Type                 => (VariableType)(val >> 24);
         public uint         NextOccurrenceOffset => (val & 0x00FFFFFF);
 
         public override string ToString() => Type.ToPrettyString() + HEX_PRE + NextOccurrenceOffset.ToString(HEX_FM6);
+
+        public Reference(uint v)
+        {
+            val = v;
+        }
+        public Reference(VariableType type, uint nextOccurrenceOffset)
+        {
+            val = (((uint)type << 24) & 0xFF000000) | (nextOccurrenceOffset & 0x00FFFFFF);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

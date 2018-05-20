@@ -74,6 +74,7 @@ namespace Altar.Recomp
         All   ,
         Noone ,
         Global,
+        Local ,
 
         // variabletype
         Array   ,
