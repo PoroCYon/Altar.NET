@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Altar.Decomp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -64,7 +65,7 @@ namespace Altar.Repack
 
         public BBData(BinBuffer bb, int[] offs)
         {
-            Buffer        = bb;
+            Buffer = bb;
             OffsetOffsets = offs;
         }
     }
@@ -263,7 +264,7 @@ namespace Altar.Repack
         {
             var ret = new SectionOptions();
             var stringOffsetOffsets = new List<int>();
-            
+
             unsafe
             {
                 for (int i = 0; i < 2; i++)
@@ -308,7 +309,7 @@ namespace Altar.Repack
 
         public static void Pad(BBData data, int amount, int offset)
         {
-            var pad = (amount-1) - ((data.Buffer.Position + offset - 1) % amount);
+            var pad = (amount - 1) - ((data.Buffer.Position + offset - 1) % amount);
             for (int j = 0; j < pad; j++)
             {
                 data.Buffer.WriteByte(0);
@@ -334,7 +335,7 @@ namespace Altar.Repack
             {
                 Pad(data, 0x80, 8);
                 var p = data.Buffer.Position;
-                data.Buffer.Position = offsets[i]+4;
+                data.Buffer.Position = offsets[i] + 4;
                 secondaryOffsets[i] = data.Buffer.Position;
                 data.Buffer.Write(p);
                 data.Buffer.Position = p;
@@ -401,8 +402,8 @@ namespace Altar.Repack
 
             for (int i = 0; i < fonts.Length; i++)
             {
-                stringOffsetOffsets[i*2] = offsets[i] + (int)Marshal.OffsetOf(typeof(FontEntry), "CodeName") + 8;
-                stringOffsetOffsets[i*2+1] = offsets[i] + (int)Marshal.OffsetOf(typeof(FontEntry), "SystemName") + 8;
+                stringOffsetOffsets[i * 2] = offsets[i] + (int)Marshal.OffsetOf(typeof(FontEntry), "CodeName") + 8;
+                stringOffsetOffsets[i * 2 + 1] = offsets[i] + (int)Marshal.OffsetOf(typeof(FontEntry), "SystemName") + 8;
                 texpOffsetOffsets[i] = offsets[i] + (int)Marshal.OffsetOf(typeof(FontEntry), "TPagOffset") + 8;
             }
 
@@ -426,7 +427,7 @@ namespace Altar.Repack
                 BBData audiodata = new BBData(new BinBuffer(), new int[0]);
                 audiodata.Buffer.Write(waves[i].Wave.Length); // AudioEntry.Length
                 audiodata.Buffer.Write(waves[i].Wave);
-                if (i != waves.Length-1) Pad(audiodata, 0x4, i == 0 ? 8+offset : 0);
+                if (i != waves.Length - 1) Pad(audiodata, 0x4, i == 0 ? 8 + offset : 0);
                 datas[i] = audiodata;
             }
 
@@ -470,7 +471,7 @@ namespace Altar.Repack
             };
 
             if (oi.Physics != null) oe.Physics = (ObjectPhysics)oi.Physics;
-            
+
             for (int i = 0; i < oi.OtherFloats.Length; i++)
             {
                 unsafe
@@ -480,14 +481,14 @@ namespace Altar.Repack
             }
 
             var hasMore = oi.OtherFloats.Length > 0;
-            
+
             if (hasMore)
             {
                 if (oi.ShapePoints == null) oe.Rest.ShapePoints_IfMoreFloats.Count = 0xFFFFFFFF;
                 else oe.Rest.ShapePoints_IfMoreFloats.Count = (uint)oi.ShapePoints.Length << 1;
                 BinBuffer tmp = new BinBuffer();
                 tmp.Write(oe);
-                data.Buffer.Write(tmp.AsByteArray(), 0, 4+(int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest")+(int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints_IfMoreFloats"));
+                data.Buffer.Write(tmp.AsByteArray(), 0, 4 + (int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest") + (int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints_IfMoreFloats"));
             }
             else
             {
@@ -507,12 +508,12 @@ namespace Altar.Repack
                     var point = oi.ShapePoints[i];
                     if (point.X != -0xDEAD)
                     {
-                        ptoffsets[i*2] = ptdata.Position;
+                        ptoffsets[i * 2] = ptdata.Position;
                         ptdata.Write(point.X);
                     }
                     if (point.Y != -0xC0DE)
                     {
-                        ptoffsets[i*2+1] = ptdata.Position;
+                        ptoffsets[i * 2 + 1] = ptdata.Position;
                         ptdata.Write(point.Y);
                     }
                 }
@@ -529,7 +530,7 @@ namespace Altar.Repack
                     else
                     {
                         offsetOffsets.Add(data.Buffer.Position);
-                        data.Buffer.Write(ptoffsets[i*2] + ptdataoffset);
+                        data.Buffer.Write(ptoffsets[i * 2] + ptdataoffset);
                     }
                     if (point.Y == -0xC0DE)
                     {
@@ -538,7 +539,7 @@ namespace Altar.Repack
                     else
                     {
                         offsetOffsets.Add(data.Buffer.Position);
-                        data.Buffer.Write(ptoffsets[i*2+1] + ptdataoffset);
+                        data.Buffer.Write(ptoffsets[i * 2 + 1] + ptdataoffset);
                     }
                 }
                 data.OffsetOffsets = offsetOffsets.ToArray();
@@ -584,13 +585,13 @@ namespace Altar.Repack
         public static int[] WriteSounds(BBData data, SoundInfo[] sounds, IDictionary<string, int> stringOffsets, string[] audioGroups)
         {
             int[] offsets = WriteList(data, sounds, (sounddata, sound) => WriteSound(sounddata, sound, stringOffsets, audioGroups));
-            var stringOffsetOffsets = new int[sounds.Length*3];
+            var stringOffsetOffsets = new int[sounds.Length * 3];
 
             for (int i = 0; i < sounds.Length; i++)
             {
-                stringOffsetOffsets[i*3] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "NameOffset") + 8;
-                stringOffsetOffsets[i*3+1] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "TypeOffset") + 8;
-                stringOffsetOffsets[i*3+2] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "FileOffset") + 8;
+                stringOffsetOffsets[i * 3] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "NameOffset") + 8;
+                stringOffsetOffsets[i * 3 + 1] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "TypeOffset") + 8;
+                stringOffsetOffsets[i * 3 + 2] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "FileOffset") + 8;
             }
             return stringOffsetOffsets;
         }
@@ -619,7 +620,7 @@ namespace Altar.Repack
                 {
                     data.Buffer.Write(texPagOffsets[ti]);
                 }
-                
+
                 if (si.CollisionMasks == null)
                 {
                     data.Buffer.Write(0xFFFFFFFF);
@@ -635,7 +636,7 @@ namespace Altar.Repack
                             for (int x = 0; x < w; x += 8)
                             {
                                 byte b = 0;
-                                if (x     < w && mask[x,     y]) b |= 0b00000001;
+                                if (x < w && mask[x, y]) b |= 0b00000001;
                                 if (x + 1 < w && mask[x + 1, y]) b |= 0b00000010;
                                 if (x + 2 < w && mask[x + 2, y]) b |= 0b00000100;
                                 if (x + 3 < w && mask[x + 3, y]) b |= 0b00001000;
@@ -718,7 +719,7 @@ namespace Altar.Repack
                 PointCount = (uint)pi.Points.Length
             });
             data.Buffer.Write(tmp, 0, tmp.Size - 12, 0);
-            
+
             foreach (var pt in pi.Points)
                 data.Buffer.Write(pt);
         }
@@ -832,19 +833,19 @@ namespace Altar.Repack
                 _unknown = ri._unknown,
 
                 Flags = 0,
-                
+
                 World = ri.World,
                 Bounding = ri.Bounding,
                 Gravity = ri.Gravity,
                 MetresPerPixel = ri.MetresPerPixel
             };
-            if (ri.EnableViews       ) re.Flags |= RoomEntryFlags.EnableViews;
-            if (ri.ShowColour        ) re.Flags |= RoomEntryFlags.ShowColour;
+            if (ri.EnableViews) re.Flags |= RoomEntryFlags.EnableViews;
+            if (ri.ShowColour) re.Flags |= RoomEntryFlags.ShowColour;
             if (ri.ClearDisplayBuffer) re.Flags |= RoomEntryFlags.ClearDisplayBuffer;
 
-            var bgOffsetOffset   = (int)Marshal.OffsetOf(typeof(RoomEntry), "BgOffset");
+            var bgOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "BgOffset");
             var viewOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ViewOffset");
-            var objOffsetOffset  = (int)Marshal.OffsetOf(typeof(RoomEntry), "ObjOffset");
+            var objOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ObjOffset");
             var tileOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "TileOffset");
 
             data.Buffer.Write(re);
@@ -874,11 +875,11 @@ namespace Altar.Repack
         public static int[] WriteRooms(BBData data, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
         {
             int[] offsets = WriteList(data, rooms, WriteRoom, stringOffsets);
-            var stringOffsetOffsets = new int[rooms.Length*2];
+            var stringOffsetOffsets = new int[rooms.Length * 2];
             for (int i = 0; i < rooms.Length; i++)
             {
-                stringOffsetOffsets[i*2] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Name") + 8;
-                stringOffsetOffsets[i*2+1] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Caption") + 8;
+                stringOffsetOffsets[i * 2] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Name") + 8;
+                stringOffsetOffsets[i * 2 + 1] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Caption") + 8;
             }
             return stringOffsetOffsets;
         }
@@ -898,34 +899,42 @@ namespace Altar.Repack
             data.Buffer.Write(new RefDefEntryWithOthers
             {
                 NameOffset = (uint)stringOffsets[rd.Name],
-                _pad0 = rd.unknown1,
+                InstanceType = (int)rd.InstanceType,
                 _pad1 = rd.unknown2,
                 Occurrences = rd.Occurrences,
                 FirstAddress = rd.FirstOffset
             });
         }
 
-        public static int[] WriteRefDefs(BBData data, ReferenceDef[] variables, IDictionary<string, int> stringOffsets, bool IsOldBCVersion, bool isFunction)
+        public static void WriteRefDefs(BBData data, ReferenceDef[] variables,
+            IDictionary<string, int> stringOffsets,
+            bool IsOldBCVersion, bool isFunction,
+            out int[] stringOffsetOffsets, out int[] codeOffsetOffsets)
         {
             if (!IsOldBCVersion && isFunction)
             {
                 data.Buffer.Write(variables.Length);
             }
-            var stringOffsetOffsets = new int[variables.Length];
+            stringOffsetOffsets = new int[variables.Length];
+            var codeOffsetOffsetsList = new List<int>(variables.Length);
             for (int i = 0; i < variables.Length; i++)
             {
                 if (IsOldBCVersion || isFunction)
                 {
                     stringOffsetOffsets[i] = data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntry), "NameOffset") + 8;
+                    if (variables[i].FirstOffset != 0xFFFFFFFF)
+                        codeOffsetOffsetsList.Add(data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntry), "FirstAddress") + 8);
                     WriteRefDef(data, variables[i], stringOffsets);
                 }
                 else
                 {
                     stringOffsetOffsets[i] = data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntryWithOthers), "NameOffset") + 8;
+                    if (variables[i].FirstOffset != 0xFFFFFFFF)
+                        codeOffsetOffsetsList.Add(data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntryWithOthers), "FirstAddress") + 8);
                     WriteRefDefWithOthers(data, variables[i], stringOffsets);
                 }
             }
-            return stringOffsetOffsets;
+            codeOffsetOffsets = codeOffsetOffsetsList.ToArray();
         }
 
         public static int[] WriteFunctionLocals(BBData data, FunctionLocalsInfo[] functions, IDictionary<string, int> stringOffsets)
@@ -953,7 +962,7 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
-        public static void WriteCodeBlock(BBData data, Decomp.AnyInstruction[] instructions, uint bytecodeVersion)
+        public static void WriteCodeBlock(BBData data, AnyInstruction[] instructions, uint bytecodeVersion)
         {
             foreach (var inst in instructions)
             {
@@ -962,7 +971,7 @@ namespace Altar.Repack
                 uint size;
                 unsafe
                 {
-                    size = Decomp.DisasmExt.Size(&inst, bytecodeVersion)*4;
+                    size = DisasmExt.Size(&inst, bytecodeVersion) * 4;
                 }
                 data.Buffer.Write(instdata, 0, (int)size, 0);
             }
@@ -975,21 +984,196 @@ namespace Altar.Repack
             if (bytecodeVersion > 0xE)
             {
                 data.Buffer.Write(1);
-                data.Buffer.Write(8);
+                data.Buffer.Write(0);
                 data.Buffer.Write(0);
             }
-            WriteCodeBlock(data, ci.InstructionsCopy, bytecodeVersion);
+            else
+            {
+                WriteCodeBlock(data, ci.InstructionsCopy, bytecodeVersion);
+            }
+        }
+
+        private static void AddReferencesOffset(IDictionary<Tuple<string, InstanceType>, List<uint>> allOffsets,
+            IDictionary<Tuple<string, InstanceType>, IList<uint>> subOffsets, long offset)
+        {
+            foreach (var kv in subOffsets)
+            {
+                List<uint> fnOffsets;
+                if (!allOffsets.TryGetValue(kv.Key, out fnOffsets))
+                {
+                    fnOffsets = new List<uint>();
+                    allOffsets[kv.Key] = fnOffsets;
+                }
+                foreach (var subOffset in kv.Value)
+                {
+                    fnOffsets.Add(subOffset + (uint)offset);
+                }
+            }
         }
 
         public static int[] WriteCodes(BBData data, GMFile f, IDictionary<string, int> stringOffsets)
         {
-            var offsets = WriteList(data, f.Code, (fd, ci) => WriteCodeInfo(fd, ci, stringOffsets, f.General.BytecodeVersion));
-            var stringOffsetOffsets = new int[f.Code.Length];
+            int bytecodeSize = 0;
+            foreach (var ci in f.Code)
+            {
+                bytecodeSize += ci.Size;
+            }
+
+            IDictionary<Tuple<string, InstanceType>, List<uint>> functionReferences = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
+            IDictionary<Tuple<string, InstanceType>, List<uint>> variableReferences = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
+
+            BBData[] datas = new BBData[f.Code.Length];
             for (int i = 0; i < f.Code.Length; i++)
             {
-                stringOffsetOffsets[i] = offsets[i] + 8;
+                BBData codedata = new BBData(new BinBuffer(), new int[0]);
+                WriteCodeInfo(codedata, f.Code[i], stringOffsets, f.General.BytecodeVersion);
+                datas[i] = codedata;
             }
+
+            var bb = data.Buffer;
+
+            bb.Write(datas.Length);
+
+            var allOffs = data.OffsetOffsets.ToList();
+
+            var offAcc = bb.Position + datas.Length * sizeof(int); // after all offsets
+            if (f.General.BytecodeVersion > 0xE)
+            {
+                offAcc += bytecodeSize;
+            }
+            int[] offsets = new int[datas.Length];
+            var stringOffsetOffsets = new int[f.Code.Length];
+            for (int i = 0; i < datas.Length; i++)
+            {
+                allOffs.Add(bb.Position);
+                bb.Write(offAcc);
+                offsets[i] = offAcc;
+
+                stringOffsetOffsets[i] = offAcc + 8;
+
+                offAcc += datas[i].Buffer.Size;
+            }
+
+            int[] bytecodeOffsets = null;
+            if (f.General.BytecodeVersion > 0xE)
+            {
+                // In >=F bytecodes, the code comes before the info data, which
+                // is why this method can't just be a call to WriteList.
+                bytecodeOffsets = new int[f.Code.Length];
+                for (int i = 0; i < f.Code.Length; i++)
+                {
+                    bytecodeOffsets[i] = data.Buffer.Position;
+                    AddReferencesOffset(functionReferences, f.Code[i].functionReferences, data.Buffer.Position);
+                    AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
+                    WriteCodeBlock(data, f.Code[i].InstructionsCopy, f.General.BytecodeVersion);
+                }
+            }
+
+            for (int i = 0; i < datas.Length; i++)
+            {
+                if (f.General.BytecodeVersion > 0xE)
+                {
+                    datas[i].Buffer.Position = (int)Marshal.OffsetOf(typeof(CodeEntryF), "BytecodeOffset");
+                    datas[i].Buffer.Write(bb.Position - bytecodeOffsets[i]);
+                }
+                else
+                {
+                    AddReferencesOffset(functionReferences, f.Code[i].functionReferences, data.Buffer.Position);
+                    AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
+                }
+                Write(bb, datas[i]);
+                allOffs.AddRange(datas[i].OffsetOffsets); // updated by Write
+            }
+
+            IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(f.Strings.Length);
+            for (uint i = 0; i < f.Strings.Length; i++) stringIndices[f.Strings[i]] = i;
+
+            IDictionary<Tuple<string, InstanceType>, uint> functionStarts;
+            IDictionary<Tuple<string, InstanceType>, uint> functionCounts;
+            ResolveReferenceOffsets(data, functionReferences, stringIndices, out functionStarts, out functionCounts);
+            for (int i = 0; i < f.RefData.Functions.Length; i++)
+            {
+                var fi = f.RefData.Functions[i];
+                var key = new Tuple<string, InstanceType>(fi.Name, fi.InstanceType);
+                if (functionStarts.ContainsKey(key)) fi.FirstOffset = functionStarts[key];
+                if (functionCounts.ContainsKey(key)) fi.Occurrences = functionCounts[key];
+                f.RefData.Functions[i] = fi;
+            }
+            IDictionary<Tuple<string, InstanceType>, uint> variableStarts;
+            IDictionary<Tuple<string, InstanceType>, uint> variableCounts;
+            ReplaceStogRefs(variableReferences, f.RefData.Variables);
+            ResolveReferenceOffsets(data, variableReferences, stringIndices, out variableStarts, out variableCounts);
+            for (int i = 0; i < f.RefData.Variables.Length; i++)
+            {
+                var vi = f.RefData.Variables[i];
+                var key = new Tuple<string, InstanceType>(vi.Name, vi.InstanceType);
+                if (variableStarts.ContainsKey(key)) vi.FirstOffset = variableStarts[key];
+                if (variableCounts.ContainsKey(key)) vi.Occurrences = variableCounts[key];
+                f.RefData.Variables[i] = vi;
+            }
+
+            data.OffsetOffsets = allOffs.ToArray();
+
             return stringOffsetOffsets;
+        }
+
+        public static void ReplaceStogRefs(IDictionary<Tuple<string, InstanceType>, List<uint>> references, ReferenceDef[] refdata)
+        {
+            // StackTopOrGlobal isn't allowed in the reference definitions, but
+            // they still seem to be tracked in one of the other definitions.
+            IDictionary<Tuple<string, InstanceType>, List<uint>> refsToAdd = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
+            foreach (var kv in references)
+            {
+                if (kv.Key.Item2 != InstanceType.StackTopOrGlobal)
+                    continue;
+                for (int i = 0; i < refdata.Length; i++)
+                {
+                    if (refdata[i].Name == kv.Key.Item1)
+                    {
+                        var key = new Tuple<string, InstanceType>(refdata[i].Name, refdata[i].InstanceType);
+                        if (references.ContainsKey(key))
+                        {
+                            references[key].AddRange(kv.Value);
+                            references[key].Sort(); // probably won't happen more than once
+                        }
+                        else
+                        {
+                            refsToAdd[key] = kv.Value;
+                        }
+                        break;
+                    }
+                }
+            }
+            foreach (var kv in refsToAdd)
+                references.Add(kv);
+            for (int i = 0; i < refdata.Length; i++)
+            {
+                references.Remove(new Tuple<string, InstanceType>(refdata[i].Name, InstanceType.StackTopOrGlobal));
+            }
+        }
+
+        public static void ResolveReferenceOffsets(BBData data,
+            IDictionary<Tuple<string, InstanceType>, List<uint>> references, IDictionary<string, uint> stringIndices,
+            out IDictionary<Tuple<string, InstanceType>, uint> startOffsets, out IDictionary<Tuple<string, InstanceType>, uint> counts)
+        {
+            startOffsets = new Dictionary<Tuple<string, InstanceType>, uint>(references.Count);
+            counts = new Dictionary<Tuple<string, InstanceType>, uint>(references.Count);
+            foreach (var kv in references)
+            {
+                startOffsets[kv.Key] = kv.Value[0];
+                counts[kv.Key] = (uint)kv.Value.Count;
+                for (int i = 0; i < kv.Value.Count; i++)
+                {
+                    uint diff;
+                    if (i < kv.Value.Count - 1)
+                        diff = (kv.Value[i + 1] - kv.Value[i]) & 0xFFFFFF;
+                    else
+                        diff = stringIndices[kv.Key.Item1];
+                    data.Buffer.Position = (int)kv.Value[i] + 4;
+                    uint existing = data.Buffer.ReadUInt32();
+                    data.Buffer.Write(diff | existing);
+                }
+            }
         }
     }
 }

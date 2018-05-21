@@ -396,14 +396,15 @@ namespace Altar.Repack
             j.IsString ? new ReferenceDef { Name = j.ToString(), FirstOffset = 0xFFFFFFFF } : new ReferenceDef
         {
             Name = (string)j["name"],
-            Occurrences = (uint)j["occurrences"],
+            Occurrences = j.Has("occurrences") ? (uint)j["occurrences"] : 0,
             FirstOffset = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
-            HasExtra = j.Has("unknown1") || j.Has("unknown2"),
-            unknown1 = j.Has("unknown1") ? (uint)j["unknown1"] : 0xFFFFFFFF,
-            unknown2 = j.Has("unknown2") ? (uint)j["unknown2"] : 0
+            HasExtra = j.Has("instancetype") || j.Has("unknown"),
+            InstanceType = j.Has("instancetype") ? (InstanceType)(int)j["instancetype"] : InstanceType.Global,
+            unknown2 = j.Has("unknown") ? (uint)j["unknown"] : 0
         };
 
-        private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv, string[] strings)
+        private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv,
+            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
         {
             IEnumerable<Instruction> instructions;
             if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_ASM))
@@ -420,13 +421,42 @@ namespace Altar.Repack
             {
                 throw new InvalidDataException("Unknown code format for '" + filename + "'");
             }
-            return DeserializeAssembly(instructions, bcv, strings);
+            return DeserializeAssembly(instructions, bcv,
+                stringIndices, objectIndices);
         }
 
-        private static CodeInfo DeserializeAssembly(IEnumerable<Instruction> instructions, uint bcv, string[] strings)
+        private static void AddReference(IDictionary<Tuple<string, InstanceType>, IList<uint>> references, Tuple<string, InstanceType> name, uint index)
         {
-            IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(strings.Length);
-            for (uint i = 0; i < strings.Length; i++) stringIndices[strings[i]] = i;
+            IList<uint> reflist;
+            if (!references.TryGetValue(name, out reflist))
+            {
+                reflist = new List<uint>(1);
+                references[name] = reflist;
+            }
+            reflist.Add(index);
+        }
+
+        private static InstanceType GetInstanceType(InstanceType instanceType, string objName, IDictionary<string, uint> objectIndices)
+        {
+            if (instanceType <= 0)
+            {
+                return instanceType;
+            }
+            else if (objName != null)
+            {
+                return (InstanceType)objectIndices[objName];
+            }
+            else
+            {
+                throw new InvalidDataException("Bad instance tuple");
+            }
+        }
+
+        private static CodeInfo DeserializeAssembly(IEnumerable<Instruction> instructions, uint bcv,
+            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
+        {
+            IDictionary<Tuple<string, InstanceType>, IList<uint>> functionReferences = new Dictionary<Tuple<string, InstanceType>, IList<uint>>();
+            IDictionary<Tuple<string, InstanceType>, IList<uint>> variableReferences = new Dictionary<Tuple<string, InstanceType>, IList<uint>>();
 
             var binaryInstructions = new List<AnyInstruction>();
             uint size = 0;
@@ -445,11 +475,13 @@ namespace Altar.Repack
                         var setinst = (Set)inst;
                         bininst.Set = new SetInstruction
                         {
-                            DestVar = new Reference(setinst.VariableType, 0xFFFFFF), // TODO
-                            Instance = setinst.InstanceType,
+                            DestVar = new Reference(setinst.VariableType, 0),
+                            Instance = GetInstanceType(setinst.InstanceType, setinst.InstanceName, objectIndices),
                             OpCode = op,
                             Types = new TypePair(setinst.Type1, setinst.Type2)
                         };
+                        AddReference(variableReferences, new Tuple<string, InstanceType>(setinst.TargetVariable,
+                            setinst.InstanceType), size);
                         break;
                     case InstructionKind.Push:
                         var bp = new PushInstruction
@@ -460,8 +492,10 @@ namespace Altar.Repack
                         if (bp.Type == DataType.Variable)
                         {
                             var p = (PushVariable)inst;
-                            bp.Value = (short)p.InstanceType;
-                            bp.ValueRest = new Reference(p.VariableType, 0xFFFFFF).val; // TODO
+                            bp.Value = (short)GetInstanceType(p.InstanceType, p.InstanceName, objectIndices);
+                            bp.ValueRest = new Reference(p.VariableType, 0).val;
+                            AddReference(variableReferences, new Tuple<string, InstanceType>(p.VariableName,
+                                p.InstanceType), size);
                         }
                         else
                         {
@@ -494,10 +528,11 @@ namespace Altar.Repack
                         bininst.Call = new CallInstruction
                         {
                             Arguments = (ushort)callinst.Arguments,
-                            Function = new Reference(callinst.FunctionType, 0xFFFFFF), // TODO
+                            Function = new Reference(callinst.FunctionType, 0),
                             OpCode = op,
                             ReturnType = callinst.ReturnType
                         };
+                        AddReference(functionReferences, new Tuple<string, InstanceType>(callinst.FunctionName, InstanceType.Global), size);
                         break;
                     case InstructionKind.Break:
                         var breakinst = (Break)inst;
@@ -541,9 +576,17 @@ namespace Altar.Repack
                             var s = (string)(gotoinst.Label);
                             // TODO
                         }
+                        var relTarget = (int)absTarget - (int)size;
+                        uint offset = unchecked((uint)relTarget);
+                        if (relTarget < 0)
+                        {
+                            offset &= 0xFFFFFF;
+                            offset += 0x1000000;
+                        }
+                        offset /= 4;
                         bininst.Goto = new BranchInstruction
                         {
-                            Offset = (Int24)(absTarget - size) / 4,
+                            Offset = new Int24(offset),
                             OpCode = op
                         };
                         break;
@@ -561,7 +604,9 @@ namespace Altar.Repack
             return new CodeInfo
             {
                 Size = (int)size,
-                InstructionsCopy = binaryInstructions.ToArray()
+                InstructionsCopy = binaryInstructions.ToArray(),
+                functionReferences = functionReferences,
+                variableReferences = variableReferences
             };
         }
 
@@ -670,16 +715,47 @@ namespace Altar.Repack
                     f.Audio[i] = audioinfo;
                 }
             }
+            if (projFile.Has("objs"))
+            {
+                Console.Write("Loading objects... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+
+                var objs = projFile["objs"].ToArray();
+                var objNames = objs.Select(o => Path.GetFileNameWithoutExtension((string)o)).ToArray();
+                f.Objects = new ObjectInfo[objs.Length];
+                for (int i = 0; i < objs.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + objs.Length + C_PAREN);
+                    f.Objects[i] = DeserializeObj(
+                        JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(objs[i])))),
+                        f.Sprites,
+                        s => (uint)Array.IndexOf(objNames, s));
+                    f.Objects[i].Name = objNames[i];
+                }
+            }
             if (projFile.Has("code"))
             {
                 Console.WriteLine("Loading code...");
                 var code = projFile["code"].ToArray();
                 f.Code = new CodeInfo[code.Length];
+
+                IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(f.Strings.Length);
+                for (uint i = 0; i < f.Strings.Length; i++) stringIndices[f.Strings[i]] = i;
+                IDictionary<string, uint> objectIndices = new Dictionary<string, uint>(f.Objects.Length);
+                for (uint i = 0; i < f.Objects.Length; i++) objectIndices[f.Objects[i].Name] = i;
+
                 for (int i = 0; i < code.Length; i++)
                 {
                     Console.WriteLine((string)(code[i]));
-                    f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion, f.Strings);
+                    f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
+                        stringIndices, objectIndices);
                     f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                    /*if (f.Code[i].Name == "gml_Script_scr_namingscreen")
+                    {
+                        return f;
+                    }*/
                 }
             }
             if (projFile.Has("sounds"))
@@ -751,26 +827,6 @@ namespace Altar.Repack
                 {
                     f.Fonts[i] = DeserializeFont(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(fonts[i])))));
                     f.Fonts[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
-                }
-            }
-            if (projFile.Has("objs"))
-            {
-                Console.Write("Loading objects... ");
-                var cl = Console.CursorLeft;
-                var ct = Console.CursorTop;
-
-                var objs = projFile["objs"].ToArray();
-                var objNames = objs.Select(o => Path.GetFileNameWithoutExtension((string)o)).ToArray();
-                f.Objects = new ObjectInfo[objs.Length];
-                for (int i = 0; i < objs.Length; i++)
-                {
-                    Console.SetCursorPosition(cl, ct);
-                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + objs.Length + C_PAREN);
-                    f.Objects[i] = DeserializeObj(
-                        JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(objs[i])))),
-                        f.Sprites,
-                        s => (uint)Array.IndexOf(objNames, s));
-                    f.Objects[i].Name = objNames[i];
                 }
             }
             if (projFile.Has("rooms"))

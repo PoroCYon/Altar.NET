@@ -728,7 +728,7 @@ namespace Altar.Unpack
                 ret.Occurrences = rde->Occurrences;
                 ret.FirstOffset = rde->FirstAddress;
                 ret.HasExtra = true;
-                ret.unknown1 = rde->_pad0;
+                ret.InstanceType = (Decomp.InstanceType)rde->InstanceType;
                 ret.unknown2 = rde->_pad1;
 
                 return ret;

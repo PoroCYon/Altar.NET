@@ -259,6 +259,17 @@ namespace Altar
                         SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Code.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_ASM, Disassembler.DisplayInstructions(f, i, eo.AbsoluteAddresses));
+
+                        /*BinBuffer bb = new BinBuffer();
+                        for (uint j = 0; j < f.Code[i].Instructions.Length; j++)
+                        {
+                            var instr = f.Code[i].Instructions[j];
+                            var isize = DisasmExt.Size(instr, f.General.BytecodeVersion)*4;
+
+                            bb.Write((IntPtr)instr, (int)isize);
+                        }
+                        bb.Position = 0;
+                        File.WriteAllBytes(od + DIR_CODE + f.Code[i].Name + EXT_BIN, bb.ReadBytes(bb.Size));*/
                     }
                     Console.WriteLine();
                 }
@@ -561,6 +572,9 @@ namespace Altar
             var texpChunk = new BBData(new BinBuffer(), new int[0]);
             int[] texPagOffsets = SectionWriter.WriteTexturePages(texpChunk, f.TexturePages);
 
+            var codeChunk = new BBData(new BinBuffer(), new int[0]);
+            var codeChunkStringOffsetOffsets = SectionWriter.WriteCodes(codeChunk, f, stringOffsets);
+
             var output = Path.GetFullPath(opt.OutputFile);
 
             var offsets = new int[0];
@@ -572,6 +586,8 @@ namespace Altar
             int stringsChunkPosition = 0;
             var texpOffsetOffsets = new List<int>();
             int texpChunkPosition = 0;
+            var codeOffsetOffsets = new List<int>();
+            int codeChunkPosition = 0;
 
             foreach (var chunkFile in projFile["chunks"])
             {
@@ -581,6 +597,7 @@ namespace Altar
                 BBData chunk = new BBData(new BinBuffer(), new int[0]);
                 int[] chunkStringOffsetOffsets = null;
                 int[] chunkTexpOffsetOffsets = null;
+                int[] chunkCodeOffsetOffsets = null;
                 switch (chunkId)
                 {
                     case SectionHeaders.General:
@@ -621,16 +638,20 @@ namespace Altar
                         texpChunkPosition = writer.Buffer.Position + 8;
                         break;
                     case SectionHeaders.Code:
-                        chunkStringOffsetOffsets = SectionWriter.WriteCodes(chunk, f, stringOffsets);
+                        chunk = codeChunk;
+                        chunkStringOffsetOffsets = codeChunkStringOffsetOffsets;
+                        codeChunkPosition = writer.Buffer.Position + 8;
                         break;
                     case SectionHeaders.Variables:
                         if (f.VariableExtra != null)
                             foreach (var e in f.VariableExtra)
                                 chunk.Buffer.Write(e);
-                        chunkStringOffsetOffsets = SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringOffsets, f.General.IsOldBCVersion, false);
+                        SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringOffsets, f.General.IsOldBCVersion, false,
+                            out chunkStringOffsetOffsets, out chunkCodeOffsetOffsets);
                         break;
                     case SectionHeaders.Functions:
-                        chunkStringOffsetOffsets = SectionWriter.WriteRefDefs(chunk, f.RefData.Functions, stringOffsets, f.General.IsOldBCVersion, true);
+                        SectionWriter.WriteRefDefs(chunk, f.RefData.Functions, stringOffsets, f.General.IsOldBCVersion, true,
+                            out chunkStringOffsetOffsets, out chunkCodeOffsetOffsets);
                         chunkStringOffsetOffsets = chunkStringOffsetOffsets.Concat(SectionWriter.WriteFunctionLocals(chunk, f.FunctionLocals, stringOffsets)).ToArray();
                         break;
                     case SectionHeaders.Strings:
@@ -653,20 +674,28 @@ namespace Altar
                 }
                 if (chunkStringOffsetOffsets != null)
                 {
-                    foreach (var stringOffset in chunkStringOffsetOffsets)
+                    foreach (var offset in chunkStringOffsetOffsets)
                     {
-                        stringOffsetOffsets.Add(stringOffset + writer.Buffer.Position);
+                        stringOffsetOffsets.Add(offset + writer.Buffer.Position);
                     }
                 }
                 chunkStringOffsetOffsets = null;
                 if (chunkTexpOffsetOffsets != null)
                 {
-                    foreach (var texpOffset in chunkTexpOffsetOffsets)
+                    foreach (var offset in chunkTexpOffsetOffsets)
                     {
-                        texpOffsetOffsets.Add(texpOffset + writer.Buffer.Position);
+                        texpOffsetOffsets.Add(offset + writer.Buffer.Position);
                     }
                 }
                 chunkTexpOffsetOffsets = null;
+                if (chunkCodeOffsetOffsets != null)
+                {
+                    foreach (var offset in chunkCodeOffsetOffsets)
+                    {
+                        codeOffsetOffsets.Add(offset + writer.Buffer.Position);
+                    }
+                }
+                chunkCodeOffsetOffsets = null;
                 SectionWriter.WriteChunk(writer, chunkId, chunk);
             }
 
@@ -688,6 +717,14 @@ namespace Altar
                 var o = writer.Buffer.ReadInt32();
                 //bb.Position -= sizeof(int);
                 writer.Buffer.Write(o + texpChunkPosition);
+            }
+
+            foreach (var codeOffset in codeOffsetOffsets)
+            {
+                writer.Buffer.Position = codeOffset;
+                var o = writer.Buffer.ReadInt32();
+                //bb.Position -= sizeof(int);
+                writer.Buffer.Write(o + codeChunkPosition);
             }
 
             writer.Buffer.Position = 0;

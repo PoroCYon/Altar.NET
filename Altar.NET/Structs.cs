@@ -13,7 +13,7 @@ namespace Altar
         public uint Occurrences;
         public uint FirstOffset;
         public bool HasExtra;
-        public uint unknown1;
+        public InstanceType InstanceType;
         public uint unknown2;
     }
 
@@ -187,6 +187,8 @@ namespace Altar
         public int Size;
         internal AnyInstruction[] InstructionsCopy; // I ain't dealin' with no pointers
         // (TODO: don't use pointers)
+        internal IDictionary<Tuple<string, InstanceType>, IList<uint>> functionReferences;
+        internal IDictionary<Tuple<string, InstanceType>, IList<uint>> variableReferences;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureInfo
