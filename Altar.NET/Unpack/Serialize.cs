@@ -454,16 +454,20 @@ namespace Altar.Unpack
 
         private static JsonData SerializeReferenceDef(ReferenceDef rd)
         {
+            if (!rd.HasExtra)
+            {
+                return new JsonData(rd.Name);
+            }
             var r = CreateObj();
 
             r["name"] = rd.Name;
-            r["occurrences"] = rd.Occurrences;
-            if (rd.FirstOffset != 0xFFFFFFFF)
-                r["firstoffset"] = rd.FirstOffset;
+            //r["occurrences"] = rd.Occurrences;
+            //if (rd.FirstOffset != 0xFFFFFFFF)
+            //    r["firstoffset"] = rd.FirstOffset;
             if (rd.HasExtra)
             {
-                r["unknown1"] = rd.unknown1;
-                r["unknown2"] = rd.unknown2;
+                r["instancetype"] = (int)rd.InstanceType;
+                r["unknown"] = rd.unknown2;
             }
 
             return r;

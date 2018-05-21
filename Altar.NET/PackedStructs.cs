@@ -42,7 +42,7 @@ namespace Altar
     public unsafe struct RefDefEntryWithOthers
     {
         public uint NameOffset;
-        public uint _pad0; // unknown, some flags?
+        public int InstanceType;
         public uint _pad1; // unknown
         public uint Occurrences;
         public uint FirstAddress;
