@@ -399,7 +399,7 @@ namespace Altar.Repack
             Occurrences = j.Has("occurrences") ? (uint)j["occurrences"] : 0,
             FirstOffset = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
             HasExtra = j.Has("instancetype") || j.Has("unknown"),
-            InstanceType = j.Has("instancetype") ? (InstanceType)(int)j["instancetype"] : InstanceType.Global,
+            InstanceType = j.Has("instancetype") ? (InstanceType)(int)j["instancetype"] : InstanceType.StackTopOrGlobal,
             unknown2 = j.Has("unknown") ? (uint)j["unknown"] : 0
         };
 
@@ -532,7 +532,7 @@ namespace Altar.Repack
                             OpCode = op,
                             ReturnType = callinst.ReturnType
                         };
-                        AddReference(functionReferences, new Tuple<string, InstanceType>(callinst.FunctionName, InstanceType.Global), size);
+                        AddReference(functionReferences, new Tuple<string, InstanceType>(callinst.FunctionName, InstanceType.StackTopOrGlobal), size);
                         break;
                     case InstructionKind.Break:
                         var breakinst = (Break)inst;
@@ -563,6 +563,11 @@ namespace Altar.Repack
                             OpCode = op,
                             Type = singleinst.Type
                         };
+                        if (inst is Dup)
+                        {
+                            var dupinst = (Dup)inst;
+                            bininst.SingleType.DupExtra = dupinst.Extra;
+                        }
                         break;
                     case InstructionKind.Goto:
                         var gotoinst = (Branch)inst;

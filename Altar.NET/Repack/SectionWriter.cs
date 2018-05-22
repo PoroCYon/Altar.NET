@@ -1122,6 +1122,7 @@ namespace Altar.Repack
             // StackTopOrGlobal isn't allowed in the reference definitions, but
             // they still seem to be tracked in one of the other definitions.
             IDictionary<Tuple<string, InstanceType>, List<uint>> refsToAdd = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
+            IList<Tuple<string, InstanceType>> toRemove = new List<Tuple<string, InstanceType>>();
             foreach (var kv in references)
             {
                 if (kv.Key.Item2 != InstanceType.StackTopOrGlobal)
@@ -1140,15 +1141,16 @@ namespace Altar.Repack
                         {
                             refsToAdd[key] = kv.Value;
                         }
+                        toRemove.Add(new Tuple<string, InstanceType>(refdata[i].Name, InstanceType.StackTopOrGlobal));
                         break;
                     }
                 }
             }
             foreach (var kv in refsToAdd)
                 references.Add(kv);
-            for (int i = 0; i < refdata.Length; i++)
+            foreach (var key in toRemove)
             {
-                references.Remove(new Tuple<string, InstanceType>(refdata[i].Name, InstanceType.StackTopOrGlobal));
+                references.Remove(key);
             }
         }
 
