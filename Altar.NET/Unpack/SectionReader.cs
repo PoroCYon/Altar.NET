@@ -48,7 +48,7 @@ namespace Altar.Unpack
         {
             if (off == 0 || (off & 0xFFFFFF00) == 0xFFFFFF00 /* avoid crashes due
                                                                 to bogus offsets */)
-                return String.Empty;
+                return null;
 
             return ReadString((byte*)GMFile.PtrFromOffset(content, off-4));
         }
@@ -146,6 +146,20 @@ namespace Altar.Unpack
             t.InstanceID = entry->InstanceID;
 
             return t;
+        }
+        static RoomObjInst ReadRoomObjInst(GMFileContent content, IntPtr p)
+        {
+            var entry = (RoomObjInstEntry*)p;
+            var oi = new RoomObjInst();
+            oi.Index   = entry->Index;
+            oi.ObjName = StringFromOffset(content, entry->Name);
+            oi.Unk2    = entry->Unk2;
+            oi.Instances = new uint[entry->InstCount];
+            for (uint i = 0; i < oi.Instances.Length; i++)
+            {
+                oi.Instances[i] = (&entry->Instances)[i];
+            }
+            return oi;
         }
 
         public static GeneralInfo GetGeneralInfo(GMFileContent content)
@@ -262,6 +276,7 @@ namespace Altar.Unpack
             ret.Bounding = se->Bounding;
             ret.BBoxMode = se->BBoxMode;
             ret.Origin   = se->Origin  ;
+            ret.Version  = 1;
 
             ret.SeparateColMasks = se->SeparateColMasks.IsTrue();
 
@@ -270,6 +285,8 @@ namespace Altar.Unpack
             {
                 var se2 = (SpriteEntry2*)GMFile.PtrFromOffset(content, (&content.Sprites->Offsets)[id]);
                 tex = &se2->Textures;
+                ret.Version = 2;
+                ret.UnknownFloat = se2->funk;
             }
             if (tex->Count == ~(uint)0)
             {
@@ -541,6 +558,16 @@ namespace Altar.Unpack
             ret.Objects     = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->ObjOffset ), ReadRoomObj );
             ret.Tiles       = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, re->TileOffset), ReadRoomTile);
 
+            if (re->BgOffset != (&content.Rooms->Offsets)[id]+sizeof(RoomEntry))
+            {
+                // heuristic to find instance data
+                uint instanceListOffset = *(uint*)GMFile.PtrFromOffset(content, (&content.Rooms->Offsets)[id]+sizeof(RoomEntry));
+                if (instanceListOffset > (&content.Rooms->Offsets)[id] && (instanceListOffset&0xFF000000) != 0xFF000000)
+                {
+                    ret.ObjInst = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, instanceListOffset), ReadRoomObjInst);
+                }
+            }
+
             return ret;
         }
         public static TexturePageInfo GetTexPageInfo(GMFileContent content, uint id)
@@ -622,9 +649,8 @@ namespace Altar.Unpack
                 throw new ArgumentOutOfRangeException(nameof(id));
 
             var ag = GMFile.PtrFromOffset(content, (&content.AudioGroup->Offsets)[id]);
-            ag = GMFile.PtrFromOffset(content, *(uint*)ag);
 
-            return ReadString((byte*)ag); // it's just a name
+            return StringFromOffset(content, *(uint*)ag); // it's just a name
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)

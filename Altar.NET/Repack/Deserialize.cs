@@ -149,6 +149,17 @@ namespace Altar.Repack
 
             return r;
         }
+        static RoomObjInst DeserializeRoomObjInst(JsonData j)
+        {
+            return new RoomObjInst
+            {
+                Index = (uint)j["index"],
+                Instances = DeserializeArray(j["instances"], i => (uint)i),
+                ObjName = (string)j["obj"],
+                Unk2 = (uint)j["unk2"]
+            };
+        }
+
         static RoomView DeserializeRoomView(JsonData j, ObjectInfo[] objs)
         {
             var r = new RoomView
@@ -288,7 +299,9 @@ namespace Altar.Repack
             Bounding = DeserializeBBox2(j["bounding"]),
             Origin = DeserializePoint(j["origin"]),
             TextureIndices = j.Has("textures") ? DeserializeArray(j["textures"], (Func<dynamic, uint>)(jd => (uint)jd)) : null,
-            CollisionMasks = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null
+            CollisionMasks = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null,
+            Version = j.Has("unknown1") ? 2 : 1,
+            UnknownFloat = j.Has("unknown1") ? (float)j["unknown1"] : 0.0f
         };
         #endregion
         #region public static BackgroundInfo DeserializeBg    (JsonData j)
@@ -373,7 +386,8 @@ namespace Altar.Repack
             Backgrounds = DeserializeArray(j["bgs"], (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg(d, bgs))),
             Views = DeserializeArray(j["views"], (Func<dynamic, RoomView>)(d => DeserializeRoomView(d, objs))),
             Objects = DeserializeArray(j["objs"], (Func<dynamic, RoomObject>)(d => DeserializeRoomObj(d, objs))),
-            Tiles = DeserializeArray(j["tiles"], (Func<dynamic, RoomTile>)(d => DeserializeRoomTile(d, bgs)))
+            Tiles = DeserializeArray(j["tiles"], (Func<dynamic, RoomTile>)(d => DeserializeRoomTile(d, bgs))),
+            ObjInst = j.Has("objinst") ? DeserializeArray(j["objinst"], DeserializeRoomObjInst) : null
         };
         #endregion
         #region public static TexturePageInfo DeserializeTPag(JsonData j)
@@ -400,7 +414,7 @@ namespace Altar.Repack
             FirstOffset = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
             HasExtra = j.Has("instancetype") || j.Has("unknown"),
             InstanceType = j.Has("instancetype") ? (InstanceType)(int)j["instancetype"] : InstanceType.StackTopOrGlobal,
-            unknown2 = j.Has("unknown") ? (uint)j["unknown"] : 0
+            unknown2 = j.Has("unknown") ? (int)j["unknown"] : 0
         };
 
         private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv,
@@ -421,19 +435,8 @@ namespace Altar.Repack
             {
                 throw new InvalidDataException("Unknown code format for '" + filename + "'");
             }
-            return DeserializeAssembly(instructions, bcv,
+            return DeserializeAssembly(Path.GetFileNameWithoutExtension(filename), instructions, bcv,
                 stringIndices, objectIndices);
-        }
-
-        private static void AddReference(IDictionary<Tuple<string, InstanceType>, IList<uint>> references, Tuple<string, InstanceType> name, uint index)
-        {
-            IList<uint> reflist;
-            if (!references.TryGetValue(name, out reflist))
-            {
-                reflist = new List<uint>(1);
-                references[name] = reflist;
-            }
-            reflist.Add(index);
         }
 
         private static InstanceType GetInstanceType(InstanceType instanceType, string objName, IDictionary<string, uint> objectIndices)
@@ -452,11 +455,11 @@ namespace Altar.Repack
             }
         }
 
-        private static CodeInfo DeserializeAssembly(IEnumerable<Instruction> instructions, uint bcv,
+        private static CodeInfo DeserializeAssembly(string name, IEnumerable<Instruction> instructions, uint bcv,
             IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
         {
-            IDictionary<Tuple<string, InstanceType>, IList<uint>> functionReferences = new Dictionary<Tuple<string, InstanceType>, IList<uint>>();
-            IDictionary<Tuple<string, InstanceType>, IList<uint>> variableReferences = new Dictionary<Tuple<string, InstanceType>, IList<uint>>();
+            IList<Tuple<ReferenceSignature, uint>> functionReferences = new List<Tuple<ReferenceSignature, uint>>();
+            IList<Tuple<ReferenceSignature, uint>> variableReferences = new List<Tuple<ReferenceSignature, uint>>();
 
             var binaryInstructions = new List<AnyInstruction>();
             uint size = 0;
@@ -480,8 +483,12 @@ namespace Altar.Repack
                             OpCode = op,
                             Types = new TypePair(setinst.Type1, setinst.Type2)
                         };
-                        AddReference(variableReferences, new Tuple<string, InstanceType>(setinst.TargetVariable,
-                            setinst.InstanceType), size);
+                        variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+                        {
+                            Name = setinst.TargetVariable,
+                            InstanceType = setinst.InstanceType,
+                            Instance = setinst.InstanceType == InstanceType.Local ? name : null
+                        }, size));
                         break;
                     case InstructionKind.Push:
                         var bp = new PushInstruction
@@ -494,8 +501,12 @@ namespace Altar.Repack
                             var p = (PushVariable)inst;
                             bp.Value = (short)GetInstanceType(p.InstanceType, p.InstanceName, objectIndices);
                             bp.ValueRest = new Reference(p.VariableType, 0).val;
-                            AddReference(variableReferences, new Tuple<string, InstanceType>(p.VariableName,
-                                p.InstanceType), size);
+                            variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+                            {
+                                Name = p.VariableName,
+                                InstanceType = p.InstanceType,
+                                Instance = p.InstanceType == InstanceType.Local ? name : null
+                            }, size));
                         }
                         else
                         {
@@ -532,7 +543,11 @@ namespace Altar.Repack
                             OpCode = op,
                             ReturnType = callinst.ReturnType
                         };
-                        AddReference(functionReferences, new Tuple<string, InstanceType>(callinst.FunctionName, InstanceType.StackTopOrGlobal), size);
+                        functionReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+                        {
+                            Name = callinst.FunctionName,
+                            InstanceType = InstanceType.StackTopOrGlobal
+                        }, size));
                         break;
                     case InstructionKind.Break:
                         var breakinst = (Break)inst;

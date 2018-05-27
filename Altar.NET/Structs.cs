@@ -14,9 +14,23 @@ namespace Altar
         public uint FirstOffset;
         public bool HasExtra;
         public InstanceType InstanceType;
-        public uint unknown2;
+        public int unknown2;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ReferenceSignature
+    {
+        public string Name;
+        public InstanceType InstanceType;
+        public string Instance;
+        public ReferenceSignature(ReferenceDef r)
+        {
+            Name = r.Name;
+            InstanceType = r.InstanceType;
+            Instance = null;
+        }
+        public override string ToString() => Name;
+    }
     // ---
 
     [StructLayout(LayoutKind.Sequential)]
@@ -80,6 +94,8 @@ namespace Altar
         public uint BBoxMode;
         public bool SeparateColMasks;
         public Point Origin;
+        public int Version;
+        public float UnknownFloat;
 
         public uint[] TextureIndices;
         public bool[][,] CollisionMasks;
@@ -170,6 +186,7 @@ namespace Altar
         public RoomView      [] Views      ;
         public RoomObject    [] Objects    ;
         public RoomTile      [] Tiles      ;
+        public RoomObjInst   [] ObjInst    ;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct TexturePageInfo
@@ -187,8 +204,8 @@ namespace Altar
         public int Size;
         internal AnyInstruction[] InstructionsCopy; // I ain't dealin' with no pointers
         // (TODO: don't use pointers)
-        internal IDictionary<Tuple<string, InstanceType>, IList<uint>> functionReferences;
-        internal IDictionary<Tuple<string, InstanceType>, IList<uint>> variableReferences;
+        internal IList<Tuple<ReferenceSignature, uint>> functionReferences;
+        internal IList<Tuple<ReferenceSignature, uint>> variableReferences;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureInfo
@@ -247,6 +264,14 @@ namespace Altar
         public uint InstanceID;
         public PointF Scale;
         public Colour Colour;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RoomObjInst
+    {
+        public string ObjName;
+        public uint Index;
+        public uint Unk2;
+        public uint[] Instances;
     }
 
     public enum FontAntiAliasing : byte
