@@ -1118,12 +1118,14 @@ namespace Altar.Repack
             variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
             {
                 Name = "prototype",
-                InstanceType = InstanceType.Self
+                InstanceType = InstanceType.Self,
+                VariableType = VariableType.Normal
             }, 0xFFFFFFFF));
             variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
             {
                 Name = "@@array@@",
-                InstanceType = InstanceType.Self
+                InstanceType = InstanceType.Self,
+                VariableType = VariableType.Normal
             }, 0xFFFFFFFF));
 
             int[] bytecodeOffsets = null;
@@ -1205,10 +1207,7 @@ namespace Altar.Repack
                 Functions = functionStartOffsetsAndCounts.ToArray(),
                 Variables = variableStartOffsetsAndCounts.ToArray()
             };
-
-            var j = Unpack.Serialize.SerializeVars(f);
-            System.IO.File.WriteAllText(@"F:\Users\Spencer\Downloads\JetBoy LD41\data\variables2.json", j.ToJson());
-
+            
             data.OffsetOffsets = allOffs.ToArray();
 
             return stringOffsetOffsets;
@@ -1281,13 +1280,15 @@ namespace Altar.Repack
                     InstanceType = targetRef.InstanceType,
                     Name = targetRef.Name,
                     Occurrences = count,
-                    unknown2 = targetRef.InstanceType == InstanceType.Local ? localCount : nonLocalCount
+                    unknown2 = targetRef.InstanceType == InstanceType.Local ?
+                        localCount : targetRef.VariableType == VariableType.StackTop ?
+                            nonLocalCount : - 6
                 });
                 if (targetRef.InstanceType == InstanceType.Local)
                 {
                     localCount++;
                 }
-                else
+                else if (targetRef.VariableType == VariableType.StackTop)
                 {
                     nonLocalCount++;
                 }

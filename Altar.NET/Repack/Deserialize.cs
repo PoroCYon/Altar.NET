@@ -487,7 +487,8 @@ namespace Altar.Repack
                         {
                             Name = setinst.TargetVariable,
                             InstanceType = setinst.InstanceType,
-                            Instance = setinst.InstanceType == InstanceType.Local ? name : null
+                            Instance = setinst.InstanceType == InstanceType.Local ? name : null,
+                            VariableType = setinst.VariableType
                         }, size));
                         break;
                     case InstructionKind.Push:
@@ -505,7 +506,8 @@ namespace Altar.Repack
                             {
                                 Name = p.VariableName,
                                 InstanceType = p.InstanceType,
-                                Instance = p.InstanceType == InstanceType.Local ? name : null
+                                Instance = p.InstanceType == InstanceType.Local ? name : null,
+                                VariableType = p.VariableType
                             }, size));
                         }
                         else
@@ -546,7 +548,8 @@ namespace Altar.Repack
                         functionReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
                         {
                             Name = callinst.FunctionName,
-                            InstanceType = InstanceType.StackTopOrGlobal
+                            InstanceType = InstanceType.StackTopOrGlobal,
+                            VariableType = callinst.FunctionType
                         }, size));
                         break;
                     case InstructionKind.Break:
