@@ -23,12 +23,7 @@ namespace Altar
         public string Name;
         public InstanceType InstanceType;
         public string Instance;
-        public ReferenceSignature(ReferenceDef r)
-        {
-            Name = r.Name;
-            InstanceType = r.InstanceType;
-            Instance = null;
-        }
+        public VariableType VariableType;
         public override string ToString() => Name;
     }
     // ---
