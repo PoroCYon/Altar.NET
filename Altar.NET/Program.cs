@@ -609,6 +609,9 @@ namespace Altar
                     case SectionHeaders.Sounds:
                         chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringOffsets, f.AudioGroups);
                         break;
+                    case SectionHeaders.AudioGroup:
+                        chunkStringOffsetOffsets = SectionWriter.WriteAudioGroups(chunk, f.AudioGroups, stringOffsets);
+                        break;
                     case SectionHeaders.Sprites:
                         SectionWriter.WriteSprites(chunk, f.Sprites, stringOffsets, texPagOffsets,
                             out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
@@ -656,7 +659,7 @@ namespace Altar
                         break;
                     case SectionHeaders.Strings:
                         // for Textures chunk up next
-                        SectionWriter.Pad(stringsChunk, 0x100, writer.Buffer.Position + 8);
+                        SectionWriter.Pad(stringsChunk, 0x80, writer.Buffer.Position + 8);
                         chunk = stringsChunk;
                         stringsChunkPosition = writer.Buffer.Position + 12;
                         break;

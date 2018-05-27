@@ -323,6 +323,7 @@ namespace Altar.Repack
             for (int i = 0; i < textures.Length; i++)
             {
                 BBData texturedata = new BBData(new BinBuffer(), new int[0]);
+                //texturedata.Buffer.Write(1); // TextureEntry._pad
                 texturedata.Buffer.Write(0); // TextureEntry._pad
                 texturedata.Buffer.Write(0); // TextureEntry.Offset
                 datas[i] = texturedata;
@@ -335,7 +336,7 @@ namespace Altar.Repack
             {
                 Pad(data, 0x80, 8);
                 var p = data.Buffer.Position;
-                data.Buffer.Position = offsets[i] + 4;
+                //data.Buffer.Position = offsets[i] + 8;
                 secondaryOffsets[i] = data.Buffer.Position;
                 data.Buffer.Write(p);
                 data.Buffer.Position = p;
@@ -564,9 +565,9 @@ namespace Altar.Repack
         {
             var se = new SoundEntry
             {
-                NameOffset = (uint)stringOffsets[si.Name],
-                TypeOffset = (uint)stringOffsets[si.Type],
-                FileOffset = (uint)stringOffsets[si.File],
+                NameOffset = si.Name == null ? 0 : (uint)stringOffsets[si.Name],
+                TypeOffset = si.Type == null ? 0 : (uint)stringOffsets[si.Type],
+                FileOffset = si.File == null ? 0 : (uint)stringOffsets[si.File],
 
                 Volume = si.VolumeMod,
                 Pitch = si.PitchMod,
@@ -585,15 +586,27 @@ namespace Altar.Repack
         public static int[] WriteSounds(BBData data, SoundInfo[] sounds, IDictionary<string, int> stringOffsets, string[] audioGroups)
         {
             int[] offsets = WriteList(data, sounds, (sounddata, sound) => WriteSound(sounddata, sound, stringOffsets, audioGroups));
-            var stringOffsetOffsets = new int[sounds.Length * 3];
+            var stringOffsetOffsets = new List<int>();
 
             for (int i = 0; i < sounds.Length; i++)
             {
-                stringOffsetOffsets[i * 3] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "NameOffset") + 8;
-                stringOffsetOffsets[i * 3 + 1] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "TypeOffset") + 8;
-                stringOffsetOffsets[i * 3 + 2] = offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "FileOffset") + 8;
+                if (sounds[i].Name != null) stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "NameOffset") + 8);
+                if (sounds[i].Type != null) stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "TypeOffset") + 8);
+                if (sounds[i].File != null) stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(SoundEntry), "FileOffset") + 8);
             }
-            return stringOffsetOffsets;
+            return stringOffsetOffsets.ToArray();
+        }
+
+        public static int[] WriteAudioGroups(BBData data, string[] audioGroups, IDictionary<string, int> stringOffsets)
+        {
+            int[] offsets = WriteList(data, audioGroups, (groupdata, group) => groupdata.Buffer.Write(stringOffsets[group]));
+            var stringOffsetOffsets = new int[audioGroups.Length];
+
+            for (int i = 0; i < audioGroups.Length; i++)
+            {
+                stringOffsetOffsets[i] = offsets[i] + 8;
+            }
+            return stringOffsetOffsets.ToArray();
         }
 
         private static void WriteSprite(BBData data, SpriteInfo si, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
@@ -609,13 +622,32 @@ namespace Altar.Repack
                 SeparateColMasks = si.SeparateColMasks ? DwordBool.True : DwordBool.False
             };
 
-            se.Textures.Count = si.TextureIndices == null ? 0xFFFFFFFF : (uint)si.TextureIndices.Length;
             var tmp = new BinBuffer();
             tmp.Write(se);
-            data.Buffer.Write(tmp, 0, tmp.Size - 4, 0);
+            data.Buffer.Write(tmp, 0, tmp.Size - 8, 0);
 
-            if (si.TextureIndices != null)
+            if (si.Version >= 2)
             {
+                var se2 = new SpriteEntry2();
+                unsafe
+                {
+                    se2._pad2[0] = -1;
+                    se2._pad2[1] = 1;
+                    se2._pad2[2] = 0;
+                }
+                se2.funk = si.UnknownFloat;
+                tmp = new BinBuffer();
+                tmp.Write(se2);
+                data.Buffer.Write(tmp, 0, 0x14, 0x38);
+            }
+
+            if (si.TextureIndices == null)
+            {
+                data.Buffer.Write(0xFFFFFFFF);
+            }
+            else
+            {
+                data.Buffer.Write(si.TextureIndices.Length);
                 foreach (var ti in si.TextureIndices)
                 {
                     data.Buffer.Write(texPagOffsets[ti]);
@@ -669,7 +701,15 @@ namespace Altar.Repack
                 var si = sprites[i];
                 if (si.TextureIndices != null)
                 {
-                    var texIdxOffs = offsets[i] + (int)Marshal.OffsetOf(typeof(SpriteEntry), "Textures") + 12;
+                    var texIdxOffs = offsets[i] + 12;
+                    if (si.Version < 2)
+                    {
+                        texIdxOffs += (int)Marshal.OffsetOf(typeof(SpriteEntry), "Textures");
+                    }
+                    else
+                    {
+                        texIdxOffs += (int)Marshal.OffsetOf(typeof(SpriteEntry2), "Textures");
+                    }
                     for (int j = 0; j < si.TextureIndices.Length; j++)
                     {
                         texpOffsetOffsetsList.Add(texIdxOffs + j * sizeof(int));
@@ -818,12 +858,28 @@ namespace Altar.Repack
             });
         }
 
+        private static void WriteRoomObjInst(BBData data, RoomObjInst roi, IDictionary<string, int> stringOffsets)
+        {
+            data.Buffer.Write(new RoomObjInstEntry
+            {
+                Index = roi.Index,
+                Unk2 = roi.Unk2,
+                InstCount = (uint)roi.Instances.Length,
+                Name = (uint)stringOffsets[roi.ObjName]
+            });
+            data.Buffer.Position -= 4;
+            foreach (var id in roi.Instances)
+            {
+                data.Buffer.Write(id);
+            }
+        }
+
         private static void WriteRoom(BBData data, RoomInfo ri, IDictionary<string, int> stringOffsets)
         {
             var re = new RoomEntry
             {
                 Name = (uint)stringOffsets[ri.Name],
-                Caption = (uint)stringOffsets[ri.Caption],
+                Caption = ri.Caption == null ? 0 : (uint)stringOffsets[ri.Caption],
                 Size = ri.Size,
                 Speed = ri.Speed,
                 Persistent = ri.IsPersistent ? DwordBool.True : DwordBool.False,
@@ -847,9 +903,16 @@ namespace Altar.Repack
             var viewOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ViewOffset");
             var objOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ObjOffset");
             var tileOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "TileOffset");
+            int objInstOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "MetresPerPixel") + 4;
 
             data.Buffer.Write(re);
             data.OffsetOffsets = new int[] { bgOffsetOffset, viewOffsetOffset, objOffsetOffset, tileOffsetOffset };
+
+            if (ri.ObjInst != null)
+            {
+                data.Buffer.Write(0);
+                data.OffsetOffsets = data.OffsetOffsets.Concat(new int[] { objInstOffsetOffset }).ToArray();
+            }
 
             data.Buffer.Position = bgOffsetOffset;
             data.Buffer.Write(data.Buffer.Size);
@@ -870,18 +933,27 @@ namespace Altar.Repack
             data.Buffer.Write(data.Buffer.Size);
             data.Buffer.Position = data.Buffer.Size;
             WriteList(data, ri.Tiles, WriteRoomTile);
+
+            if (ri.ObjInst != null)
+            {
+                data.Buffer.Position = objInstOffsetOffset;
+                data.Buffer.Write(data.Buffer.Size);
+                data.Buffer.Position = data.Buffer.Size;
+                WriteList(data, ri.ObjInst, WriteRoomObjInst, stringOffsets);
+            }
         }
 
         public static int[] WriteRooms(BBData data, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
         {
             int[] offsets = WriteList(data, rooms, WriteRoom, stringOffsets);
-            var stringOffsetOffsets = new int[rooms.Length * 2];
+            var stringOffsetOffsets = new List<int>();
             for (int i = 0; i < rooms.Length; i++)
             {
-                stringOffsetOffsets[i * 2] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Name") + 8;
-                stringOffsetOffsets[i * 2 + 1] = offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Caption") + 8;
+                stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Name") + 8);
+                if (rooms[i].Caption != null) stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Caption") + 8);
+                // TODO string offsets for objinst
             }
-            return stringOffsetOffsets;
+            return stringOffsetOffsets.ToArray();
         }
 
         private static void WriteRefDef(BBData data, ReferenceDef rd, IDictionary<string, int> stringOffsets)
@@ -993,24 +1065,15 @@ namespace Altar.Repack
             }
         }
 
-        private static void AddReferencesOffset(IDictionary<Tuple<string, InstanceType>, List<uint>> allOffsets,
-            IDictionary<Tuple<string, InstanceType>, IList<uint>> subOffsets, long offset)
+        private static void AddReferencesOffset(IList<Tuple<ReferenceSignature, uint>> allOffsets,
+            IList<Tuple<ReferenceSignature, uint>> subOffsets, long offset)
         {
             foreach (var kv in subOffsets)
             {
-                List<uint> fnOffsets;
-                if (!allOffsets.TryGetValue(kv.Key, out fnOffsets))
-                {
-                    fnOffsets = new List<uint>();
-                    allOffsets[kv.Key] = fnOffsets;
-                }
-                foreach (var subOffset in kv.Value)
-                {
-                    fnOffsets.Add(subOffset + (uint)offset);
-                }
+                allOffsets.Add(new Tuple<ReferenceSignature, uint>(kv.Item1, (uint)(kv.Item2 + offset)));
             }
         }
-
+        
         public static int[] WriteCodes(BBData data, GMFile f, IDictionary<string, int> stringOffsets)
         {
             int bytecodeSize = 0;
@@ -1018,9 +1081,6 @@ namespace Altar.Repack
             {
                 bytecodeSize += ci.Size;
             }
-
-            IDictionary<Tuple<string, InstanceType>, List<uint>> functionReferences = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
-            IDictionary<Tuple<string, InstanceType>, List<uint>> variableReferences = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
 
             BBData[] datas = new BBData[f.Code.Length];
             for (int i = 0; i < f.Code.Length; i++)
@@ -1030,13 +1090,11 @@ namespace Altar.Repack
                 datas[i] = codedata;
             }
 
-            var bb = data.Buffer;
-
-            bb.Write(datas.Length);
+            data.Buffer.Write(datas.Length);
 
             var allOffs = data.OffsetOffsets.ToList();
 
-            var offAcc = bb.Position + datas.Length * sizeof(int); // after all offsets
+            var offAcc = data.Buffer.Position + datas.Length * sizeof(int); // after all offsets
             if (f.General.BytecodeVersion > 0xE)
             {
                 offAcc += bytecodeSize;
@@ -1045,14 +1103,28 @@ namespace Altar.Repack
             var stringOffsetOffsets = new int[f.Code.Length];
             for (int i = 0; i < datas.Length; i++)
             {
-                allOffs.Add(bb.Position);
-                bb.Write(offAcc);
+                allOffs.Add(data.Buffer.Position);
+                data.Buffer.Write(offAcc);
                 offsets[i] = offAcc;
 
                 stringOffsetOffsets[i] = offAcc + 8;
 
                 offAcc += datas[i].Buffer.Size;
             }
+
+            IList<Tuple<ReferenceSignature, uint>> functionReferences = new List<Tuple<ReferenceSignature, uint>>();
+            IList<Tuple<ReferenceSignature, uint>> variableReferences = new List<Tuple<ReferenceSignature, uint>>();
+
+            variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+            {
+                Name = "prototype",
+                InstanceType = InstanceType.Self
+            }, 0xFFFFFFFF));
+            variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+            {
+                Name = "@@array@@",
+                InstanceType = InstanceType.Self
+            }, 0xFFFFFFFF));
 
             int[] bytecodeOffsets = null;
             if (f.General.BytecodeVersion > 0xE)
@@ -1062,8 +1134,17 @@ namespace Altar.Repack
                 bytecodeOffsets = new int[f.Code.Length];
                 for (int i = 0; i < f.Code.Length; i++)
                 {
-                    bytecodeOffsets[i] = data.Buffer.Position;
+                    bytecodeOffsets[i] = data.Buffer.Position - 12;
                     AddReferencesOffset(functionReferences, f.Code[i].functionReferences, data.Buffer.Position);
+                    if (f.Code[i].variableReferences.Count == 0 || f.Code[i].variableReferences[0].Item1.Name != "arguments")
+                    {
+                        variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+                        {
+                            Name = "arguments",
+                            InstanceType = InstanceType.Local,
+                            Instance = f.Code[i].Name
+                        }, 0xFFFFFFFF));
+                    }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
                     WriteCodeBlock(data, f.Code[i].InstructionsCopy, f.General.BytecodeVersion);
                 }
@@ -1074,106 +1155,141 @@ namespace Altar.Repack
                 if (f.General.BytecodeVersion > 0xE)
                 {
                     datas[i].Buffer.Position = (int)Marshal.OffsetOf(typeof(CodeEntryF), "BytecodeOffset");
-                    datas[i].Buffer.Write(bb.Position - bytecodeOffsets[i]);
+                    datas[i].Buffer.Write(bytecodeOffsets[i] - data.Buffer.Position);
                 }
                 else
                 {
                     AddReferencesOffset(functionReferences, f.Code[i].functionReferences, data.Buffer.Position);
+                    if (f.Code[i].variableReferences.Count == 0 || f.Code[i].variableReferences[0].Item1.Name != "arguments")
+                    {
+                        variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
+                        {
+                            Name = "arguments",
+                            InstanceType = InstanceType.Local,
+                            Instance = f.Code[i].Name
+                        }, 0xFFFFFFFF));
+                    }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
                 }
-                Write(bb, datas[i]);
+                Write(data.Buffer, datas[i]);
                 allOffs.AddRange(datas[i].OffsetOffsets); // updated by Write
             }
 
             IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(f.Strings.Length);
             for (uint i = 0; i < f.Strings.Length; i++) stringIndices[f.Strings[i]] = i;
 
-            IDictionary<Tuple<string, InstanceType>, uint> functionStarts;
-            IDictionary<Tuple<string, InstanceType>, uint> functionCounts;
-            ResolveReferenceOffsets(data, functionReferences, stringIndices, out functionStarts, out functionCounts);
-            for (int i = 0; i < f.RefData.Functions.Length; i++)
+            IList<ReferenceDef> functionStartOffsetsAndCounts;
+            ResolveReferenceOffsets(data, functionReferences, stringIndices, false, out functionStartOffsetsAndCounts);
+
+            IList<ReferenceDef> variableStartOffsetsAndCounts;
+            ResolveReferenceOffsets(data, variableReferences, stringIndices, true, out variableStartOffsetsAndCounts);
+
+            // I tried my best at guessing what these should be, but it wasn't enough.
+            // I suspect it may have to do with variable type, since getting
+            // one wrong resulted in "tried to index something that isn't an
+            // array."
+            for (int i = 0; i < variableStartOffsetsAndCounts.Count; i++)
             {
-                var fi = f.RefData.Functions[i];
-                var key = new Tuple<string, InstanceType>(fi.Name, fi.InstanceType);
-                if (functionStarts.ContainsKey(key)) fi.FirstOffset = functionStarts[key];
-                if (functionCounts.ContainsKey(key)) fi.Occurrences = functionCounts[key];
-                f.RefData.Functions[i] = fi;
+                var v = variableStartOffsetsAndCounts[i];
+                if (i < f.RefData.Variables.Length &&
+                    v.Name == f.RefData.Variables[i].Name &&
+                    v.InstanceType == f.RefData.Variables[i].InstanceType)
+                {
+                    v.unknown2 = f.RefData.Variables[i].unknown2;
+                    variableStartOffsetsAndCounts[i] = v;
+                }
             }
-            IDictionary<Tuple<string, InstanceType>, uint> variableStarts;
-            IDictionary<Tuple<string, InstanceType>, uint> variableCounts;
-            ReplaceStogRefs(variableReferences, f.RefData.Variables);
-            ResolveReferenceOffsets(data, variableReferences, stringIndices, out variableStarts, out variableCounts);
-            for (int i = 0; i < f.RefData.Variables.Length; i++)
+
+            f.RefData = new RefData
             {
-                var vi = f.RefData.Variables[i];
-                var key = new Tuple<string, InstanceType>(vi.Name, vi.InstanceType);
-                if (variableStarts.ContainsKey(key)) vi.FirstOffset = variableStarts[key];
-                if (variableCounts.ContainsKey(key)) vi.Occurrences = variableCounts[key];
-                f.RefData.Variables[i] = vi;
-            }
+                Functions = functionStartOffsetsAndCounts.ToArray(),
+                Variables = variableStartOffsetsAndCounts.ToArray()
+            };
+
+            var j = Unpack.Serialize.SerializeVars(f);
+            System.IO.File.WriteAllText(@"F:\Users\Spencer\Downloads\JetBoy LD41\data\variables2.json", j.ToJson());
 
             data.OffsetOffsets = allOffs.ToArray();
 
             return stringOffsetOffsets;
         }
 
-        public static void ReplaceStogRefs(IDictionary<Tuple<string, InstanceType>, List<uint>> references, ReferenceDef[] refdata)
+        public static void ResolveReferenceOffsets(BBData data,
+            IList<Tuple<ReferenceSignature, uint>> references, IDictionary<string, uint> stringIndices, bool extended,
+            out IList<ReferenceDef> startOffsetsAndCounts)
         {
-            // StackTopOrGlobal isn't allowed in the reference definitions, but
-            // they still seem to be tracked in one of the other definitions.
-            IDictionary<Tuple<string, InstanceType>, List<uint>> refsToAdd = new Dictionary<Tuple<string, InstanceType>, List<uint>>();
-            IList<Tuple<string, InstanceType>> toRemove = new List<Tuple<string, InstanceType>>();
-            foreach (var kv in references)
+            startOffsetsAndCounts = new List<ReferenceDef>(references.Count);
+            int localCount = 0;
+            int nonLocalCount = 0;
+            for (int i = 0; i < references.Count; i++)
             {
-                if (kv.Key.Item2 != InstanceType.StackTopOrGlobal)
-                    continue;
-                for (int i = 0; i < refdata.Length; i++)
+                Tuple<ReferenceSignature, uint> last = references[i];
+                uint diff;
+                uint existing;
+                uint count = 0;
+                var targetRef = references[i].Item1;
+                var start = references[i].Item2;
+                if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal)
                 {
-                    if (refdata[i].Name == kv.Key.Item1)
+                    targetRef.InstanceType = InstanceType.Self; // ??
+                    for (int j = i + 1; j < references.Count; j++)
                     {
-                        var key = new Tuple<string, InstanceType>(refdata[i].Name, refdata[i].InstanceType);
-                        if (references.ContainsKey(key))
+                        if (references[j].Item1.Name == targetRef.Name &&
+                            references[j].Item1.InstanceType < InstanceType.StackTopOrGlobal)
                         {
-                            references[key].AddRange(kv.Value);
-                            references[key].Sort(); // probably won't happen more than once
+                            targetRef = references[j].Item1;
+                            break;
+                        }
+                    }
+                }
+                if (targetRef.InstanceType == InstanceType.Local && targetRef.Name == "arguments")
+                {
+                    localCount = 0;
+                }
+                if (start != 0xFFFFFFFF)
+                {
+                    count = 1;
+                    for (int j = i + 1; j < references.Count;)
+                    {
+                        if (references[j].Item1.Name == targetRef.Name &&
+                            (!extended || (references[j].Item1.InstanceType >= InstanceType.StackTopOrGlobal) ||
+                            (references[j].Item1.InstanceType == targetRef.InstanceType &&
+                            (references[j].Item1.InstanceType != InstanceType.Local || (references[j].Item1.Instance == targetRef.Instance)))))
+                        {
+                            diff = (references[j].Item2 - last.Item2) & 0xFFFFFF;
+                            data.Buffer.Position = (int)last.Item2 + 4;
+                            existing = data.Buffer.ReadUInt32();
+                            data.Buffer.Write(diff | existing);
+                            last = references[j];
+                            references.RemoveAt(j);
+                            count++;
                         }
                         else
                         {
-                            refsToAdd[key] = kv.Value;
+                            j++;
                         }
-                        toRemove.Add(new Tuple<string, InstanceType>(refdata[i].Name, InstanceType.StackTopOrGlobal));
-                        break;
                     }
-                }
-            }
-            foreach (var kv in refsToAdd)
-                references.Add(kv);
-            foreach (var key in toRemove)
-            {
-                references.Remove(key);
-            }
-        }
-
-        public static void ResolveReferenceOffsets(BBData data,
-            IDictionary<Tuple<string, InstanceType>, List<uint>> references, IDictionary<string, uint> stringIndices,
-            out IDictionary<Tuple<string, InstanceType>, uint> startOffsets, out IDictionary<Tuple<string, InstanceType>, uint> counts)
-        {
-            startOffsets = new Dictionary<Tuple<string, InstanceType>, uint>(references.Count);
-            counts = new Dictionary<Tuple<string, InstanceType>, uint>(references.Count);
-            foreach (var kv in references)
-            {
-                startOffsets[kv.Key] = kv.Value[0];
-                counts[kv.Key] = (uint)kv.Value.Count;
-                for (int i = 0; i < kv.Value.Count; i++)
-                {
-                    uint diff;
-                    if (i < kv.Value.Count - 1)
-                        diff = (kv.Value[i + 1] - kv.Value[i]) & 0xFFFFFF;
-                    else
-                        diff = stringIndices[kv.Key.Item1];
-                    data.Buffer.Position = (int)kv.Value[i] + 4;
-                    uint existing = data.Buffer.ReadUInt32();
+                    diff = stringIndices[last.Item1.Name];
+                    data.Buffer.Position = (int)last.Item2 + 4;
+                    existing = data.Buffer.ReadUInt32();
                     data.Buffer.Write(diff | existing);
+                }
+                startOffsetsAndCounts.Add(new ReferenceDef
+                {
+                    FirstOffset = start,
+                    HasExtra = extended,
+                    InstanceType = targetRef.InstanceType,
+                    Name = targetRef.Name,
+                    Occurrences = count,
+                    unknown2 = targetRef.InstanceType == InstanceType.Local ? localCount : nonLocalCount
+                });
+                if (targetRef.InstanceType == InstanceType.Local)
+                {
+                    localCount++;
+                }
+                else
+                {
+                    nonLocalCount++;
                 }
             }
         }

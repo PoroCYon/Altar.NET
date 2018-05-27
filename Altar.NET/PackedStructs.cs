@@ -43,7 +43,7 @@ namespace Altar
     {
         public uint NameOffset;
         public int InstanceType;
-        public uint _pad1; // unknown
+        public int _pad1; // unknown
         public uint Occurrences;
         public uint FirstAddress;
     }
@@ -261,8 +261,8 @@ namespace Altar
         public Point Origin;
 
         // unknown stuff
-        fixed int _pad2[3];
-        float funk;
+        public fixed int _pad2[3];
+        public float funk;
         uint _pad3;
 
         public CountOffsetsPair Textures;
@@ -361,6 +361,18 @@ namespace Altar
         public BoundingBox Bounding;
         public PointF Gravity;
         public float MetresPerPixel;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct RoomObjInstEntry
+    {
+        public uint Name;
+        public uint Index;
+        public uint Unk1;
+        public uint Unk2;
+        fixed uint _pad1[4];
+        public uint Unk3;
+        public uint InstCount;
+        public uint Instances;
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct TexPageEntry

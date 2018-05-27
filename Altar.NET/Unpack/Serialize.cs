@@ -227,6 +227,16 @@ namespace Altar.Unpack
             return r;
         }
 
+        static JsonData SerializeRoomObjInst(RoomObjInst oi)
+        {
+            var r = CreateObj();
+            r["obj"      ] = oi.ObjName;
+            r["index"    ] = oi.Index;
+            r["unk2"     ] = oi.Unk2;
+            r["instances"] = SerializeArray(oi.Instances, Utils.Identity);
+            return r;
+        }
+
         static JsonData SerializeColMask(bool[,] colMask)
         {
             var j = CreateObj();
@@ -319,6 +329,10 @@ namespace Altar.Unpack
             r["bboxmode"] = sprt.BBoxMode;
             r["sepmasks"] = sprt.SeparateColMasks;
             r["origin"  ] = SerializePoint(sprt.Origin);
+            if (sprt.Version >= 2)
+            {
+                r["unknown1"] = sprt.UnknownFloat;
+            }
             if (sprt.TextureIndices != null)
                 r["textures"] = SerializeArray(sprt.TextureIndices, Utils.Identity);
 
@@ -424,6 +438,7 @@ namespace Altar.Unpack
             r["views"] = SerializeArray(room.Views      , v => SerializeRoomView(v, objs));
             r["objs" ] = SerializeArray(room.Objects    , o => SerializeRoomObj (o, objs));
             r["tiles"] = SerializeArray(room.Tiles      , t => SerializeRoomTile(t, bgs ));
+            r["objinst"] = SerializeArray(room.ObjInst  , i => SerializeRoomObjInst(i));
 
             return r;
         }
