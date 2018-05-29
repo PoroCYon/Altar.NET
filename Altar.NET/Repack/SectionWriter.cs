@@ -1144,7 +1144,8 @@ namespace Altar.Repack
                         {
                             Name = "arguments",
                             InstanceType = InstanceType.Local,
-                            Instance = f.Code[i].Name
+                            Instance = f.Code[i].Name,
+                            VariableType = VariableType.Normal
                         }, 0xFFFFFFFF));
                     }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
@@ -1168,7 +1169,8 @@ namespace Altar.Repack
                         {
                             Name = "arguments",
                             InstanceType = InstanceType.Local,
-                            Instance = f.Code[i].Name
+                            Instance = f.Code[i].Name,
+                            VariableType = VariableType.Normal
                         }, 0xFFFFFFFF));
                     }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
@@ -1195,9 +1197,10 @@ namespace Altar.Repack
                 var v = variableStartOffsetsAndCounts[i];
                 if (i < f.RefData.Variables.Length &&
                     v.Name == f.RefData.Variables[i].Name &&
-                    v.InstanceType == f.RefData.Variables[i].InstanceType)
+                    (v.InstanceType == f.RefData.Variables[i].InstanceType || v.InstanceType >= InstanceType.StackTopOrGlobal))
                 {
                     v.unknown2 = f.RefData.Variables[i].unknown2;
+                    //v.InstanceType = f.RefData.Variables[i].InstanceType;
                     variableStartOffsetsAndCounts[i] = v;
                 }
             }
@@ -1207,7 +1210,7 @@ namespace Altar.Repack
                 Functions = functionStartOffsetsAndCounts.ToArray(),
                 Variables = variableStartOffsetsAndCounts.ToArray()
             };
-            
+
             data.OffsetOffsets = allOffs.ToArray();
 
             return stringOffsetOffsets;
@@ -1228,22 +1231,33 @@ namespace Altar.Repack
                 uint count = 0;
                 var targetRef = references[i].Item1;
                 var start = references[i].Item2;
-                if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal)
+                if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal && extended)
                 {
-                    targetRef.InstanceType = InstanceType.Self; // ??
-                    for (int j = i + 1; j < references.Count; j++)
+                    for (InstanceType possibleInstanceType = InstanceType.Self; possibleInstanceType >= InstanceType.Local; possibleInstanceType--)
                     {
-                        if (references[j].Item1.Name == targetRef.Name &&
-                            references[j].Item1.InstanceType < InstanceType.StackTopOrGlobal)
+                        for (int j = i + 1; j < references.Count; j++)
                         {
-                            targetRef = references[j].Item1;
+                            if (references[j].Item1.Name == targetRef.Name &&
+                                references[j].Item1.InstanceType == possibleInstanceType)
+                            {
+                                targetRef.InstanceType = references[j].Item1.InstanceType;
+                                targetRef.Instance = references[j].Item1.Instance;
+                                break;
+                            }
+                        }
+                        if (targetRef.InstanceType < InstanceType.StackTopOrGlobal)
+                        {
                             break;
                         }
+                    }
+                    if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal)
+                    {
+                        targetRef.InstanceType = InstanceType.Self; // ??
                     }
                 }
                 if (targetRef.InstanceType == InstanceType.Local && targetRef.Name == "arguments")
                 {
-                    localCount = 0;
+                    //localCount = 0;
                 }
                 if (start != 0xFFFFFFFF)
                 {
@@ -1251,9 +1265,12 @@ namespace Altar.Repack
                     for (int j = i + 1; j < references.Count;)
                     {
                         if (references[j].Item1.Name == targetRef.Name &&
-                            (!extended || (references[j].Item1.InstanceType >= InstanceType.StackTopOrGlobal) ||
-                            (references[j].Item1.InstanceType == targetRef.InstanceType &&
-                            (references[j].Item1.InstanceType != InstanceType.Local || (references[j].Item1.Instance == targetRef.Instance)))))
+                            (!extended ||
+                             (references[j].Item1.InstanceType >= InstanceType.StackTopOrGlobal) ||
+                             (references[j].Item1.InstanceType == targetRef.InstanceType &&
+                              //references[j].Item1.VariableType == targetRef.VariableType &&
+                              (references[j].Item1.InstanceType != InstanceType.Local ||
+                               references[j].Item1.Instance == targetRef.Instance))))
                         {
                             diff = (references[j].Item2 - last.Item2) & 0xFFFFFF;
                             data.Buffer.Position = (int)last.Item2 + 4;
@@ -1282,7 +1299,8 @@ namespace Altar.Repack
                     Occurrences = count,
                     unknown2 = targetRef.InstanceType == InstanceType.Local ?
                         localCount : targetRef.VariableType == VariableType.StackTop ?
-                            nonLocalCount : - 6
+                            nonLocalCount : - 6,
+                    VariableType = targetRef.VariableType
                 });
                 if (targetRef.InstanceType == InstanceType.Local)
                 {

@@ -62,6 +62,8 @@ namespace Altar.Decomp
                 var offTotal = (long)defs[i].FirstOffset;
                 var addr     = (AnyInstruction*)GMFile.PtrFromOffset(content, offTotal);
 
+                if (defs[i].Occurrences != 0) defs[i].VariableType = (VariableType)(((uint*)addr)[1] >> 24);
+
                 for (int j = 0; j < defs[i].Occurrences /*&& curOffset != 0*/; j++)
                 {
                     ret.Add((IntPtr)addr, i);

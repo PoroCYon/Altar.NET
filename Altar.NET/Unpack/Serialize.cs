@@ -438,7 +438,7 @@ namespace Altar.Unpack
             r["views"] = SerializeArray(room.Views      , v => SerializeRoomView(v, objs));
             r["objs" ] = SerializeArray(room.Objects    , o => SerializeRoomObj (o, objs));
             r["tiles"] = SerializeArray(room.Tiles      , t => SerializeRoomTile(t, bgs ));
-            r["objinst"] = SerializeArray(room.ObjInst  , i => SerializeRoomObjInst(i));
+            if (room.ObjInst != null) r["objinst"] = SerializeArray(room.ObjInst, i => SerializeRoomObjInst(i));
 
             return r;
         }
@@ -477,6 +477,7 @@ namespace Altar.Unpack
 
             r["name"] = rd.Name;
             //r["occurrences"] = rd.Occurrences;
+            //r["type"] = rd.VariableType.ToString();
             //if (rd.FirstOffset != 0xFFFFFFFF)
             //    r["firstoffset"] = rd.FirstOffset;
             if (rd.HasExtra)
