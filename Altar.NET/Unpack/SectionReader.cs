@@ -756,6 +756,7 @@ namespace Altar.Unpack
                 ret.HasExtra = true;
                 ret.InstanceType = (Decomp.InstanceType)rde->InstanceType;
                 ret.unknown2 = rde->_pad1;
+                ret.VariableType = Decomp.VariableType.Normal;
 
                 return ret;
             });

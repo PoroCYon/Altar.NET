@@ -15,6 +15,7 @@ namespace Altar
         public bool HasExtra;
         public InstanceType InstanceType;
         public int unknown2;
+        public VariableType VariableType;
     }
 
     [StructLayout(LayoutKind.Sequential)]
