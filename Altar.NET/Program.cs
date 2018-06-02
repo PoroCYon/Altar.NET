@@ -94,7 +94,8 @@ namespace Altar
                         || eo.Audio  || eo.Background || eo.Decompile || eo.Font || eo.General
                         || eo.Object || eo.Options || eo.Path || eo.Room || eo.Script
                         || eo.Sound  || eo.Sprite  || eo.Texture || eo.TPag || eo.AudioGroups
-                        || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks))
+                        || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks || eo.DumpEmptyChunks
+                        || eo.DumpAllChunks))
                     eo.Any = true;
 
                 if (eo.ExportToProject)
