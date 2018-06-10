@@ -152,8 +152,10 @@ namespace Altar.Unpack
             var entry = (RoomObjInstEntry*)p;
             var oi = new RoomObjInst();
             oi.Index   = entry->Index;
-            oi.ObjName = StringFromOffset(content, entry->Name);
+            oi.Name    = StringFromOffset(content, entry->Name);
+            oi.Unk1    = entry->Unk1;
             oi.Unk2    = entry->Unk2;
+            oi.Unk3    = entry->Unk3;
             oi.Instances = new uint[entry->InstCount];
             for (uint i = 0; i < oi.Instances.Length; i++)
             {
@@ -496,30 +498,42 @@ namespace Altar.Unpack
             }
             else
             {
-                ret.ShapePoints = new Point[shapeCop->Count >> 1];
+                ret.ShapePoints = new int[shapeCop->Count][][];
 
-                for (uint i = 0; i < (shapeCop->Count >> 1); i++)
+                for (uint i = 0; i < (shapeCop->Count); i++)
                 {
-                    uint xoff = (&shapeCop->Offsets)[ i << 1     ],
-                         yoff = (&shapeCop->Offsets)[(i << 1) + 1];
+                    uint shapePointOff = (&shapeCop->Offsets)[i];
 
-                    int* xptr = (int*)GMFile.PtrFromOffset(content, xoff),
-                         yptr = (int*)GMFile.PtrFromOffset(content, yoff);
+                    uint* shapePointPtr = (uint*)GMFile.PtrFromOffset(content, shapePointOff);
 
                   //Console.WriteLine(((IntPtr)xoff).ToString(SR.HEX_FM8) + SR.SPACE_S + ((IntPtr)yoff).ToString(SR.HEX_FM8));
-                    if (((xoff | yoff) & 0xFF000000) != 0 || xptr == null || yptr == null)
+                    if ((shapePointOff & 0xFF000000) != 0 || shapePointPtr == null)
                     {
                         Console.WriteLine($"Warning: shape point coord {i} of object {id} is bogus, ignoring...");
-
-                        ret.ShapePoints[i] = new Point(-0xDEAD, -0xC0DE);
 
                         continue;
                     }
 
-                    ret.ShapePoints[i] = new Point(
-                        *(int*)GMFile.PtrFromOffset(content, xoff),
-                        *(int*)GMFile.PtrFromOffset(content, yoff)
-                    );
+                    uint shapePointPointCount = *shapePointPtr;
+                    uint* shapePointPointOffsets = shapePointPtr+1;
+
+                    ret.ShapePoints[i] = new int[shapePointPointCount][];
+
+                    for (uint j = 0; j < shapePointPointCount; j++)
+                    {
+                        uint shapePointPointOff = shapePointPointOffsets[j];
+                        int* shapePointPointPtr = (int*)GMFile.PtrFromOffset(content, shapePointPointOff);
+                        // TODO: fixed size, but mostly the same across
+                        // entries. Probably structure of some sort.
+                        // Index 1/2 look like count/offset, but count is
+                        // always 1 and offset is always +4.
+                        uint pointpointlen = 17;
+                        ret.ShapePoints[i][j] = new int[pointpointlen];
+                        for (uint k = 0; k < ret.ShapePoints[i][j].Length; k++)
+                        {
+                            ret.ShapePoints[i][j][k] = shapePointPointPtr[k];
+                        }
+                    }
                 }
             }
 
@@ -547,6 +561,7 @@ namespace Altar.Unpack
             ret.EnableViews        = (re->Flags & RoomEntryFlags.EnableViews       ) != 0;
             ret.ShowColour         = (re->Flags & RoomEntryFlags.ShowColour        ) != 0;
             ret.ClearDisplayBuffer = (re->Flags & RoomEntryFlags.ClearDisplayBuffer) != 0;
+            ret.UnknownFlag        = (re->Flags & RoomEntryFlags.Unknown           ) != 0;
 
             ret.World          = re->World         ;
             ret.Bounding       = re->Bounding      ;
@@ -567,6 +582,12 @@ namespace Altar.Unpack
                     ret.ObjInst = ReadList(content, (CountOffsetsPair*)GMFile.PtrFromOffset(content, instanceListOffset), ReadRoomObjInst);
                 }
             }
+
+            // TODO: There's an extra 32 bytes at the end of each room entry in
+            // JetBoy, and they are important! I got a different background
+            // color and some motion blur effects when I set them to dummy
+            // values.
+            // background color is 16 bytes in
 
             return ret;
         }

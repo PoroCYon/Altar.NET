@@ -203,7 +203,8 @@ namespace Altar
     {
         EnableViews = 1,
         ShowColour = 2,
-        ClearDisplayBuffer = 4 // clear display buffer with window colour
+        ClearDisplayBuffer = 4, // clear display buffer with window colour
+        Unknown = 0x20000 // probably signals the extra 32 bytes at the end
 
         // isometric?
         // clearViewBg?
@@ -432,9 +433,9 @@ namespace Altar
             LinearDamping,
             AngularDamping,
             Unknown0,
-            Friction,
-            Unknown1,
-            Kinematic;
+            Friction;
+        public int Unknown1;
+        public float Kinematic;
     }
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public unsafe struct ObjectRest

@@ -230,9 +230,11 @@ namespace Altar.Unpack
         static JsonData SerializeRoomObjInst(RoomObjInst oi)
         {
             var r = CreateObj();
-            r["obj"      ] = oi.ObjName;
+            r["name"     ] = oi.Name;
             r["index"    ] = oi.Index;
+            r["unk1"     ] = oi.Unk1;
             r["unk2"     ] = oi.Unk2;
+            r["unk3"     ] = oi.Unk3;
             r["instances"] = SerializeArray(oi.Instances, Utils.Identity);
             return r;
         }
@@ -410,7 +412,7 @@ namespace Altar.Unpack
             r["data"  ] = SerializeArray(objt.OtherFloats, Utils.Identity);
 
             if (objt.ShapePoints != null)
-                r["points"] = SerializeArray(objt.ShapePoints, SerializePoint);
+                r["points"] = SerializeArray(objt.ShapePoints, x => SerializeArray(x, y => SerializeArray(y, Utils.Identity)));
 
             return r;
         }
@@ -426,6 +428,7 @@ namespace Altar.Unpack
             r["enableviews"] = room.EnableViews;
             r["showcolour" ] = room.ShowColour;
             r["clearbuf"   ] = room.ClearDisplayBuffer;
+            r["flag"       ] = room.UnknownFlag;
             r["world"      ] = room.World;
             r["bounding"   ] = SerializeRect(room.Bounding);
             r["gravity"    ] = SerializePoint(room.Gravity);

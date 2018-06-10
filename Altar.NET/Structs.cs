@@ -154,7 +154,7 @@ namespace Altar
 
         public ObjectPhysics? Physics;
         public float[] OtherFloats;
-        public Point[] ShapePoints;
+        public int[][][] ShapePoints;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomInfo
@@ -172,6 +172,7 @@ namespace Altar
         public bool EnableViews;
         public bool ShowColour;
         public bool ClearDisplayBuffer;
+        public bool UnknownFlag;
 
         public uint World;
         public BoundingBox Bounding;
@@ -264,9 +265,11 @@ namespace Altar
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomObjInst
     {
-        public string ObjName;
+        public string Name;
         public uint Index;
+        public uint Unk1;
         public uint Unk2;
+        public uint Unk3;
         public uint[] Instances;
     }
 
