@@ -117,17 +117,27 @@ namespace Altar.Repack
             int[] offsets = new int[datas.Length];
             for (int i = 0; i < datas.Length; i++)
             {
-                allOffs.Add(bb.Position);
-                bb.Write(offAcc);
-                offsets[i] = offAcc;
+                if (datas[i] == null)
+                {
+                    bb.Write(0xFFFFFFFF);
+                }
+                else
+                {
+                    allOffs.Add(bb.Position);
+                    bb.Write(offAcc);
+                    offsets[i] = offAcc;
 
-                offAcc += datas[i].Buffer.Size;
+                    offAcc += datas[i].Buffer.Size;
+                }
             }
 
             for (int i = 0; i < datas.Length; i++)
             {
-                Write(bb, datas[i]);
-                allOffs.AddRange(datas[i].OffsetOffsets); // updated by Write
+                if (datas[i] != null)
+                {
+                    Write(bb, datas[i]);
+                    allOffs.AddRange(datas[i].OffsetOffsets); // updated by Write
+                }
             }
 
             data.OffsetOffsets = allOffs.ToArray();
@@ -137,13 +147,21 @@ namespace Altar.Repack
         public static int[] WriteList<T>(BBData data, T[] things,
             Action<BBData, T> writeThing)
         {
+            if (things == null)
+            {
+                data.Buffer.Write(0xFFFFFFFF);
+                return new int[0];
+            }
             BBData[] datas = new BBData[things.Length];
 
             for (int i = 0; i < things.Length; i++)
             {
-                BBData thingdata = new BBData(new BinBuffer(), new int[0]);
-                writeThing(thingdata, things[i]);
-                datas[i] = thingdata;
+                if (things[i] != null)
+                {
+                    BBData thingdata = new BBData(new BinBuffer(), new int[0]);
+                    writeThing(thingdata, things[i]);
+                    datas[i] = thingdata;
+                }
             }
 
             return WriteList(data, datas);
@@ -257,6 +275,12 @@ namespace Altar.Repack
             for (int i = 0; i < ret.NumberCount; i++)
                 data.Buffer.Write(ge.WeirdNumbers[i]);
 
+            // TODO: some lengthy checksum/hash at the end?
+            // exits after launch if GEN8 is modified at all,
+            // doesn't launch if the extra stuff is missing
+            //for (int i = 0; i < 16; i++)
+            //    data.Buffer.Write(0x3F3F3F3F);
+
             return stringOffsetOffsets;
         }
 
@@ -286,8 +310,6 @@ namespace Altar.Repack
             {
                 ret.ConstMap.Count = (uint)opt.Constants.Count;
             }
-
-            ret.ConstMap.Offsets = 0xABCDEF01;
 
             var tmp = new BinBuffer();
             tmp.Write(ret);
@@ -344,9 +366,7 @@ namespace Altar.Repack
             }
             data.OffsetOffsets = data.OffsetOffsets.Concat(secondaryOffsets).ToArray();
 
-            // ???
-            data.Buffer.WriteByte(0);
-            data.Buffer.WriteByte(0);
+            Pad(data, 0x10, 0);
         }
 
         private static void WriteFontCharEntry(BBData data, FontCharacter fc)
@@ -463,7 +483,7 @@ namespace Altar.Repack
                 Depth = oi.Depth,
                 Persistent = oi.IsPersistent ? DwordBool.True : DwordBool.False,
 
-                ParentId = oi.ParentId == null ? -1 : (int)oi.ParentId,
+                ParentId = oi.ParentId == null ? -100 : (int)oi.ParentId,
                 MaskId = oi.TexMaskId == null ? -1 : (int)oi.TexMaskId,
 
                 HasPhysics = oi.Physics != null ? DwordBool.True : DwordBool.False,
@@ -471,7 +491,18 @@ namespace Altar.Repack
                 CollisionShape = oi.CollisionShape
             };
 
-            if (oi.Physics != null) oe.Physics = (ObjectPhysics)oi.Physics;
+            oe.Physics = oi.Physics ?? new ObjectPhysics
+            {
+                Density = 0.5f,
+                Restitution = 0.1f,
+                Group = 0,
+                LinearDamping = 0.1f,
+                AngularDamping = 0.1f,
+                Unknown0 = 0,
+                Friction = 0.2f,
+                Unknown1 = 1,
+                Kinematic = 0
+            };
 
             for (int i = 0; i < oi.OtherFloats.Length; i++)
             {
@@ -485,68 +516,29 @@ namespace Altar.Repack
 
             if (hasMore)
             {
-                if (oi.ShapePoints == null) oe.Rest.ShapePoints_IfMoreFloats.Count = 0xFFFFFFFF;
-                else oe.Rest.ShapePoints_IfMoreFloats.Count = (uint)oi.ShapePoints.Length << 1;
                 BinBuffer tmp = new BinBuffer();
                 tmp.Write(oe);
-                data.Buffer.Write(tmp.AsByteArray(), 0, 4 + (int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest") + (int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints_IfMoreFloats"));
+                data.Buffer.Write(tmp.AsByteArray(), 0, (int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest") + (int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints_IfMoreFloats"));
             }
             else
             {
-                if (oi.ShapePoints == null) oe.Rest.ShapePoints.Count = 0xFFFFFFFF;
-                else oe.Rest.ShapePoints.Count = (uint)oi.ShapePoints.Length << 1;
                 BinBuffer tmp = new BinBuffer();
                 tmp.Write(oe);
-                data.Buffer.Write(tmp.AsByteArray(), 0, 4 + (int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest") + (int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints"));
+                data.Buffer.Write(tmp.AsByteArray(), 0, (int)Marshal.OffsetOf(typeof(ObjectEntry), "Rest") + (int)Marshal.OffsetOf(typeof(ObjectRest), "ShapePoints"));
             }
-            if (oi.ShapePoints != null)
-            {
-                var ptdata = new BinBuffer();
-                var ptoffsets = new int[oi.ShapePoints.Length << 1];
-
-                for (int i = 0; i < oi.ShapePoints.Length; i++)
+            WriteList(data, oi.ShapePoints, (shapePointData, shapePoint) =>
+                WriteList(shapePointData, shapePoint, (pointPointData, pointPoint) =>
                 {
-                    var point = oi.ShapePoints[i];
-                    if (point.X != -0xDEAD)
+                    pointPointData.Buffer.Write(pointPoint[0]);
+                    pointPointData.Buffer.Write(pointPoint[1]); // probably count
+                    pointPointData.OffsetOffsets = new int[] { pointPointData.Buffer.Position };
+                    pointPointData.Buffer.Write(12); // probably offset
+                    for (int i = 3; i < pointPoint.Length; i++)
                     {
-                        ptoffsets[i * 2] = ptdata.Position;
-                        ptdata.Write(point.X);
+                        pointPointData.Buffer.Write(pointPoint[i]);
                     }
-                    if (point.Y != -0xC0DE)
-                    {
-                        ptoffsets[i * 2 + 1] = ptdata.Position;
-                        ptdata.Write(point.Y);
-                    }
-                }
-
-                var ptdataoffset = data.Buffer.Position + oi.ShapePoints.Length * 8;
-                var offsetOffsets = new List<int>();
-                for (int i = 0; i < oi.ShapePoints.Length; i++)
-                {
-                    var point = oi.ShapePoints[i];
-                    if (point.X == -0xDEAD)
-                    {
-                        data.Buffer.Write(0xFFFFFFFF);
-                    }
-                    else
-                    {
-                        offsetOffsets.Add(data.Buffer.Position);
-                        data.Buffer.Write(ptoffsets[i * 2] + ptdataoffset);
-                    }
-                    if (point.Y == -0xC0DE)
-                    {
-                        data.Buffer.Write(0xFFFFFFFF);
-                    }
-                    else
-                    {
-                        offsetOffsets.Add(data.Buffer.Position);
-                        data.Buffer.Write(ptoffsets[i * 2 + 1] + ptdataoffset);
-                    }
-                }
-                data.OffsetOffsets = offsetOffsets.ToArray();
-
-                data.Buffer.Write(ptdata);
-            }
+                })
+            );
         }
 
         public static int[] WriteObjects(BBData data, ObjectInfo[] objects, IDictionary<string, int> stringOffsets)
@@ -863,9 +855,11 @@ namespace Altar.Repack
             data.Buffer.Write(new RoomObjInstEntry
             {
                 Index = roi.Index,
+                Unk1 = roi.Unk1,
                 Unk2 = roi.Unk2,
+                Unk3 = roi.Unk3,
                 InstCount = (uint)roi.Instances.Length,
-                Name = (uint)stringOffsets[roi.ObjName]
+                Name = (uint)stringOffsets[roi.Name]
             });
             data.Buffer.Position -= 4;
             foreach (var id in roi.Instances)
@@ -898,6 +892,7 @@ namespace Altar.Repack
             if (ri.EnableViews) re.Flags |= RoomEntryFlags.EnableViews;
             if (ri.ShowColour) re.Flags |= RoomEntryFlags.ShowColour;
             if (ri.ClearDisplayBuffer) re.Flags |= RoomEntryFlags.ClearDisplayBuffer;
+            if (ri.UnknownFlag) re.Flags |= RoomEntryFlags.Unknown;
 
             var bgOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "BgOffset");
             var viewOffsetOffset = (int)Marshal.OffsetOf(typeof(RoomEntry), "ViewOffset");
@@ -941,6 +936,9 @@ namespace Altar.Repack
                 data.Buffer.Position = data.Buffer.Size;
                 WriteList(data, ri.ObjInst, WriteRoomObjInst, stringOffsets);
             }
+            
+            //for (int i = 0; i < 8; i++)
+            //    data.Buffer.Write(0x3F3F3F3F);
         }
 
         public static int[] WriteRooms(BBData data, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
@@ -951,7 +949,21 @@ namespace Altar.Repack
             {
                 stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Name") + 8);
                 if (rooms[i].Caption != null) stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(RoomEntry), "Caption") + 8);
-                // TODO string offsets for objinst
+                if (rooms[i].ObjInst != null)
+                {
+                    data.Buffer.Position = offsets[i];
+                    data.Buffer.Position += (int)Marshal.OffsetOf(typeof(RoomEntry), "MetresPerPixel") + 4;
+                    int listoff = data.Buffer.ReadInt32();
+                    data.Buffer.Position = listoff;
+                    listoff += 4;
+                    int count = data.Buffer.ReadInt32();
+                    for (int j = 0; j < count; j++)
+                    {
+                        data.Buffer.Position = listoff + j * 4;
+                        int off = data.Buffer.ReadInt32();
+                        stringOffsetOffsets.Add(off + (int)Marshal.OffsetOf(typeof(RoomObjInstEntry), "Name") + 8);
+                    }
+                }
             }
             return stringOffsetOffsets.ToArray();
         }

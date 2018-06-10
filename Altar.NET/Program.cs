@@ -630,9 +630,9 @@ namespace Altar
                         SectionWriter.WriteFonts(chunk, f.Fonts, stringOffsets, texPagOffsets,
                             out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
                         break;
-                    /*case SectionHeaders.Objects:
+                    case SectionHeaders.Objects:
                         chunkStringOffsetOffsets = SectionWriter.WriteObjects(chunk, f.Objects, stringOffsets);
-                        break;*/
+                        break;
                     case SectionHeaders.Rooms:
                         chunkStringOffsetOffsets = SectionWriter.WriteRooms(chunk, f.Rooms, stringOffsets);
                         break;

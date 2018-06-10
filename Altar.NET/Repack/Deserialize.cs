@@ -120,7 +120,7 @@ namespace Altar.Repack
             Friction = (float)j["friction"],
             Kinematic = (float)j["kinematic"],
             Unknown0 = (float)j["unk0"],
-            Unknown1 = (float)j["unk1"]
+            Unknown1 = (int)j["unk1"]
         };
         #endregion
 
@@ -155,8 +155,10 @@ namespace Altar.Repack
             {
                 Index = (uint)j["index"],
                 Instances = DeserializeArray(j["instances"], i => (uint)i),
-                ObjName = (string)j["obj"],
-                Unk2 = (uint)j["unk2"]
+                Name = (string)j["name"],
+                Unk1 = (uint)j["unk1"],
+                Unk2 = (uint)j["unk2"],
+                Unk3 = (uint)j["unk3"]
             };
         }
 
@@ -361,7 +363,10 @@ namespace Altar.Repack
                 CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j["colshape"], true),
 
                 OtherFloats = DeserializeArray(j["data"], (Func<dynamic, float>)(d => (float)d)),
-                ShapePoints = DeserializeArray(j["points"], (Func<dynamic, Point>)(d => DeserializePoint(d)))
+                ShapePoints = DeserializeArray(j["points"],
+                    (Func<dynamic, int[][]>)(d => DeserializeArray(d,
+                        (Func<dynamic, int[]>)(e => DeserializeArray(e,
+                            (Func<dynamic, int>)(f => (int)f))))))
             };
         }
         #region public static RoomInfo        DeserializeRoom(JsonData j, BackgroundInfo[] bgs, ObjectInfo[] objs)
@@ -373,6 +378,7 @@ namespace Altar.Repack
             EnableViews = (bool)j["enableviews"],
             ShowColour = (bool)j["showcolour"],
             ClearDisplayBuffer = (bool)j["clearbuf"],
+            UnknownFlag = (bool)j["flag"],
             World = (uint)j["world"],
             MetresPerPixel = (float)j["metresperpx"],
             DrawBackgroundColour = (bool)j["drawbgcol"],
@@ -738,6 +744,22 @@ namespace Altar.Repack
                     f.Audio[i] = audioinfo;
                 }
             }
+            if (projFile.Has("sprites"))
+            {
+                Console.Write("Loading sprites... ");
+                var cl = Console.CursorLeft;
+                var ct = Console.CursorTop;
+
+                var sprites = projFile["sprites"].ToArray();
+                f.Sprites = new SpriteInfo[sprites.Length];
+                for (int i = 0; i < sprites.Length; i++)
+                {
+                    Console.SetCursorPosition(cl, ct);
+                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + sprites.Length + C_PAREN);
+                    f.Sprites[i] = DeserializeSprite(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sprites[i])))));
+                    f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
+                }
+            }
             if (projFile.Has("objs"))
             {
                 Console.Write("Loading objects... ");
@@ -790,22 +812,6 @@ namespace Altar.Repack
                 {
                     f.Sound[i] = DeserializeSound(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sounds[i])))));
                     f.Sound[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
-                }
-            }
-            if (projFile.Has("sprites"))
-            {
-                Console.Write("Loading sprites... ");
-                var cl = Console.CursorLeft;
-                var ct = Console.CursorTop;
-
-                var sprites = projFile["sprites"].ToArray();
-                f.Sprites = new SpriteInfo[sprites.Length];
-                for (int i = 0; i < sprites.Length; i++)
-                {
-                    Console.SetCursorPosition(cl, ct);
-                    Console.WriteLine(O_PAREN + (i + 1) + SLASH + sprites.Length + C_PAREN);
-                    f.Sprites[i] = DeserializeSprite(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sprites[i])))));
-                    f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
                 }
             }
             if (projFile.Has("bg"))
