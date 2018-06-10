@@ -358,7 +358,7 @@ namespace Altar.Repack
             {
                 Pad(data, 0x80, 8);
                 var p = data.Buffer.Position;
-                //data.Buffer.Position = offsets[i] + 8;
+                data.Buffer.Position = offsets[i] + 4; // 8
                 secondaryOffsets[i] = data.Buffer.Position;
                 data.Buffer.Write(p);
                 data.Buffer.Position = p;
@@ -366,7 +366,7 @@ namespace Altar.Repack
             }
             data.OffsetOffsets = data.OffsetOffsets.Concat(secondaryOffsets).ToArray();
 
-            Pad(data, 0x10, 0);
+            Pad(data, 8, 0);
         }
 
         private static void WriteFontCharEntry(BBData data, FontCharacter fc)
