@@ -150,6 +150,32 @@ namespace Altar
             Audio        = new AudioInfo      [0];
             AudioGroups  = new string         [0];
         }
+        static T[] TryReadMany<T>(SectionCountOffsets* hdr, Func<uint, T> readOne)
+        {
+            if (hdr == null || hdr->Header.IsEmpty()) return ArrayExt<T>.Empty;
+
+            uint cnt = hdr->Count;
+            List<T> l = new List<T>((int)cnt);
+
+            for (uint i = 0; i < cnt; ++i)
+            {
+                try
+                {
+                    l.Add(readOne(i));
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error reading " +
+                            hdr->Header.MagicString() + " #" + i +
+                            " - skipping others.");
+                    Console.Error.WriteLine(e);
+
+                    break;
+                }
+            }
+
+            return l.ToArray();
+        }
         internal GMFile(GMFileContent f)
         {
             Content = f;
@@ -158,35 +184,31 @@ namespace Altar
             //Console.Error.WriteLine(General.BytecodeVersion);
             Options = SectionReader.GetOptionInfo (f);
 
-            if (f.Sounds       != null && !f.Sounds->Header.IsEmpty())
-                Sound        = Utils.UintRange(0, f.Sounds      ->Count).Select(i => SectionReader.GetSoundInfo   (f, i)).ToArray();
-            var toil = SectionReader.BuildTPAGOffsetIndexLUT(f);
-            if (f.Sprites      != null && !f.Sprites->Header.IsEmpty())
-                Sprites      = Utils.UintRange(0, f.Sprites     ->Count).Select(i => SectionReader.GetSpriteInfo  (f, i, toil)).ToArray();
-            if (f.Backgrounds  != null && !f.Backgrounds->Header.IsEmpty())
-                Backgrounds  = Utils.UintRange(0, f.Backgrounds ->Count).Select(i => SectionReader.GetBgInfo      (f, i)).ToArray();
-            if (f.Paths        != null && !f.Paths->Header.IsEmpty())
-                Paths        = Utils.UintRange(0, f.Paths       ->Count).Select(i => SectionReader.GetPathInfo    (f, i)).ToArray();
-            if (f.Scripts      != null && !f.Scripts->Header.IsEmpty())
-                Scripts      = Utils.UintRange(0, f.Scripts     ->Count).Select(i => SectionReader.GetScriptInfo  (f, i)).ToArray();
-            if (f.Fonts        != null && !f.Fonts->Header.IsEmpty())
-                Fonts        = Utils.UintRange(0, f.Fonts       ->Count).Select(i => SectionReader.GetFontInfo    (f, i)).ToArray();
-            if (f.Objects      != null && !f.Objects->Header.IsEmpty())
-                Objects      = Utils.UintRange(0, f.Objects     ->Count).Select(i => SectionReader.GetObjectInfo  (f, i)).ToArray();
-            if (f.Rooms        != null && !f.Rooms->Header.IsEmpty())
-                Rooms        = Utils.UintRange(0, f.Rooms       ->Count).Select(i => SectionReader.GetRoomInfo    (f, i)).ToArray();
-            if (f.TexturePages != null && !f.TexturePages->Header.IsEmpty())
-                TexturePages = Utils.UintRange(0, f.TexturePages->Count).Select(i => SectionReader.GetTexPageInfo (f, i)).ToArray();
-            if (f.Code         != null && !f.Code->Header.IsEmpty())
-                Code         = Utils.UintRange(0, f.Code        ->Count).Select(i => Disassembler .DisassembleCode(f, i)).ToArray();
-            if (f.Strings      != null && !f.Strings->Header.IsEmpty())
-                Strings      = Utils.UintRange(0, f.Strings     ->Count).Select(i => SectionReader.GetStringInfo  (f, i)).ToArray();
-            if (f.Textures     != null && !f.Textures->Header.IsEmpty())
-                Textures     = Utils.UintRange(0, f.Textures    ->Count).Select(i => SectionReader.GetTextureInfo (f, i)).ToArray();
-            if (f.Audio        != null && !f.Audio->Header.IsEmpty())
-                Audio        = Utils.UintRange(0, f.Audio       ->Count).Select(i => SectionReader.GetAudioInfo   (f, i)).ToArray();
-            if (f.AudioGroup   != null && !f.AudioGroup->Header.IsEmpty())
-                AudioGroups  = Utils.UintRange(0, f.AudioGroup  ->Count).Select(i => SectionReader.GetAudioGroupInfo(f, i)).ToArray();
+            Sound = TryReadMany(f.Sounds, i => SectionReader.GetSoundInfo(f, i));
+
+            try
+            {
+                var toil = SectionReader.BuildTPAGOffsetIndexLUT(f);
+                Sprites = TryReadMany(f.Sprites, i => SectionReader.GetSpriteInfo(f, i, toil));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Error building TPAG Offset/Index LUT, can't read sprites.");
+                Console.Error.WriteLine(e);
+            }
+
+            Backgrounds  = TryReadMany(f.Backgrounds , i => SectionReader.GetBgInfo        (f, i));
+            Paths        = TryReadMany(f.Paths       , i => SectionReader.GetPathInfo      (f, i));
+            Scripts      = TryReadMany(f.Scripts     , i => SectionReader.GetScriptInfo    (f, i));
+            Fonts        = TryReadMany(f.Fonts       , i => SectionReader.GetFontInfo      (f, i));
+            Objects      = TryReadMany(f.Objects     , i => SectionReader.GetObjectInfo    (f, i));
+            Rooms        = TryReadMany(f.Rooms       , i => SectionReader.GetRoomInfo      (f, i));
+            TexturePages = TryReadMany(f.TexturePages, i => SectionReader.GetTexPageInfo   (f, i));
+            Code         = TryReadMany(f.Code        , i => Disassembler .DisassembleCode  (f, i));
+            Strings      = TryReadMany(f.Strings     , i => SectionReader.GetStringInfo    (f, i));
+            Textures     = TryReadMany(f.Textures    , i => SectionReader.GetTextureInfo   (f, i));
+            Audio        = TryReadMany(f.Audio       , i => SectionReader.GetAudioInfo     (f, i));
+            AudioGroups  = TryReadMany(f.AudioGroup  , i => SectionReader.GetAudioGroupInfo(f, i));
 
             AudioSoundMap = new Dictionary<uint, uint>();
             if (Sound != null)
@@ -198,29 +220,39 @@ namespace Altar
                         AudioSoundMap[(uint)s.AudioID] = i;
                 }
 
-            var vars = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
-            var fns  = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
-
-            RefData = new RefData
+            try
             {
-                Variables = vars,
-                Functions = fns ,
+                var vars = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Variables) : SectionReader.GetRefDefsWithOthers(f, f.Variables);
+                var fns  = General.IsOldBCVersion ? SectionReader.GetRefDefs(f, f.Functions) : SectionReader.GetRefDefsWithLength(f, f.Functions);
 
-                 VarAccessors = Disassembler.GetReferenceTable(f, vars),
-                FuncAccessors = Disassembler.GetReferenceTable(f, fns )
-            };
+                var varacc = Disassembler.GetReferenceTable(f, vars);
+                var fnacc = Disassembler.GetReferenceTable(f, fns);
 
-            if (f.Functions->Entries.NameOffset * 12 < f.Functions->Header.Size)
-            {
-                FunctionLocals = SectionReader.GetFunctionLocals(f, f.Functions);
-            }
-            if (f.Variables != null && !General.IsOldBCVersion)
-            {
-                VariableExtra = new uint[] {
-                    ((uint*)&f.Variables->Entries)[0],
-                    ((uint*)&f.Variables->Entries)[1],
-                    ((uint*)&f.Variables->Entries)[2]
+                RefData = new RefData
+                {
+                    Variables = vars,
+                    Functions = fns,
+                    VarAccessors = varacc,
+                    FuncAccessors = fnacc
                 };
+
+                if (f.Functions->Entries.NameOffset * 12 < f.Functions->Header.Size)
+                {
+                    FunctionLocals = SectionReader.GetFunctionLocals(f, f.Functions);
+                }
+                if (f.Variables != null && !General.IsOldBCVersion)
+                {
+                    VariableExtra = new uint[] {
+                        ((uint*)&f.Variables->Entries)[0],
+                        ((uint*)&f.Variables->Entries)[1],
+                        ((uint*)&f.Variables->Entries)[2]
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Can't figure out RefDef pairs.");
+                Console.Error.WriteLine(e);
             }
         }
 

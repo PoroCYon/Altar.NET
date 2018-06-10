@@ -313,4 +313,8 @@ namespace Altar
             return false;
         }
     }
+    public static class ArrayExt<T>
+    {
+        public readonly static T[] Empty = new T[0];
+    }
 }
