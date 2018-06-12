@@ -1093,6 +1093,8 @@ namespace Altar.Repack
             {
                 bytecodeSize += ci.Size;
             }
+            
+            Console.WriteLine($"Assembling...");
 
             BBData[] datas = new BBData[f.Code.Length];
             for (int i = 0; i < f.Code.Length; i++)
@@ -1124,6 +1126,8 @@ namespace Altar.Repack
                 offAcc += datas[i].Buffer.Size;
             }
 
+            Console.WriteLine($"Linking...");
+
             IList<Tuple<ReferenceSignature, uint>> functionReferences = new List<Tuple<ReferenceSignature, uint>>();
             IList<Tuple<ReferenceSignature, uint>> variableReferences = new List<Tuple<ReferenceSignature, uint>>();
 
@@ -1131,13 +1135,15 @@ namespace Altar.Repack
             {
                 Name = "prototype",
                 InstanceType = InstanceType.Self,
-                VariableType = VariableType.Normal
+                VariableType = VariableType.Normal,
+                VariableIndex = 0
             }, 0xFFFFFFFF));
             variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
             {
                 Name = "@@array@@",
                 InstanceType = InstanceType.Self,
-                VariableType = VariableType.Normal
+                VariableType = VariableType.Normal,
+                VariableIndex = 1
             }, 0xFFFFFFFF));
 
             int[] bytecodeOffsets = null;
@@ -1157,7 +1163,8 @@ namespace Altar.Repack
                             Name = "arguments",
                             InstanceType = InstanceType.Local,
                             Instance = f.Code[i].Name,
-                            VariableType = VariableType.Normal
+                            VariableType = VariableType.Normal,
+                            VariableIndex = -1
                         }, 0xFFFFFFFF));
                     }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
@@ -1182,7 +1189,8 @@ namespace Altar.Repack
                             Name = "arguments",
                             InstanceType = InstanceType.Local,
                             Instance = f.Code[i].Name,
-                            VariableType = VariableType.Normal
+                            VariableType = VariableType.Normal,
+                            VariableIndex = -1
                         }, 0xFFFFFFFF));
                     }
                     AddReferencesOffset(variableReferences, f.Code[i].variableReferences, data.Buffer.Position);
@@ -1203,16 +1211,16 @@ namespace Altar.Repack
             // I tried my best at guessing what these should be, but it wasn't enough.
             // I suspect it may have to do with variable type, since getting
             // one wrong resulted in "tried to index something that isn't an
-            // array."
+            // array" (or something to that effect).
             for (int i = 0; i < variableStartOffsetsAndCounts.Count; i++)
             {
                 var v = variableStartOffsetsAndCounts[i];
                 if (i < f.RefData.Variables.Length &&
-                    v.Name == f.RefData.Variables[i].Name &&
-                    (v.InstanceType == f.RefData.Variables[i].InstanceType || v.InstanceType >= InstanceType.StackTopOrGlobal))
+                    v.Name == f.RefData.Variables[i].Name)// &&
+                    //(v.InstanceType == f.RefData.Variables[i].InstanceType || v.InstanceType >= InstanceType.StackTopOrGlobal))
                 {
                     v.unknown2 = f.RefData.Variables[i].unknown2;
-                    //v.InstanceType = f.RefData.Variables[i].InstanceType;
+                    v.InstanceType = f.RefData.Variables[i].InstanceType;
                     variableStartOffsetsAndCounts[i] = v;
                 }
             }
@@ -1232,7 +1240,7 @@ namespace Altar.Repack
             IList<Tuple<ReferenceSignature, uint>> references, IDictionary<string, uint> stringIndices, bool extended,
             out IList<ReferenceDef> startOffsetsAndCounts)
         {
-            startOffsetsAndCounts = new List<ReferenceDef>(references.Count);
+            startOffsetsAndCounts = new List<ReferenceDef>();
             int localCount = 0;
             int nonLocalCount = 0;
             for (int i = 0; i < references.Count; i++)
@@ -1243,7 +1251,7 @@ namespace Altar.Repack
                 uint count = 0;
                 var targetRef = references[i].Item1;
                 var start = references[i].Item2;
-                if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal && extended)
+                if (targetRef.InstanceType >= InstanceType.StackTopOrGlobal && extended && targetRef.VariableIndex != -1)
                 {
                     for (InstanceType possibleInstanceType = InstanceType.Self; possibleInstanceType >= InstanceType.Local; possibleInstanceType--)
                     {
@@ -1278,11 +1286,14 @@ namespace Altar.Repack
                     {
                         if (references[j].Item1.Name == targetRef.Name &&
                             (!extended ||
+                             (targetRef.VariableIndex != -1) ||
                              (references[j].Item1.InstanceType >= InstanceType.StackTopOrGlobal) ||
                              (references[j].Item1.InstanceType == targetRef.InstanceType &&
                               //references[j].Item1.VariableType == targetRef.VariableType &&
                               (references[j].Item1.InstanceType != InstanceType.Local ||
-                               references[j].Item1.Instance == targetRef.Instance))))
+                               references[j].Item1.Instance == targetRef.Instance))) &&
+                            ((targetRef.VariableIndex == -1) ||
+                             (targetRef.VariableIndex == references[j].Item1.VariableIndex)))
                         {
                             diff = (references[j].Item2 - last.Item2) & 0xFFFFFF;
                             data.Buffer.Position = (int)last.Item2 + 4;
@@ -1302,7 +1313,7 @@ namespace Altar.Repack
                     existing = data.Buffer.ReadUInt32();
                     data.Buffer.Write(diff | existing);
                 }
-                startOffsetsAndCounts.Add(new ReferenceDef
+                var def = new ReferenceDef
                 {
                     FirstOffset = start,
                     HasExtra = extended,
@@ -1311,9 +1322,19 @@ namespace Altar.Repack
                     Occurrences = count,
                     unknown2 = targetRef.InstanceType == InstanceType.Local ?
                         localCount : targetRef.VariableType == VariableType.StackTop ?
-                            nonLocalCount : - 6,
+                            nonLocalCount : -6,
                     VariableType = targetRef.VariableType
-                });
+                };
+                if (targetRef.VariableIndex == -1)
+                {
+                    startOffsetsAndCounts.Add(def);
+                }
+                else
+                {
+                    while (startOffsetsAndCounts.Count <= targetRef.VariableIndex)
+                        startOffsetsAndCounts.Add(new ReferenceDef());
+                    startOffsetsAndCounts[targetRef.VariableIndex] = def;
+                }
                 if (targetRef.InstanceType == InstanceType.Local)
                 {
                     localCount++;

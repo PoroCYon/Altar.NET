@@ -527,7 +527,13 @@ namespace Altar.Recomp
                     case TokenType.Brf:
                     case TokenType.PushEnv:
                     case TokenType.PopEnv:
-                        yield return new Branch { OpCode = TokenToOpCodes(nt), Label = LabelValue(Dequeue()) };
+                        yield return new Branch
+                        {
+                            OpCode = TokenToOpCodes(nt),
+                            Label = ((Peek() is IntToken) || (Peek() is WordToken)) ?
+                                LabelValue(Dequeue()) :
+                                null
+                        };
                         break;
                     #endregion
                     #region set
@@ -562,7 +568,26 @@ namespace Altar.Recomp
                             var n = ReadIdentifier();
                             var t3 = TryReadVariableType();
 
-                            yield return new Set { OpCode  = TokenToOpCodes(nt), Type1 = t1, Type2 = t2, InstanceType = instu.Item2, InstanceName = instu.Item1, TargetVariable = n, VariableType = t3 };
+                            int variableIndex = -1;
+                            {
+                                SkipWhitespace();
+                                var m = Peek();
+                                if (m is IntToken)
+                                {
+                                    variableIndex = (int)((IntToken)Dequeue()).Value;
+                                }
+                            }
+
+                            yield return new Set {
+                                OpCode  = TokenToOpCodes(nt),
+                                Type1 = t1,
+                                Type2 = t2,
+                                InstanceType = instu.Item2,
+                                InstanceName = instu.Item1,
+                                TargetVariable = n,
+                                VariableType = t3,
+                                VariableIndex = variableIndex
+                            };
                         }
                         break;
                     #endregion
@@ -589,7 +614,25 @@ namespace Altar.Recomp
                                     var n = ReadIdentifier();
                                     var t2 = TryReadVariableType();
 
-                                    yield return new PushVariable { OpCode = TokenToOpCodes(nt, 0, t1, instu.Item2), Type = t1, InstanceType = instu.Item2, InstanceName = instu.Item1, VariableName = n, VariableType = t2 };
+                                    int variableIndex = -1;
+                                    {
+                                        SkipWhitespace();
+                                        var m = Peek();
+                                        if (m is IntToken)
+                                        {
+                                            variableIndex = (int)((IntToken)Dequeue()).Value;
+                                        }
+                                    }
+
+                                    yield return new PushVariable {
+                                        OpCode = TokenToOpCodes(nt, 0, t1, instu.Item2),
+                                        Type = t1,
+                                        InstanceType = instu.Item2,
+                                        InstanceName = instu.Item1,
+                                        VariableName = n,
+                                        VariableType = t2,
+                                        VariableIndex = variableIndex
+                                    };
                                     break;
                                 default:
                                     var v = InnerValue(Dequeue());
