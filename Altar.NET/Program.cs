@@ -476,7 +476,7 @@ namespace Altar
                     
                     if (eo.DumpAllChunks) chunks.Add((IntPtr)c.TexturePages);
                     if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Code        );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables);
+                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables   );
                     if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Functions   );
                     if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Strings     );
                     if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Textures    );
@@ -568,12 +568,15 @@ namespace Altar
             GMFile f = Deserialize.ReadFile(baseDir, projFile);
 
             var stringsChunk = new BBData(new BinBuffer(), new int[0]);
+            Console.WriteLine($"Preparing strings...");
             IDictionary<string, int> stringOffsets = SectionWriter.WriteStrings(stringsChunk, f.Strings);
 
             var texpChunk = new BBData(new BinBuffer(), new int[0]);
+            Console.WriteLine($"Preparing textures...");
             int[] texPagOffsets = SectionWriter.WriteTexturePages(texpChunk, f.TexturePages);
 
             var codeChunk = new BBData(new BinBuffer(), new int[0]);
+            Console.WriteLine($"Preparing code...");
             var codeChunkStringOffsetOffsets = SectionWriter.WriteCodes(codeChunk, f, stringOffsets);
 
             var output = Path.GetFullPath(opt.OutputFile);

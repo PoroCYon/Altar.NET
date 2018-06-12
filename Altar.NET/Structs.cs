@@ -25,6 +25,7 @@ namespace Altar
         public InstanceType InstanceType;
         public string Instance;
         public VariableType VariableType;
+        public int VariableIndex;
         public override string ToString() => Name;
     }
     // ---

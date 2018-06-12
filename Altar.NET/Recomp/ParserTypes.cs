@@ -66,6 +66,7 @@ namespace Altar.Recomp
         public string TargetVariable;
 
         public VariableType VariableType;
+        internal int VariableIndex;
 
         public override string ToString() => base.ToString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + TargetVariable + VariableType.ToPrettyString();
     }
@@ -106,6 +107,7 @@ namespace Altar.Recomp
         public string VariableName;
 
         public VariableType VariableType;
+        internal int VariableIndex;
 
         public override string ToString() => base.ToString() + SR.SPACE_S + (InstanceName ?? InstanceType.ToPrettyString()) + SR.COLON + VariableName + VariableType.ToPrettyString();
     }

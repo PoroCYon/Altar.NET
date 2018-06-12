@@ -123,14 +123,22 @@ namespace Altar.Decomp
                     case InstructionKind.Goto:
                         var g = iptr->Goto;
 
-                        var a = g.Offset.UValue * 4;
-                        if ((a & 0xFF000000) != 0)
+                        if ((g.Offset.UValue&0x800000) != 0)
                         {
-                            a &= 0x00FFFFFF;
-                            a -= 0x01000000;
+                            // there is precisely one place where this happens: gml_Object_obj_battlebomb_Alarm_3.gml
+                            // and I have no clue what it could mean
                         }
+                        else
+                        {
+                            var a = g.Offset.UValue * 4;
+                            if ((a & 0xFF000000) != 0)
+                            {
+                                a &= 0x00FFFFFF;
+                                a -= 0x01000000;
+                            }
 
-                        sb.Append(HEX_PRE).Append(Utils.ToHexSignString(relInstr + unchecked((int)a), HEX_FM6));
+                            sb.Append(HEX_PRE).Append(Utils.ToHexSignString(relInstr + unchecked((int)a), HEX_FM6));
+                        }
                         break;
 
                     #region set
@@ -158,6 +166,13 @@ namespace Altar.Decomp
 
                         sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);
                         sb.Append(s.DestVar.Type.ToPrettyString());
+
+                        if (true)
+                        {
+                            sb.Append(' ');
+                            sb.Append(rdata.VarAccessors[(IntPtr)iptr]);
+                        }
+
                         break;
                     #endregion
                     #region push
@@ -191,15 +206,22 @@ namespace Altar.Decomp
 
                                 sb.Append(rdata.Variables[rdata.VarAccessors[(IntPtr)iptr]].Name);
                                 sb.Append(rv.Type.ToPrettyString());
+
+                                if (true)
+                                {
+                                    sb.Append(' ');
+                                    sb.Append(rdata.VarAccessors[(IntPtr)iptr]);
+                                }
+
                                 break;
                             case DataType.Boolean:
                                 sb.Append(((DwordBool*)&r)->ToPrettyString());
                                 break;
                             case DataType.Double:
-                                sb.Append(((double*)&r)->ToString(CultureInfo.InvariantCulture));
+                                sb.Append(((double*)&r)->ToString("G16", CultureInfo.InvariantCulture));
                                 break;
                             case DataType.Single:
-                                sb.Append(((float*)&r)->ToString(CultureInfo.InvariantCulture));
+                                sb.Append(((float*)&r)->ToString("G8", CultureInfo.InvariantCulture));
                                 break;
                             case DataType.Int32:
                                 sb.Append(unchecked((int)r).ToString(CultureInfo.InvariantCulture));

@@ -494,7 +494,8 @@ namespace Altar.Repack
                             Name = setinst.TargetVariable,
                             InstanceType = setinst.InstanceType,
                             Instance = setinst.InstanceType == InstanceType.Local ? name : null,
-                            VariableType = setinst.VariableType
+                            VariableType = setinst.VariableType,
+                            VariableIndex = setinst.VariableIndex
                         }, size));
                         break;
                     case InstructionKind.Push:
@@ -513,7 +514,8 @@ namespace Altar.Repack
                                 Name = p.VariableName,
                                 InstanceType = p.InstanceType,
                                 Instance = p.InstanceType == InstanceType.Local ? name : null,
-                                VariableType = p.VariableType
+                                VariableType = p.VariableType,
+                                VariableIndex = p.VariableIndex
                             }, size));
                         }
                         else
@@ -555,7 +557,8 @@ namespace Altar.Repack
                         {
                             Name = callinst.FunctionName,
                             InstanceType = InstanceType.StackTopOrGlobal,
-                            VariableType = callinst.FunctionType
+                            VariableType = callinst.FunctionType,
+                            VariableIndex = -1
                         }, size));
                         break;
                     case InstructionKind.Break:
@@ -604,6 +607,20 @@ namespace Altar.Repack
                         {
                             var s = (string)(gotoinst.Label);
                             // TODO
+                        }
+                        else if (gotoinst.Label == null)
+                        {
+                            bininst.Goto = new BranchInstruction
+                            {
+                                Offset = new Int24(0xF00000),
+                                OpCode = op
+                            };
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Can't use label " + gotoinst.Label);
+                            break;
                         }
                         var relTarget = (int)absTarget - (int)size;
                         uint offset = unchecked((uint)relTarget);
@@ -797,10 +814,6 @@ namespace Altar.Repack
                     f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
                         stringIndices, objectIndices);
                     f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
-                    /*if (f.Code[i].Name == "gml_Script_scr_namingscreen")
-                    {
-                        return f;
-                    }*/
                 }
             }
             if (projFile.Has("sounds"))
