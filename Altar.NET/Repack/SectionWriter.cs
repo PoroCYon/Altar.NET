@@ -1063,13 +1063,13 @@ namespace Altar.Repack
 
         private static void WriteCodeInfo(BBData data, CodeInfo ci, IDictionary<string, int> stringOffsets, uint bytecodeVersion)
         {
-            data.Buffer.Write(stringOffsets[ci.Name]);
-            data.Buffer.Write(ci.Size);
+            data.Buffer.Write(stringOffsets[ci.Name]); // Name
+            data.Buffer.Write(ci.Size); // Length
             if (bytecodeVersion > 0xE)
             {
-                data.Buffer.Write(1);
-                data.Buffer.Write(0);
-                data.Buffer.Write(0);
+                data.Buffer.Write(ci.ArgumentCount); // ArgumentCount
+                data.Buffer.Write(0); // BytecodeOffset
+                data.Buffer.Write(0); // pad
             }
             else
             {

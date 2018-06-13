@@ -200,6 +200,7 @@ namespace Altar
         public string Name;
         public AnyInstruction*[] Instructions;
         public int Size;
+        internal int ArgumentCount;
         internal AnyInstruction[] InstructionsCopy; // I ain't dealin' with no pointers
         // (TODO: don't use pointers)
         internal IList<Tuple<ReferenceSignature, uint>> functionReferences;
