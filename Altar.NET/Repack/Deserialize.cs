@@ -814,6 +814,18 @@ namespace Altar.Repack
                     f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
                         stringIndices, objectIndices);
                     f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                    f.Code[i].ArgumentCount = 1;
+                    if (f.FunctionLocals != null)
+                    {
+                        for (int j = 0; j < f.FunctionLocals.Length; j++)
+                        {
+                            int fastIndex = (j + i) % f.FunctionLocals.Length;
+                            if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
+                            {
+                                f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
+                            }
+                        }
+                    }
                 }
             }
             if (projFile.Has("sounds"))

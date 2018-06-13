@@ -394,7 +394,7 @@ namespace Altar
     {
         public uint Name;
         public uint Length;
-        public uint Probably1;
+        public uint ArgumentCount;
         public int BytecodeOffset;
         uint Probably0;
     }
