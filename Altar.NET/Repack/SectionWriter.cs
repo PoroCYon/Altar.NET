@@ -215,7 +215,7 @@ namespace Altar.Repack
             return stringOffsets;
         }
 
-        public static int[] WriteGeneral(BBData data, GeneralInfo ge, IDictionary<string, int> stringOffsets)
+        public static int[] WriteGeneral(BBData data, GeneralInfo ge, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
         {
             var ret = new SectionGeneral
             {
@@ -234,7 +234,10 @@ namespace Altar.Repack
 
                 Info = ge.InfoFlags,
                 ActiveTargets = ge.ActiveTargets,
-                AppID = ge.SteamAppID
+                AppID = ge.SteamAppID,
+
+                LastObj = 0,
+                LastTile = 0
             };
             var stringOffsetOffsets = new int[]
             {
@@ -243,6 +246,26 @@ namespace Altar.Repack
                 (int)Marshal.OffsetOf(typeof(SectionGeneral), "NameOffset") - 3,
                 (int)Marshal.OffsetOf(typeof(SectionGeneral), "DisplayNameOffset") - 3
             };
+
+            foreach (var room in rooms)
+            {
+                foreach (var obj in room.Objects)
+                {
+                    if (obj.InstanceID > ret.LastObj)
+                    {
+                        ret.LastObj = obj.InstanceID;
+                    }
+                }
+                foreach (var tile in room.Tiles)
+                {
+                    if (tile.InstanceID > ret.LastTile)
+                    {
+                        ret.LastTile = tile.InstanceID;
+                    }
+                }
+            }
+            ret.LastObj++;
+            ret.LastTile++;
 
             for (int i = 0; i < 4; i++)
                 unsafe
