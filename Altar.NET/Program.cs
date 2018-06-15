@@ -605,7 +605,7 @@ namespace Altar
                 switch (chunkId)
                 {
                     case SectionHeaders.General:
-                        chunkStringOffsetOffsets = SectionWriter.WriteGeneral(chunk, f.General, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteGeneral(chunk, f.General, f.Rooms, stringOffsets);
                         break;
                     case SectionHeaders.Options:
                         chunkStringOffsetOffsets = SectionWriter.WriteOptions(chunk, f.Options, stringOffsets);
