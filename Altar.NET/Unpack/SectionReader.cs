@@ -750,7 +750,7 @@ namespace Altar.Unpack
         //TODO: unused stuff might contain info about local vars?
         public static ReferenceDef[] GetRefDefsWithLength(GMFileContent content, SectionRefDefs* section)
         {
-            ReferenceDef[] refs = GetRefDefsInternal(content, section, 1, section->Entries.NameOffset /* actually length, because reasons */, 12, p =>
+            return GetRefDefsInternal(content, section, 1, section->Entries.NameOffset /* actually length, because reasons */, 12, p =>
             {
                 var rde = (RefDefEntry*)p;
                 var ret = new ReferenceDef();
@@ -761,8 +761,6 @@ namespace Altar.Unpack
 
                 return ret;
             }, false);
-
-            return refs;
         }
         public static ReferenceDef[] GetRefDefsWithOthers(GMFileContent content, SectionRefDefs* section)
         {

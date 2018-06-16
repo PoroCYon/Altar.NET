@@ -86,22 +86,22 @@ namespace Altar
     [Flags]
     public enum InfoFlags : uint
     {
-        Fullscreen = 0x0001,
-        SyncVertex1 = 0x0002,
-        SyncVertex2 = 0x0004,
-        Interpolate = 0x0008,
-        Unknown = 0x0010, // seems to be 1 all the time...
-        ShowCursor = 0x0020,
-        Sizeable = 0x0040,
-        ScreenKey = 0x0080,
-        SyncVertex3 = 0x0100,
-        StudioVersionB1 = 0x0200,
-        StudioVersionB2 = 0x0400,
-        StudioVersionB3 = 0x0800,
+        Fullscreen        = 0x0001,
+        SyncVertex1       = 0x0002,
+        SyncVertex2       = 0x0004,
+        Interpolate       = 0x0008,
+        Unknown           = 0x0010, // seems to be 1 all the time...
+        ShowCursor        = 0x0020,
+        Sizeable          = 0x0040,
+        ScreenKey         = 0x0080,
+        SyncVertex3       = 0x0100,
+        StudioVersionB1   = 0x0200,
+        StudioVersionB2   = 0x0400,
+        StudioVersionB3   = 0x0800,
         StudioVersionMask = StudioVersionB1 | StudioVersionB2 | StudioVersionB3,
-        SteamEnabled = 0x1000,
-        LocalDataEnabled = 0x2000,
-        BorderlessWindow = 0x4000
+        SteamEnabled      = 0x1000,
+        LocalDataEnabled  = 0x2000,
+        BorderlessWindow  = 0x4000
 
         // others...?
     }
@@ -194,9 +194,9 @@ namespace Altar
     [Flags]
     public enum SoundEntryFlags : uint
     {
-        Embedded = 0x01, // NotStreamed?
+        Embedded   = 0x01, // NotStreamed?
         Compressed = 0x02,
-        Normal = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
+        Normal     = 0x04 | 0x20 | 0x40 // all seem to have these flags -> unimportant?
     }
     [Flags]
     public enum RoomEntryFlags
@@ -316,7 +316,7 @@ namespace Altar
     public enum CollisionShape : uint
     {
         Circle = 0,
-        Box = 1,
+        Box    = 1,
         Custom = 2
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

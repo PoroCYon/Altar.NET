@@ -88,39 +88,39 @@ namespace Altar.Repack
             throw new FormatException($"Invalid colour format: invalid type {j.JsonType}");
         }
 
-        static Point DeserializePoint(JsonData j) => new Point((int)j["x"], (int)j["y"]);
-        static PointF DeserializePointF(JsonData j) => new PointF((float)j["x"], (float)j["y"]);
-        static Point16 DeserializePoint16(JsonData j) => new Point16((ushort)j["x"], (ushort)j["y"]);
-        static Point DeserializeSize(JsonData j) => new Point((int)j["width"], (int)j["height"]);
-        static PointF DeserializeSizeF(JsonData j) => new PointF((float)j["width"], (float)j["height"]);
-        static Point16 DeserializeSize16(JsonData j) => new Point16((ushort)j["width"], (ushort)j["height"]);
-        static Rectangle DeserializeRect(JsonData j) => new Rectangle((int)j["x"], (int)j["y"], (int)j["width"], (int)j["height"]);
-        static Rectangle16 DeserializeRect16(JsonData j) => new Rectangle16((ushort)j["x"], (ushort)j["y"], (ushort)j["width"], (ushort)j["height"]);
-        static BoundingBox DeserializeBBox(JsonData j) => new BoundingBox((uint)j["top"], (uint)j["left"], (uint)j["right"], (uint)j["bottom"]);
-        static BoundingBox2 DeserializeBBox2(JsonData j) => new BoundingBox2((uint)j["left"], (uint)j["right"], (uint)j["bottom"], (uint)j["top"]);
-        static PathPoint DeserializePathPt(JsonData j) => new PathPoint { Position = DeserializePointF(j["pos"]), Speed = (float)j["speed"] };
+        static Point        DeserializePoint  (JsonData j) => new Point  ((int)j["x"], (int)j["y"]);
+        static PointF       DeserializePointF (JsonData j) => new PointF ((float)j["x"], (float)j["y"]);
+        static Point16      DeserializePoint16(JsonData j) => new Point16((ushort)j["x"], (ushort)j["y"]);
+        static Point        DeserializeSize   (JsonData j) => new Point  ((int)j["width"], (int)j["height"]);
+        static PointF       DeserializeSizeF  (JsonData j) => new PointF ((float)j["width"], (float)j["height"]);
+        static Point16      DeserializeSize16 (JsonData j) => new Point16((ushort)j["width"], (ushort)j["height"]);
+        static Rectangle    DeserializeRect   (JsonData j) => new Rectangle   ((int)j["x"], (int)j["y"], (int)j["width"], (int)j["height"]);
+        static Rectangle16  DeserializeRect16 (JsonData j) => new Rectangle16 ((ushort)j["x"], (ushort)j["y"], (ushort)j["width"], (ushort)j["height"]);
+        static BoundingBox  DeserializeBBox   (JsonData j) => new BoundingBox ((uint)j["top"], (uint)j["left"], (uint)j["right"], (uint)j["bottom"]);
+        static BoundingBox2 DeserializeBBox2  (JsonData j) => new BoundingBox2((uint)j["left"], (uint)j["right"], (uint)j["bottom"], (uint)j["top"]);
+        static PathPoint    DeserializePathPt (JsonData j) => new PathPoint { Position = DeserializePointF(j["pos"]), Speed = (float)j["speed"] };
 
         #region static FontCharacter DeserializeFontChar  (JsonData j)
         static FontCharacter DeserializeFontChar(JsonData j) => new FontCharacter
         {
             Character = (char)j["char"],
             TPagFrame = DeserializeRect16(j["frame"]),
-            Shift = (ushort)j["shift"],
-            Offset = (uint)j["offset"]
+            Shift     = (ushort)j["shift"],
+            Offset    = (uint)j["offset"]
         };
         #endregion
         #region static ObjectPhysics DeserializeObjPhysics(JsonData j)
         static ObjectPhysics DeserializeObjPhysics(JsonData j) => new ObjectPhysics
         {
-            Density = (float)j["density"],
-            Restitution = (float)j["restitution"],
-            Group = (float)j["group"],
-            LinearDamping = (float)j["lineardamp"],
+            Density        = (float)j["density"],
+            Restitution    = (float)j["restitution"],
+            Group          = (float)j["group"],
+            LinearDamping  = (float)j["lineardamp"],
             AngularDamping = (float)j["angulardamp"],
-            Friction = (float)j["friction"],
-            Kinematic = (float)j["kinematic"],
-            Unknown0 = (float)j["unk0"],
-            Unknown1 = (int)j["unk1"]
+            Friction       = (float)j["friction"],
+            Kinematic      = (float)j["kinematic"],
+            Unknown0       = (float)j["unk0"],
+            Unknown1       = (int)j["unk1"]
         };
         #endregion
 
@@ -128,14 +128,14 @@ namespace Altar.Repack
         {
             var r = new RoomBackground
             {
-                IsEnabled = (bool)j["enabled"],
-                IsForeground = (bool)j["foreground"],
-                TileX = (bool)j["tilex"],
-                TileY = (bool)j["tiley"],
+                IsEnabled     = (bool)j["enabled"],
+                IsForeground  = (bool)j["foreground"],
+                TileX         = (bool)j["tilex"],
+                TileY         = (bool)j["tiley"],
                 StretchSprite = (bool)j["stretch"],
 
                 Position = DeserializePoint(j["pos"]),
-                Speed = DeserializePoint(j["speed"])
+                Speed    = DeserializePoint(j["speed"])
             };
 
             if (((JsonData)j).Has("bg"))
@@ -153,12 +153,12 @@ namespace Altar.Repack
         {
             return new RoomObjInst
             {
-                Index = (uint)j["index"],
+                Index     = (uint)j["index"],
                 Instances = DeserializeArray(j["instances"], i => (uint)i),
-                Name = (string)j["name"],
-                Unk1 = (uint)j["unk1"],
-                Unk2 = (uint)j["unk2"],
-                Unk3 = (uint)j["unk3"]
+                Name      = (string)j["name"],
+                Unk1      = (uint)j["unk1"],
+                Unk2      = (uint)j["unk2"],
+                Unk3      = (uint)j["unk3"]
             };
         }
 
@@ -167,10 +167,10 @@ namespace Altar.Repack
             var r = new RoomView
             {
                 IsEnabled = (bool)j["enabled"],
-                View = DeserializeRect(j["view"]),
-                Port = DeserializeRect(j["port"]),
-                Border = DeserializePoint(j["border"]),
-                Speed = DeserializePoint(j["speed"])
+                View      = DeserializeRect(j["view"]),
+                Port      = DeserializeRect(j["port"]),
+                Border    = DeserializePoint(j["border"]),
+                Speed     = DeserializePoint(j["speed"])
             };
 
             if (((JsonData)j).Has("obj"))
@@ -188,11 +188,11 @@ namespace Altar.Repack
         {
             var r = new RoomObject
             {
-                Position = DeserializePoint(j["pos"]),
-                Scale = DeserializePointF(j["scale"]),
-                Colour = ParseColour((JsonData)j["colour"]),
-                Rotation = (float)j["rotation"],
-                InstanceID = (uint)j["instanceid"],
+                Position     = DeserializePoint(j["pos"]),
+                Scale        = DeserializePointF(j["scale"]),
+                Colour       = ParseColour((JsonData)j["colour"]),
+                Rotation     = (float)j["rotation"],
+                InstanceID   = (uint)j["instanceid"],
                 CreateCodeID = (uint)j["createcodeid"]
             };
 
@@ -207,13 +207,13 @@ namespace Altar.Repack
         {
             var r = new RoomTile
             {
-                Position = DeserializePoint(j["pos"]),
+                Position       = DeserializePoint(j["pos"]),
                 SourcePosition = DeserializePoint(j["sourcepos"]),
-                Size = DeserializeSize(j["size"]),
-                Scale = DeserializePointF(j["scale"]),
-                Colour = ParseColour((JsonData)j["colour"]),
-                Depth = (uint)j["tiledepth"],
-                InstanceID = (uint)j["instanceid"]
+                Size           = DeserializeSize(j["size"]),
+                Scale          = DeserializePointF(j["scale"]),
+                Colour         = ParseColour((JsonData)j["colour"]),
+                Depth          = (uint)j["tiledepth"],
+                InstanceID     = (uint)j["instanceid"]
             };
 
             var i = Array.FindIndex(bgs, b => b.Name == (string)j["bg"]);
@@ -227,23 +227,23 @@ namespace Altar.Repack
         #region public static GeneralInfo DeserializeGeneral(JsonData j)
         public static GeneralInfo DeserializeGeneral(JsonData j) => new GeneralInfo
         {
-            IsDebug = (bool)j["debug"],
+            IsDebug         = (bool)j["debug"],
             BytecodeVersion = (uint)j["bytecodeversion"],
-            FileName = (string)j["filename"],
-            Configuration = (string)j["config"],
-            GameID = (uint)j["gameid"],
-            Name = (string)j["name"],
-            Version = new Version((string)j["version"]),
-            WindowSize = DeserializeSize(j["windowsize"]),
-            LicenseMD5Hash = DeserializeArray(j["licensemd5"], (Func<dynamic, byte>)(jd => (byte)jd)),
-            LicenceCRC32 = (uint)j["licensecrc32"],
-            DisplayName = (string)j["displayname"],
-            Timestamp = DateTime.Parse((string)j["timestamp"], CultureInfo.InvariantCulture),
+            FileName        = (string)j["filename"],
+            Configuration   = (string)j["config"],
+            GameID          = (uint)j["gameid"],
+            Name            = (string)j["name"],
+            Version         = new Version((string)j["version"]),
+            WindowSize      = DeserializeSize(j["windowsize"]),
+            LicenseMD5Hash  = DeserializeArray(j["licensemd5"], (Func<dynamic, byte>)(jd => (byte)jd)),
+            LicenceCRC32    = (uint)j["licensecrc32"],
+            DisplayName     = (string)j["displayname"],
+            Timestamp       = DateTime.Parse((string)j["timestamp"], CultureInfo.InvariantCulture),
 
             ActiveTargets = (GameTargets)Enum.Parse(typeof(GameTargets), (string)j["targets"], true),
-            unknown = DeserializeArray(j["unknown"], (Func<dynamic, uint>)(jd => (uint)jd)),
-            SteamAppID = (uint)j["appid"],
-            InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
+            unknown       = DeserializeArray(j["unknown"], (Func<dynamic, uint>)(jd => (uint)jd)),
+            SteamAppID    = (uint)j["appid"],
+            InfoFlags     = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
 
             WeirdNumbers = DeserializeArray(j["numbers"], (Func<dynamic, uint>)(jd => (uint)jd))
         };
@@ -282,28 +282,28 @@ namespace Altar.Repack
         #region public static SoundInfo      DeserializeSound (JsonData j)
         public static SoundInfo DeserializeSound(JsonData j) => new SoundInfo
         {
-            IsEmbedded = (bool)j["embedded"],
+            IsEmbedded   = (bool)j["embedded"],
             IsCompressed = (bool)j["compressed"],
-            Type = (string)j["type"],
-            File = (string)j["file"],
-            VolumeMod = (float)j["volume"],
-            PitchMod = (float)j["pitch"],
-            Group = (string)j["group"],
-            AudioID = (int)j["audioid"]
+            Type         = (string)j["type"],
+            File         = (string)j["file"],
+            VolumeMod    = (float)j["volume"],
+            PitchMod     = (float)j["pitch"],
+            Group        = (string)j["group"],
+            AudioID      = (int)j["audioid"]
         };
         #endregion
         #region public static SpriteInfo     DeserializeSprite(JsonData j)
         public static SpriteInfo DeserializeSprite(JsonData j) => new SpriteInfo
         {
-            BBoxMode = (uint)j["bboxmode"],
+            BBoxMode         = (uint)j["bboxmode"],
             SeparateColMasks = (bool)j["sepmasks"],
-            Size = DeserializeSize(j["size"]),
-            Bounding = DeserializeBBox2(j["bounding"]),
-            Origin = DeserializePoint(j["origin"]),
-            TextureIndices = j.Has("textures") ? DeserializeArray(j["textures"], (Func<dynamic, uint>)(jd => (uint)jd)) : null,
-            CollisionMasks = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null,
-            Version = j.Has("unknown1") ? 2 : 1,
-            UnknownFloat = j.Has("unknown1") ? (float)j["unknown1"] : 0.0f
+            Size             = DeserializeSize(j["size"]),
+            Bounding         = DeserializeBBox2(j["bounding"]),
+            Origin           = DeserializePoint(j["origin"]),
+            TextureIndices   = j.Has("textures") ? DeserializeArray(j["textures"], (Func<dynamic, uint>)(jd => (uint)jd)) : null,
+            CollisionMasks   = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null,
+            Version          = j.Has("unknown1") ? 2 : 1,
+            UnknownFloat     = j.Has("unknown1") ? (float)j["unknown1"] : 0.0f
         };
         #endregion
         #region public static BackgroundInfo DeserializeBg    (JsonData j)
@@ -315,10 +315,10 @@ namespace Altar.Repack
         #region public static PathInfo       DeserializePath  (JsonData j)
         public static PathInfo DeserializePath(JsonData j) => new PathInfo
         {
-            IsSmooth = (bool)j["smooth"],
-            IsClosed = (bool)j["closed"],
+            IsSmooth  = (bool)j["smooth"],
+            IsClosed  = (bool)j["closed"],
             Precision = (uint)j["precision"],
-            Points = DeserializeArray(j["points"], (Func<dynamic, PathPoint>)(d => DeserializePathPt(d)))
+            Points    = DeserializeArray(j["points"], (Func<dynamic, PathPoint>)(d => DeserializePathPt(d)))
         };
         #endregion
         public static ScriptInfo DeserializeScript(JsonData j, CodeInfo[] code)
@@ -330,15 +330,15 @@ namespace Altar.Repack
         #region public static FontInfo       DeserializeFont  (JsonData j)
         public static FontInfo DeserializeFont(JsonData j) => new FontInfo
         {
-            SystemName = (string)j["sysname"],
-            EmSize = (uint)j["emsize"],
-            IsBold = (bool)j["bold"],
-            IsItalic = (bool)j["italic"],
+            SystemName   = (string)j["sysname"],
+            EmSize       = (uint)j["emsize"],
+            IsBold       = (bool)j["bold"],
+            IsItalic     = (bool)j["italic"],
             AntiAliasing = (FontAntiAliasing)Enum.Parse(typeof(FontAntiAliasing), (string)j["antialias"], true),
-            Charset = (byte)j["charset"],
-            TexPagId = (uint)j["texture"],
-            Scale = DeserializePointF(j["scale"]),
-            Characters = DeserializeArray(j["chars"], (Func<dynamic, FontCharacter>)(d => DeserializeFontChar(d)))
+            Charset      = (byte)j["charset"],
+            TexPagId     = (uint)j["texture"],
+            Scale        = DeserializePointF(j["scale"]),
+            Characters   = DeserializeArray(j["chars"], (Func<dynamic, FontCharacter>)(d => DeserializeFontChar(d)))
         };
         #endregion
 
@@ -348,18 +348,18 @@ namespace Altar.Repack
 
             return new ObjectInfo
             {
-                SpriteIndex = spr < 0 ? UInt32.MaxValue : (uint)spr,
-                IsVisible = (bool)j["visible"],
-                IsSolid = (bool)j["solid"],
-                Depth = (int)j["depth"],
+                SpriteIndex  = spr < 0 ? UInt32.MaxValue : (uint)spr,
+                IsVisible    = (bool)j["visible"],
+                IsSolid      = (bool)j["solid"],
+                Depth        = (int)j["depth"],
                 IsPersistent = (bool)j["persist"],
 
-                ParentId = ((JsonData)j).Has("parent") ? (uint?)objNameToId((string)j["parent"]) : null,
+                ParentId  = ((JsonData)j).Has("parent") ? (uint?)objNameToId((string)j["parent"]) : null,
                 TexMaskId = ((JsonData)j).Has("texmask") ? (uint?)j["texmask"] : null,
 
                 Physics = ((JsonData)j).Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j["physics"]) : null,
 
-                IsSensor = (bool)j["sensor"],
+                IsSensor       = (bool)j["sensor"],
                 CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j["colshape"], true),
 
                 OtherFloats = DeserializeArray(j["data"], (Func<dynamic, float>)(d => (float)d)),
@@ -372,28 +372,28 @@ namespace Altar.Repack
         #region public static RoomInfo        DeserializeRoom(JsonData j, BackgroundInfo[] bgs, ObjectInfo[] objs)
         public static RoomInfo DeserializeRoom(JsonData j, BackgroundInfo[] bgs, ObjectInfo[] objs) => new RoomInfo
         {
-            Caption = (string)j["caption"],
-            Speed = (uint)j["speed"],
-            IsPersistent = (bool)j["persist"],
-            EnableViews = (bool)j["enableviews"],
-            ShowColour = (bool)j["showcolour"],
-            ClearDisplayBuffer = (bool)j["clearbuf"],
-            UnknownFlag = (bool)j["flag"],
-            World = (uint)j["world"],
-            MetresPerPixel = (float)j["metresperpx"],
+            Caption              = (string)j["caption"],
+            Speed                = (uint)j["speed"],
+            IsPersistent         = (bool)j["persist"],
+            EnableViews          = (bool)j["enableviews"],
+            ShowColour           = (bool)j["showcolour"],
+            ClearDisplayBuffer   = (bool)j["clearbuf"],
+            UnknownFlag          = (bool)j["flag"],
+            World                = (uint)j["world"],
+            MetresPerPixel       = (float)j["metresperpx"],
             DrawBackgroundColour = (bool)j["drawbgcol"],
-            _unknown = (uint)j["unknown"],
+            _unknown             = (uint)j["unknown"],
 
-            Size = DeserializeSize(j["size"]),
-            Colour = ParseColour(j["colour"]),
+            Size     = DeserializeSize(j["size"]),
+            Colour   = ParseColour(j["colour"]),
             Bounding = DeserializeBBox(j["bounding"]),
-            Gravity = DeserializePointF(j["gravity"]),
+            Gravity  = DeserializePointF(j["gravity"]),
 
             Backgrounds = DeserializeArray(j["bgs"], (Func<dynamic, RoomBackground>)(d => DeserializeRoomBg(d, bgs))),
-            Views = DeserializeArray(j["views"], (Func<dynamic, RoomView>)(d => DeserializeRoomView(d, objs))),
-            Objects = DeserializeArray(j["objs"], (Func<dynamic, RoomObject>)(d => DeserializeRoomObj(d, objs))),
-            Tiles = DeserializeArray(j["tiles"], (Func<dynamic, RoomTile>)(d => DeserializeRoomTile(d, bgs))),
-            ObjInst = j.Has("objinst") ? DeserializeArray(j["objinst"], DeserializeRoomObjInst) : null
+            Views       = DeserializeArray(j["views"], (Func<dynamic, RoomView>)(d => DeserializeRoomView(d, objs))),
+            Objects     = DeserializeArray(j["objs"], (Func<dynamic, RoomObject>)(d => DeserializeRoomObj(d, objs))),
+            Tiles       = DeserializeArray(j["tiles"], (Func<dynamic, RoomTile>)(d => DeserializeRoomTile(d, bgs))),
+            ObjInst     = j.Has("objinst") ? DeserializeArray(j["objinst"], DeserializeRoomObjInst) : null
         };
         #endregion
         #region public static TexturePageInfo DeserializeTPag(JsonData j)
@@ -409,18 +409,18 @@ namespace Altar.Repack
         public static FunctionLocalsInfo DeserializeFuncLocals(JsonData j) => new FunctionLocalsInfo
         {
             FunctionName = (string)j["name"],
-            LocalNames = DeserializeArray(j["locals"], jd => jd.ToString())
+            LocalNames   = DeserializeArray(j["locals"], jd => jd.ToString())
         };
 
         private static ReferenceDef DeserializeReferenceDef(JsonData j) =>
             j.IsString ? new ReferenceDef { Name = j.ToString(), FirstOffset = 0xFFFFFFFF } : new ReferenceDef
         {
-            Name = (string)j["name"],
-            Occurrences = j.Has("occurrences") ? (uint)j["occurrences"] : 0,
-            FirstOffset = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
-            HasExtra = j.Has("instancetype") || j.Has("unknown"),
+            Name         = (string)j["name"],
+            Occurrences  = j.Has("occurrences") ? (uint)j["occurrences"] : 0,
+            FirstOffset  = j.Has("firstoffset") ? (uint)j["firstoffset"] : 0xFFFFFFFF,
+            HasExtra     = j.Has("instancetype") || j.Has("unknown"),
             InstanceType = j.Has("instancetype") ? (InstanceType)(int)j["instancetype"] : InstanceType.StackTopOrGlobal,
-            unknown2 = j.Has("unknown") ? (int)j["unknown"] : 0
+            unknown2     = j.Has("unknown") ? (int)j["unknown"] : 0
         };
 
         private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv,
