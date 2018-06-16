@@ -1,12 +1,10 @@
-﻿using System;
+﻿using Altar.Decomp;
+using Altar.Unpack;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Altar.Decomp;
-using Altar.Repack;
-using Altar.Unpack;
-
 using static Altar.SR;
 
 namespace Altar
@@ -304,7 +302,7 @@ namespace Altar
                         ret.Extensions = (SectionUnknown*)hdr;
 
                         if (!ret.Extensions->IsEmpty())
-                            Console.WriteLine("Warning: EXTN chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: EXTN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Sounds:
                         ret.Sounds = (SectionCountOffsets*)hdr;
@@ -325,7 +323,7 @@ namespace Altar
                         ret.Shaders = (SectionUnknown*)hdr;
 
                         if (!ret.Shaders->IsEmpty())
-                            Console.WriteLine("Warning: SHDR chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: SHDR chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Fonts:
                         ret.Fonts = (SectionCountOffsets*)hdr;
@@ -334,7 +332,7 @@ namespace Altar
                         ret.Timelines = (SectionUnknown*)hdr;
 
                         if (!ret.Timelines->IsEmpty())
-                            Console.WriteLine("Warning: TMLN chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: TMLN chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.Objects:
                         ret.Objects = (SectionCountOffsets*)hdr;
@@ -346,7 +344,7 @@ namespace Altar
                         ret.DataFiles = (SectionUnknown*)hdr;
 
                         if (!ret.DataFiles->IsEmpty())
-                            Console.WriteLine("Warning: DAFL chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: DAFL chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.TexturePage:
                         ret.TexturePages = (SectionCountOffsets*)hdr;
@@ -376,18 +374,18 @@ namespace Altar
                         ret.Language = (SectionUnknown*)hdr;
 
                         if (!ret.Language->IsEmpty())
-                            Console.WriteLine("Warning: LANG chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: LANG chunk is not empty, its content will not be exported!");
                         break;
                     case SectionHeaders.GLOB_Unk:
                         ret.GLOB_Unk = (SectionUnknown*)hdr;
 
                         if (!ret.GLOB_Unk->IsEmpty())
-                            Console.WriteLine("Warning: GLOB chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine("Warning: GLOB chunk is not empty, its content will not be exported!");
                         break;
                     default:
                         var unk = (SectionUnknown*)hdr;
                         if (!unk->IsEmpty())
-                            Console.WriteLine($"Warning: unknown chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine($"Warning: unknown chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
 
                         ret.UnknownChunks.Add(hdr->Identity, (IntPtr)unk);
                         break;
@@ -395,7 +393,7 @@ namespace Altar
 
                 for (int i = 0; i < ret.HeaderOffsets.Length; i++)
                     if (((SectionHeader*)((byte*)basePtr + ret.HeaderOffsets[i]))->Identity == hdr->Identity)
-                        Console.WriteLine($"WARNING: chunk {hdr->MagicString()} encountered (at least) twice! Only the last occurrence will be exported! (If you see this message, consider reversing manually.)");
+                        Console.Error.WriteLine($"WARNING: chunk {hdr->MagicString()} encountered (at least) twice! Only the last occurrence will be exported! (If you see this message, consider reversing manually.)");
 
                 if (ret.HeaderOffsets.Length >= headersMet)
                 {

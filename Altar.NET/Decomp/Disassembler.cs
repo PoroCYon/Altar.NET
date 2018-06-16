@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Altar.Unpack;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using Altar.Unpack;
 
 using static Altar.SR;
 
@@ -218,10 +217,10 @@ namespace Altar.Decomp
                                 sb.Append(((DwordBool*)&r)->ToPrettyString());
                                 break;
                             case DataType.Double:
-                                sb.Append(((double*)&r)->ToString("G16", CultureInfo.InvariantCulture));
+                                sb.Append(((double*)&r)->ToString(DOUBLE_FMT, CultureInfo.InvariantCulture));
                                 break;
                             case DataType.Single:
-                                sb.Append(((float*)&r)->ToString("G8", CultureInfo.InvariantCulture));
+                                sb.Append(((float*)&r)->ToString(SINGLE_FMT, CultureInfo.InvariantCulture));
                                 break;
                             case DataType.Int32:
                                 sb.Append(unchecked((int)r).ToString(CultureInfo.InvariantCulture));

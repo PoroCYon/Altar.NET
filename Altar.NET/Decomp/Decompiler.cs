@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Altar.Unpack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Altar.Unpack;
 
 namespace Altar.Decomp
 {

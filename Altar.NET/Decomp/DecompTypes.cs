@@ -130,7 +130,7 @@ namespace Altar.Decomp
                     break;
                 case DataType.Double:
                     if (Value is double)
-                        return ((double)Value).ToString(CultureInfo.InvariantCulture) + DOUBLE_L;
+                        return ((double)Value).ToString(DOUBLE_FMT, CultureInfo.InvariantCulture) + DOUBLE_L;
                     break;
                 case DataType.Int16:
                     if (Value is short)
@@ -146,7 +146,7 @@ namespace Altar.Decomp
                     break;
                 case DataType.Single:
                     if (Value is float)
-                        return ((float )Value).ToString(CultureInfo.InvariantCulture) + SINGLE_L;
+                        return ((float )Value).ToString(SINGLE_FMT, CultureInfo.InvariantCulture) + SINGLE_L;
                     break;
                 case DataType.String:
                     if (Value is string)

@@ -1,8 +1,7 @@
-﻿using System;
+﻿using LitJson;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using LitJson;
 
 namespace Altar.Unpack
 {
@@ -274,7 +273,7 @@ namespace Altar.Unpack
             r["filename"] = gen8.FileName;
             r["config"  ] = gen8.Configuration;
             r["gameid"  ] = gen8.GameID;
-            r["name"]     = gen8.Name;
+            r["name"    ] = gen8.Name;
             r["version" ] = gen8.Version.ToString();
             r["windowsize"] = SerializeSize(gen8.WindowSize);
             r["licensemd5"] = SerializeArray(gen8.LicenseMD5Hash, Utils.Identity);
@@ -518,7 +517,7 @@ namespace Altar.Unpack
             r["general"] = "general.json";
             r["options"] = "options.json";
 
-            r["strings"] = "strings.json";
+            r["strings"  ] = "strings.json";
             r["variables"] = "variables.json";
             r["functions"] = "functions.json";
 

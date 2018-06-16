@@ -181,7 +181,7 @@ namespace Altar
 
             var pow = requiredLength == 0 ? 11 : (FastLog2(requiredLength)+1);
 
-            Array.Resize(ref buffer, 1 << Math.Max(pow, 1));
+            Array.Resize(ref buffer, 1 << pow);
         }
 
         protected override void Dispose(bool disposing)
