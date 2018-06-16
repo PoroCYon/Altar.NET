@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections;
+﻿using Altar.Decomp;
+using Altar.Recomp;
+using LitJson;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Altar.Decomp;
-using Altar.Recomp;
-using LitJson;
+
 using static Altar.SR;
 
 namespace Altar.Repack
 {
-    using AsmParser = Altar.Recomp.Parser;
-
     public static class Deserialize
     {
         static T[] DeserializeArray<T>(JsonData jArr, Func<JsonData, T> converter)
@@ -423,239 +421,6 @@ namespace Altar.Repack
             unknown2     = j.Has("unknown") ? (int)j["unknown"] : 0
         };
 
-        private static CodeInfo DeserializeCodeFromFile(string filename, uint bcv,
-            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
-        {
-            IEnumerable<Instruction> instructions;
-            if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_ASM))
-            {
-                var t = Tokenizer.Tokenize(File.ReadAllText(filename));
-                instructions = AsmParser.Parse(t);
-            }
-            else if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_LSP))
-            {
-                // TODO
-                throw new NotImplementedException();
-            }
-            else
-            {
-                throw new InvalidDataException("Unknown code format for '" + filename + "'");
-            }
-            return DeserializeAssembly(Path.GetFileNameWithoutExtension(filename), instructions, bcv,
-                stringIndices, objectIndices);
-        }
-
-        private static InstanceType GetInstanceType(InstanceType instanceType, string objName, IDictionary<string, uint> objectIndices)
-        {
-            if (instanceType <= 0)
-            {
-                return instanceType;
-            }
-            else if (objName != null)
-            {
-                return (InstanceType)objectIndices[objName];
-            }
-            else
-            {
-                throw new InvalidDataException("Bad instance tuple");
-            }
-        }
-
-        private static CodeInfo DeserializeAssembly(string name, IEnumerable<Instruction> instructions, uint bcv,
-            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
-        {
-            IList<Tuple<ReferenceSignature, uint>> functionReferences = new List<Tuple<ReferenceSignature, uint>>();
-            IList<Tuple<ReferenceSignature, uint>> variableReferences = new List<Tuple<ReferenceSignature, uint>>();
-
-            var binaryInstructions = new List<AnyInstruction>();
-            uint size = 0;
-            foreach (var inst in instructions)
-            {
-                if (inst is Label)
-                {
-                    continue;
-                }
-                var op = new OpCodes { VersionE = inst.OpCode.VersionE, VersionF = inst.OpCode.VersionF };
-                var type = DisasmExt.Kind(op, bcv);
-                AnyInstruction bininst = new AnyInstruction();
-                switch (type)
-                {
-                    case InstructionKind.Set:
-                        var setinst = (Set)inst;
-                        bininst.Set = new SetInstruction
-                        {
-                            DestVar = new Reference(setinst.VariableType, 0),
-                            Instance = GetInstanceType(setinst.InstanceType, setinst.InstanceName, objectIndices),
-                            OpCode = op,
-                            Types = new TypePair(setinst.Type1, setinst.Type2)
-                        };
-                        variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
-                        {
-                            Name = setinst.TargetVariable,
-                            InstanceType = setinst.InstanceType,
-                            Instance = setinst.InstanceType == InstanceType.Local ? name : null,
-                            VariableType = setinst.VariableType,
-                            VariableIndex = setinst.VariableIndex
-                        }, size));
-                        break;
-                    case InstructionKind.Push:
-                        var bp = new PushInstruction
-                        {
-                            OpCode = op,
-                            Type = ((Push)inst).Type
-                        };
-                        if (bp.Type == DataType.Variable)
-                        {
-                            var p = (PushVariable)inst;
-                            bp.Value = (short)GetInstanceType(p.InstanceType, p.InstanceName, objectIndices);
-                            bp.ValueRest = new Reference(p.VariableType, 0).val;
-                            variableReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
-                            {
-                                Name = p.VariableName,
-                                InstanceType = p.InstanceType,
-                                Instance = p.InstanceType == InstanceType.Local ? name : null,
-                                VariableType = p.VariableType,
-                                VariableIndex = p.VariableIndex
-                            }, size));
-                        }
-                        else
-                        {
-                            var p = (PushConst)inst;
-                            switch (p.Type)
-                            {
-                                case DataType.Int16:
-                                    bp.Value = (short)(long)p.Value;
-                                    break;
-                                case DataType.Boolean:
-                                    bp.ValueRest = (uint)(long)p.Value;
-                                    break;
-                                case DataType.Double:
-                                case DataType.Single:
-                                    bp.ValueRest = BitConverter.ToUInt64(BitConverter.GetBytes(Convert.ToDouble(p.Value)), 0);
-                                    break;
-                                case DataType.Int32:
-                                case DataType.Int64:
-                                    bp.ValueRest = BitConverter.ToUInt64(BitConverter.GetBytes(unchecked((long)(p.Value))), 0);
-                                    break;
-                                case DataType.String:
-                                    bp.ValueRest = stringIndices[(string)p.Value];
-                                    break;
-                            }
-                        }
-                        bininst.Push = bp;
-                        break;
-                    case InstructionKind.Call:
-                        var callinst = (Call)inst;
-                        bininst.Call = new CallInstruction
-                        {
-                            Arguments = (ushort)callinst.Arguments,
-                            Function = new Reference(callinst.FunctionType, 0),
-                            OpCode = op,
-                            ReturnType = callinst.ReturnType
-                        };
-                        functionReferences.Add(new Tuple<ReferenceSignature, uint>(new ReferenceSignature
-                        {
-                            Name = callinst.FunctionName,
-                            InstanceType = InstanceType.StackTopOrGlobal,
-                            VariableType = callinst.FunctionType,
-                            VariableIndex = -1
-                        }, size));
-                        break;
-                    case InstructionKind.Break:
-                        var breakinst = (Break)inst;
-                        bininst.Break = new BreakInstruction
-                        {
-                            OpCode = op,
-                            Signal = (short)breakinst.Signal,
-                            Type = breakinst.Type
-                        };
-                        break;
-                    case InstructionKind.DoubleType:
-                        var doubleinst = (DoubleType)inst;
-                        bininst.DoubleType = new DoubleTypeInstruction
-                        {
-                            OpCode = op,
-                            Types = new TypePair(doubleinst.Type1, doubleinst.Type2)
-                        };
-                        if (inst is Compare)
-                        {
-                            var cmpinst = (Compare)inst;
-                            bininst.DoubleType.ComparisonType = cmpinst.ComparisonType;
-                        }
-                        break;
-                    case InstructionKind.SingleType:
-                        var singleinst = (SingleType)inst;
-                        bininst.SingleType = new SingleTypeInstruction
-                        {
-                            OpCode = op,
-                            Type = singleinst.Type
-                        };
-                        if (inst is Dup)
-                        {
-                            var dupinst = (Dup)inst;
-                            bininst.SingleType.DupExtra = dupinst.Extra;
-                        }
-                        break;
-                    case InstructionKind.Goto:
-                        var gotoinst = (Branch)inst;
-                        uint absTarget = 0;
-                        if (gotoinst.Label is long)
-                        {
-                            absTarget = (uint)(long)(gotoinst.Label);
-                        }
-                        else if (gotoinst.Label is string)
-                        {
-                            var s = (string)(gotoinst.Label);
-                            // TODO
-                        }
-                        else if (gotoinst.Label == null)
-                        {
-                            bininst.Goto = new BranchInstruction
-                            {
-                                Offset = new Int24(0xF00000),
-                                OpCode = op
-                            };
-                            break;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Can't use label " + gotoinst.Label);
-                            break;
-                        }
-                        var relTarget = (int)absTarget - (int)size;
-                        uint offset = unchecked((uint)relTarget);
-                        if (relTarget < 0)
-                        {
-                            offset &= 0xFFFFFF;
-                            offset += 0x1000000;
-                        }
-                        offset /= 4;
-                        bininst.Goto = new BranchInstruction
-                        {
-                            Offset = new Int24(offset),
-                            OpCode = op
-                        };
-                        break;
-                    default:
-                        Console.WriteLine("Unknown instruction type " + type + "!");
-                        continue;
-                }
-                binaryInstructions.Add(bininst);
-                unsafe
-                {
-                    size += DisasmExt.Size(&bininst, bcv)*4;
-                }
-            }
-
-            return new CodeInfo
-            {
-                Size = (int)size,
-                InstructionsCopy = binaryInstructions.ToArray(),
-                functionReferences = functionReferences,
-                variableReferences = variableReferences
-            };
-        }
-
         // strings, vars and funcs are compiled using the other things
 
         public static GMFile /* errors: different return type? */ ReadFile(string baseDir, JsonData projFile)
@@ -811,7 +576,7 @@ namespace Altar.Repack
                 for (int i = 0; i < code.Length; i++)
                 {
                     Console.WriteLine((string)(code[i]));
-                    f.Code[i] = DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
+                    f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
                         stringIndices, objectIndices);
                     f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
                     f.Code[i].ArgumentCount = 1;

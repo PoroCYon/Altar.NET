@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -352,7 +351,7 @@ namespace Altar.Unpack
                 }
             }
             else
-                Console.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
+                Console.Error.WriteLine($"Warning: collision mask of sprite {id} ({((ulong)se - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8)}) is bogus ({amt.ToString(SR.HEX_FM8)}), ignoring...");
 
             return ret;
         }
@@ -492,7 +491,7 @@ namespace Altar.Unpack
 
             if ((shapeCop->Count & 0xFFFFF000) != 0)
             {
-                Console.WriteLine($"Warning: shape point coords of object {id} are bogus, ignoring...");
+                Console.Error.WriteLine($"Warning: shape point coords of object {id} are bogus, ignoring...");
 
                 ret.ShapePoints = null;
             }
@@ -509,7 +508,7 @@ namespace Altar.Unpack
                   //Console.WriteLine(((IntPtr)xoff).ToString(SR.HEX_FM8) + SR.SPACE_S + ((IntPtr)yoff).ToString(SR.HEX_FM8));
                     if ((shapePointOff & 0xFF000000) != 0 || shapePointPtr == null)
                     {
-                        Console.WriteLine($"Warning: shape point coord {i} of object {id} is bogus, ignoring...");
+                        Console.Error.WriteLine($"Warning: shape point coord {i} of object {id} is bogus, ignoring...");
 
                         continue;
                     }

@@ -1,23 +1,23 @@
-﻿using System;
+﻿using Altar.Decomp;
+using Altar.Recomp;
+using Altar.Repack;
+using Altar.Unpack;
+using CommandLine;
+using LitJson;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using CommandLine;
-using LitJson;
-using Altar.Decomp;
-using Altar.Unpack;
 
 using static Altar.SR;
-using Altar.Repack;
 
 namespace Altar
 {
     // http://pastebin.com/9t783UNE
 
-    using AsmParser = Altar.Recomp.Parser;
-    using CLParser  = CommandLine.Parser;
+    using CLParser = CommandLine.Parser;
 
     unsafe static class Program
     {
@@ -577,7 +577,7 @@ namespace Altar
 
             var codeChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing code...");
-            var codeChunkStringOffsetOffsets = SectionWriter.WriteCodes(codeChunk, f, stringOffsets);
+            var codeChunkStringOffsetOffsets = Assembler.WriteCodes(codeChunk, f, stringOffsets);
 
             var output = Path.GetFullPath(opt.OutputFile);
 
@@ -674,7 +674,7 @@ namespace Altar
                         SectionWriter.WriteAudio(chunk, f.Audio, writer.Buffer.Position);
                         break;
                     default:
-                        Console.WriteLine("Don't know how to handle, loading from dump");
+                        Console.Error.WriteLine($"Don't know how to handle {chunkName}, loading from dump");
                         BinBuffer chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile.ToString())));
                         chunk = new BBData(chunkData, new int[0]);
                         break;

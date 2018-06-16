@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Altar
+﻿namespace Altar
 {
     static class SR
     {
@@ -46,6 +42,9 @@ namespace Altar
             HEX_PRE   = "0x",
             HEX_FM8   = "X8",
             HEX_FM6   = "X6",
+
+            SINGLE_FMT = "G8" ,
+            DOUBLE_FMT = "G16",
 
             DOUBLE_L = "d",
             SINGLE_L = "f",
