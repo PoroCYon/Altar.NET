@@ -423,8 +423,8 @@ namespace Altar.Recomp
                     SkipWhitespaceAndLines();
 
                     yield return new Label { LabelValue = lv };
-
-                    t = Dequeue();
+                    
+                    continue;
                 }
 
                 if (!(t is NormalToken) || ((NormalToken)t).Kind != TokenKind.OpCode)

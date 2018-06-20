@@ -202,8 +202,8 @@ namespace Altar.Recomp
                     while (!inString && op == p /* op != -1 (see earlier break) -> will break if p == -1 */ && IsWordSep((char)p))
                     {
                         // next char
-                        op = p;
-                        p = ReadChar();
+                        op = ReadChar();
+                        p = PeekChar();
 
                         if (SkipComments())
                             goto BREAK_OUTER;
