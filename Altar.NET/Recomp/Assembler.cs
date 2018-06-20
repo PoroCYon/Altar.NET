@@ -47,14 +47,165 @@ namespace Altar.Recomp
             }
         }
 
+        public static InstructionKind OpKind(OpCodePair op, uint bcv)
+        {
+            if (bcv > 0xE)
+                switch (op.VersionF)
+                {
+                    case FOpCode.Set:
+                        return InstructionKind.Set;
+                    case FOpCode.PushCst:
+                    case FOpCode.PushLoc:
+                    case FOpCode.PushGlb:
+                    case FOpCode.PushVar:
+                    case FOpCode.PushI16:
+                        return InstructionKind.Push;
+                    case FOpCode.Call:
+                        return InstructionKind.Call;
+                    case FOpCode.Break:
+                        return InstructionKind.Break;
+
+                    case FOpCode.Conv:
+                    case FOpCode.Mul:
+                    case FOpCode.Div:
+                    case FOpCode.Rem:
+                    case FOpCode.Mod:
+                    case FOpCode.Add:
+                    case FOpCode.Sub:
+                    case FOpCode.And:
+                    case FOpCode.Or:
+                    case FOpCode.Xor:
+                    case FOpCode.Not:
+                    case FOpCode.Shl:
+                    case FOpCode.Shr:
+                    case FOpCode.Cmp:
+                        return InstructionKind.DoubleType;
+
+                    case FOpCode.Dup:
+                    case FOpCode.Neg:
+                    case FOpCode.Ret:
+                    case FOpCode.Exit:
+                    case FOpCode.Pop:
+                        return InstructionKind.SingleType;
+
+                    case FOpCode.Br:
+                    case FOpCode.Brt:
+                    case FOpCode.Brf:
+                    case FOpCode.PushEnv:
+                    case FOpCode.PopEnv:
+                        return InstructionKind.Goto;
+                }
+            else
+                switch (op.VersionE)
+                {
+                    case EOpCode.Set:
+                        return InstructionKind.Set;
+                    case EOpCode.Push:
+                        return InstructionKind.Push;
+                    case EOpCode.Call:
+                        return InstructionKind.Call;
+                    case EOpCode.Break:
+                        return InstructionKind.Break;
+
+                    case EOpCode.Conv:
+                    case EOpCode.Mul:
+                    case EOpCode.Div:
+                    case EOpCode.Rem:
+                    case EOpCode.Mod:
+                    case EOpCode.Add:
+                    case EOpCode.Sub:
+                    case EOpCode.And:
+                    case EOpCode.Or:
+                    case EOpCode.Xor:
+                    case EOpCode.Not:
+                    case EOpCode.Shl:
+                    case EOpCode.Shr:
+                    case EOpCode.Clt:
+                    case EOpCode.Cle:
+                    case EOpCode.Ceq:
+                    case EOpCode.Cne:
+                    case EOpCode.Cge:
+                    case EOpCode.Cgt:
+                        return InstructionKind.DoubleType;
+
+                    case EOpCode.Dup:
+                    case EOpCode.Neg:
+                    case EOpCode.Ret:
+                    case EOpCode.Exit:
+                    case EOpCode.Pop:
+                        return InstructionKind.SingleType;
+
+                    case EOpCode.Br:
+                    case EOpCode.Brt:
+                    case EOpCode.Brf:
+                    case EOpCode.PushEnv:
+                    case EOpCode.PopEnv:
+                        return InstructionKind.Goto;
+                }
+
+            throw new ArgumentOutOfRangeException();
+        }
+
+        public static uint InstSize(Instruction instr, uint bcv)
+        {
+            switch (OpKind(instr.OpCode, bcv))
+            {
+                case InstructionKind.SingleType:
+                case InstructionKind.DoubleType:
+                case InstructionKind.Goto:
+                case InstructionKind.Break:
+                case InstructionKind.Environment:
+                    return 1;
+                case InstructionKind.Call:
+                    return 2;
+
+                case InstructionKind.Set:
+                    //((Set)instr).IsMagic
+
+                    return 2;
+                case InstructionKind.Push: // 0xF?
+                    var pui = (Push)instr;
+
+                    switch (pui.Type)
+                    {
+                        case DataType.Int16:
+                            return 1;
+                        case DataType.Variable:
+                            return 2;
+                        default:
+                            return pui.Type.Size() / sizeof(uint) + 1;
+                    }
+
+                default:
+                    return 0;
+            }
+        }
+
         private static CodeInfo DeserializeAssembly(string name, IEnumerable<Instruction> instructions, uint bcv,
             IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
         {
+            uint size = 0;
+            var labels = new Dictionary<string, uint>();
+            foreach (var inst in instructions)
+            {
+                if (inst is Label labelInst)
+                {
+                    if (labelInst.LabelValue is string label)
+                    {
+                        labels[label] = size*4;
+                    }
+                }
+                else
+                {
+                    size += InstSize(inst, bcv);
+                }
+            }
+
             IList<Tuple<ReferenceSignature, uint>> functionReferences = new List<Tuple<ReferenceSignature, uint>>();
             IList<Tuple<ReferenceSignature, uint>> variableReferences = new List<Tuple<ReferenceSignature, uint>>();
 
             var binaryInstructions = new List<AnyInstruction>();
-            uint size = 0;
+            size = 0;
             foreach (var inst in instructions)
             {
                 if (inst is Label)
@@ -163,9 +314,8 @@ namespace Altar.Recomp
                             OpCode = op,
                             Types = new TypePair(doubleinst.Type1, doubleinst.Type2)
                         };
-                        if (inst is Compare)
+                        if (inst is Compare cmpinst)
                         {
-                            var cmpinst = (Compare)inst;
                             bininst.DoubleType.ComparisonType = cmpinst.ComparisonType;
                         }
                         break;
@@ -176,9 +326,8 @@ namespace Altar.Recomp
                             OpCode = op,
                             Type = singleinst.Type
                         };
-                        if (inst is Dup)
+                        if (inst is Dup dupinst)
                         {
-                            var dupinst = (Dup)inst;
                             bininst.SingleType.DupExtra = dupinst.Extra;
                         }
                         break;
@@ -191,8 +340,7 @@ namespace Altar.Recomp
                         }
                         else if (gotoinst.Label is string)
                         {
-                            var s = (string)(gotoinst.Label);
-                            // TODO
+                            absTarget = labels[(string)gotoinst.Label];
                         }
                         else if (gotoinst.Label == null)
                         {
