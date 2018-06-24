@@ -113,7 +113,7 @@ namespace Altar.Repack
             var allOffs = data.OffsetOffsets.ToList();
 
             var offAcc = bb.Position + datas.Length * sizeof(int); // after all offsets
-            int[] offsets = new int[datas.Length];
+            var offsets = new List<int>(datas.Length);
             for (int i = 0; i < datas.Length; i++)
             {
                 if (datas[i] == null)
@@ -124,7 +124,7 @@ namespace Altar.Repack
                 {
                     allOffs.Add(bb.Position);
                     bb.Write(offAcc);
-                    offsets[i] = offAcc;
+                    offsets.Add(offAcc);
 
                     offAcc += datas[i].Buffer.Size;
                 }
@@ -140,7 +140,7 @@ namespace Altar.Repack
             }
 
             data.OffsetOffsets = allOffs.ToArray();
-            return offsets;
+            return offsets.ToArray();
         }
 
         public static int[] WriteList<T>(BBData data, T[] things,
@@ -199,7 +199,7 @@ namespace Altar.Repack
         {
             var bb = data.Buffer;
             bb.Write(s);
-            bb.Write((byte)0);
+            bb.WriteByte(0);
         }
 
         public static IDictionary<string, int> WriteStrings(BBData data, String[] strings)
@@ -297,7 +297,7 @@ namespace Altar.Repack
             for (int i = 0; i < ret.NumberCount; i++)
                 data.Buffer.Write(ge.WeirdNumbers[i]);
 
-            // TODO: some lengthy checksum/hash at the end?
+            // TODO for 2.0: some lengthy checksum/hash at the end?
             // exits after launch if GEN8 is modified at all,
             // doesn't launch if the extra stuff is missing
             //for (int i = 0; i < 16; i++)
@@ -367,7 +367,7 @@ namespace Altar.Repack
             for (int i = 0; i < textures.Length; i++)
             {
                 BBData texturedata = new BBData(new BinBuffer(), new int[0]);
-                //texturedata.Buffer.Write(1); // TextureEntry._pad
+                //texturedata.Buffer.Write(1); // TextureEntry._pad for 2.0
                 texturedata.Buffer.Write(0); // TextureEntry._pad
                 texturedata.Buffer.Write(0); // TextureEntry.Offset
                 datas[i] = texturedata;
@@ -380,7 +380,7 @@ namespace Altar.Repack
             {
                 Pad(data, 0x80, 8);
                 var p = data.Buffer.Position;
-                data.Buffer.Position = offsets[i] + 4; // 8
+                data.Buffer.Position = offsets[i] + 4; // 8 on 2.0
                 secondaryOffsets[i] = data.Buffer.Position;
                 data.Buffer.Write(p);
                 data.Buffer.Position = p;
@@ -959,6 +959,7 @@ namespace Altar.Repack
                 WriteList(data, ri.ObjInst, WriteRoomObjInst, stringOffsets);
             }
             
+            // Unknown stuff for 2.0
             //for (int i = 0; i < 8; i++)
             //    data.Buffer.Write(0x3F3F3F3F);
         }

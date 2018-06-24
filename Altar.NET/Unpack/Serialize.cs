@@ -510,26 +510,34 @@ namespace Altar.Unpack
             return r;
         }
 
-        public unsafe static JsonData SerializeProject(GMFile f, List<IntPtr> chunks = null)
+        public unsafe static JsonData SerializeProject(GMFile f, ExportOptions eo, List<IntPtr> chunks = null)
         {
             var r = CreateObj();
 
-            r["general"] = "general.json";
-            r["options"] = "options.json";
+            r["chunkorder"] = SerializeArray(f.ChunkOrder, sh => sh.ToChunkName());
 
-            r["strings"  ] = "strings.json";
-            r["variables"] = "variables.json";
-            r["functions"] = "functions.json";
+            if (eo.General) r["general"] = "general.json";
+            if (eo.Options) r["options"] = "options.json";
+
+            if (eo.String   ) r["strings"  ] = "strings.json";
+            if (eo.Variables) r["variables"] = "variables.json";
+            if (eo.Functions) r["functions"] = "functions.json";
 
             // ---
 
-            r["textures"] = CreateArr();
-            for (int i = 0; i < f.Textures.Length; i++)
-                r["textures"].Add(SR.DIR_TEX + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_PNG);
+            if (eo.Texture)
+            {
+                r["textures"] = CreateArr();
+                for (int i = 0; i < f.Textures.Length; i++)
+                    r["textures"].Add(SR.DIR_TEX + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_PNG);
+            }
 
-            r["tpags"] = CreateArr();
-            for (int i = 0; i < f.TexturePages.Length; i++)
-                r["tpags"].Add(SR.DIR_TXP + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_JSON);
+            if (eo.TPag)
+            {
+                r["tpags"] = CreateArr();
+                for (int i = 0; i < f.TexturePages.Length; i++)
+                    r["tpags"].Add(SR.DIR_TXP + i.ToString(CultureInfo.InvariantCulture) + SR.EXT_JSON); 
+            }
 
             // ---
 
@@ -539,36 +547,47 @@ namespace Altar.Unpack
                 if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1)
                     infoTable[s.AudioID] = s;
 
-            r["audio"] = CreateArr();
-            for (int i = 0; i < f.Audio.Length; i++)
-                r["audio"].Add(SR.DIR_WAV + infoTable[i].Name + SR.EXT_WAV);
+            if (eo.Audio)
+            {
+                r["audio"] = CreateArr();
+                for (int i = 0; i < f.Audio.Length; i++)
+                    r["audio"].Add(SR.DIR_WAV + infoTable[i].Name + SR.EXT_WAV); 
+            }
 
-            r["code"] = CreateArr();
-            for (int i = 0; i < f.Code.Length; i++)
-                r["code"].Add(SR.DIR_CODE + f.Code[i].Name + /*SR.EXT_GML_LSP*/SR.EXT_GML_ASM);
+            if (eo.Disassemble || eo.Decompile)
+            {
+                r["code"] = CreateArr();
+                for (int i = 0; i < f.Code.Length; i++)
+                {
+                    if (eo.Disassemble)
+                        r["code"].Add(SR.DIR_CODE + f.Code[i].Name + SR.EXT_GML_ASM);
+                    if (eo.Decompile)
+                        r["code"].Add(SR.DIR_CODE + f.Code[i].Name + SR.EXT_GML_LSP);
+                }
+            }
 
             // ---
 
-            if (f.Sound       != null) r["sounds" ] = SerializeArray(f.Sound      , s => SR.DIR_SND  + s.Name     + SR.EXT_JSON);
-            if (f.Sprites     != null) r["sprites"] = SerializeArray(f.Sprites    , s => SR.DIR_SPR  + s.Name     + SR.EXT_JSON);
-            if (f.Backgrounds != null) r["bg"     ] = SerializeArray(f.Backgrounds, s => SR.DIR_BG   + s.Name     + SR.EXT_JSON);
-            if (f.Paths       != null) r["paths"  ] = SerializeArray(f.Paths      , s => SR.DIR_PATH + s.Name     + SR.EXT_JSON);
-            if (f.Scripts     != null) r["scripts"] = SerializeArray(f.Scripts    , s => SR.DIR_SCR  + s.Name     + SR.EXT_JSON);
-            if (f.Fonts       != null) r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
-            if (f.Objects     != null) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
-            if (f.Rooms       != null) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
+            if (f.Sound       != null && eo.Sound     ) r["sounds" ] = SerializeArray(f.Sound      , s => SR.DIR_SND  + s.Name     + SR.EXT_JSON);
+            if (f.Sprites     != null && eo.Sprite    ) r["sprites"] = SerializeArray(f.Sprites    , s => SR.DIR_SPR  + s.Name     + SR.EXT_JSON);
+            if (f.Backgrounds != null && eo.Background) r["bg"     ] = SerializeArray(f.Backgrounds, s => SR.DIR_BG   + s.Name     + SR.EXT_JSON);
+            if (f.Paths       != null && eo.Path      ) r["paths"  ] = SerializeArray(f.Paths      , s => SR.DIR_PATH + s.Name     + SR.EXT_JSON);
+            if (f.Scripts     != null && eo.Script    ) r["scripts"] = SerializeArray(f.Scripts    , s => SR.DIR_SCR  + s.Name     + SR.EXT_JSON);
+            if (f.Fonts       != null && eo.Font      ) r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
+            if (f.Objects     != null && eo.Object    ) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
+            if (f.Rooms       != null && eo.Room      ) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
 
-            if (f.AudioGroups != null && f.AudioGroups.Length > 0) r["audiogroups"] = "audiogroups.json";
+            if (f.AudioGroups != null && eo.AudioGroups) r["audiogroups"] = "audiogroups.json";
 
-            if (chunks != null && chunks.Count > 0)
+            if (chunks != null)
             {
                 r["chunks"] = CreateArr();
 
                 for (int i = 0; i < chunks.Count; i++)
                 {
                     var hdr = (SectionHeader*)chunks[i];
-
-                    r["chunks"].Add(hdr->MagicString() + SR.EXT_BIN);
+                    if (hdr != null && (!hdr->IsEmpty() || eo.DumpEmptyChunks))
+                        r["chunks"].Add(hdr->MagicString() + SR.EXT_BIN);
                 }
             }
 

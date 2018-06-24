@@ -112,8 +112,23 @@ namespace Altar
             internal set;
         }
 
-        public FunctionLocalsInfo[] FunctionLocals;
-        public uint[] VariableExtra;
+        public FunctionLocalsInfo[] FunctionLocals
+        {
+            get;
+            internal set;
+        }
+
+        public uint[] VariableExtra
+        {
+            get;
+            internal set;
+        }
+
+        public SectionHeaders[] ChunkOrder
+        {
+            get;
+            internal set;
+        }
 
         internal GMFile()
         {
@@ -147,6 +162,10 @@ namespace Altar
             Textures     = new TextureInfo    [0];
             Audio        = new AudioInfo      [0];
             AudioGroups  = new string         [0];
+
+            FunctionLocals = new FunctionLocalsInfo[0];
+            VariableExtra  = new uint              [0];
+            ChunkOrder     = new SectionHeaders    [0];
         }
         static T[] TryReadMany<T>(SectionCountOffsets* hdr, Func<uint, T> readOne)
         {
@@ -177,6 +196,15 @@ namespace Altar
         internal GMFile(GMFileContent f)
         {
             Content = f;
+
+            var orderList = new List<SectionHeaders>(f.HeaderOffsets.Length);
+            foreach (long headerOffset in f.HeaderOffsets)
+            {
+                SectionHeaders tag = ((SectionHeader*)((byte*)f.Form + headerOffset))->Identity;
+                if (tag != SectionHeaders.Form)
+                    orderList.Add(tag);
+            }
+            ChunkOrder = orderList.ToArray();
 
             General = SectionReader.GetGeneralInfo(f);
             //Console.Error.WriteLine(General.BytecodeVersion);
@@ -249,7 +277,7 @@ namespace Altar
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine("Can't figure out RefDef pairs.");
+                Console.Error.WriteLine("Warning: Can't figure out RefDef pairs. Exception:");
                 Console.Error.WriteLine(e);
             }
         }
@@ -293,99 +321,63 @@ namespace Altar
                 switch (hdr->Identity)
                 {
                     case SectionHeaders.General:
-                        ret.General = (SectionGeneral*)hdr;
+                        ret.General      = (SectionGeneral*)hdr;
                         break;
                     case SectionHeaders.Options:
-                        ret.Options = (SectionOptions*)hdr;
-                        break;
-                    case SectionHeaders.Extensions:
-                        ret.Extensions = (SectionUnknown*)hdr;
-
-                        if (!ret.Extensions->IsEmpty())
-                            Console.Error.WriteLine("Warning: EXTN chunk is not empty, its content will not be exported!");
+                        ret.Options      = (SectionOptions*)hdr;
                         break;
                     case SectionHeaders.Sounds:
-                        ret.Sounds = (SectionCountOffsets*)hdr;
+                        ret.Sounds       = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Sprites:
-                        ret.Sprites = (SectionCountOffsets*)hdr;
+                        ret.Sprites      = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Backgrounds:
-                        ret.Backgrounds = (SectionCountOffsets*)hdr;
+                        ret.Backgrounds  = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Paths:
-                        ret.Paths = (SectionCountOffsets*)hdr;
+                        ret.Paths        = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Scripts:
-                        ret.Scripts = (SectionCountOffsets*)hdr;
-                        break;
-                    case SectionHeaders.Shaders:
-                        ret.Shaders = (SectionUnknown*)hdr;
-
-                        if (!ret.Shaders->IsEmpty())
-                            Console.Error.WriteLine("Warning: SHDR chunk is not empty, its content will not be exported!");
+                        ret.Scripts      = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Fonts:
-                        ret.Fonts = (SectionCountOffsets*)hdr;
-                        break;
-                    case SectionHeaders.Timelines:
-                        ret.Timelines = (SectionUnknown*)hdr;
-
-                        if (!ret.Timelines->IsEmpty())
-                            Console.Error.WriteLine("Warning: TMLN chunk is not empty, its content will not be exported!");
+                        ret.Fonts        = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Objects:
-                        ret.Objects = (SectionCountOffsets*)hdr;
+                        ret.Objects      = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Rooms:
-                        ret.Rooms = (SectionCountOffsets*)hdr;
-                        break;
-                    case SectionHeaders.DataFiles:
-                        ret.DataFiles = (SectionUnknown*)hdr;
-
-                        if (!ret.DataFiles->IsEmpty())
-                            Console.Error.WriteLine("Warning: DAFL chunk is not empty, its content will not be exported!");
+                        ret.Rooms        = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.TexturePage:
                         ret.TexturePages = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Code:
-                        ret.Code = (SectionCountOffsets*)hdr;
+                        ret.Code         = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Variables:
-                        ret.Variables = (SectionRefDefs*)hdr;
+                        ret.Variables    = (SectionRefDefs*)hdr;
                         break;
                     case SectionHeaders.Functions:
-                        ret.Functions = (SectionRefDefs*)hdr;
+                        ret.Functions    = (SectionRefDefs*)hdr;
                         break;
                     case SectionHeaders.Strings:
-                        ret.Strings = (SectionCountOffsets*)hdr;
+                        ret.Strings      = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Textures:
-                        ret.Textures = (SectionCountOffsets*)hdr;
+                        ret.Textures     = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.Audio:
-                        ret.Audio = (SectionCountOffsets*)hdr;
+                        ret.Audio        = (SectionCountOffsets*)hdr;
                         break;
                     case SectionHeaders.AudioGroup:
-                        ret.AudioGroup = (SectionCountOffsets*)hdr;
-                        break;
-                    case SectionHeaders.Language:
-                        ret.Language = (SectionUnknown*)hdr;
-
-                        if (!ret.Language->IsEmpty())
-                            Console.Error.WriteLine("Warning: LANG chunk is not empty, its content will not be exported!");
-                        break;
-                    case SectionHeaders.GLOB_Unk:
-                        ret.GLOB_Unk = (SectionUnknown*)hdr;
-
-                        if (!ret.GLOB_Unk->IsEmpty())
-                            Console.Error.WriteLine("Warning: GLOB chunk is not empty, its content will not be exported!");
+                        ret.AudioGroup   = (SectionCountOffsets*)hdr;
                         break;
                     default:
                         var unk = (SectionUnknown*)hdr;
                         if (!unk->IsEmpty())
-                            Console.Error.WriteLine($"Warning: unknown chunk {hdr->Identity.ToChunkName()}, chunk is not empty, its content will not be exported!");
+                            Console.Error.WriteLine($"Warning: unknown chunk {hdr->Identity.ToChunkName()} is not empty, its content will not be exported!");
 
                         ret.UnknownChunks.Add(hdr->Identity, (IntPtr)unk);
                         break;
