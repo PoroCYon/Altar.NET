@@ -10,6 +10,7 @@ namespace Altar
         Form        = 0x4D524F46, // FORM
         General     = 0x384E4547, // GEN8
         Options     = 0x4E54504F, // OPTN
+        Language    = 0x474E414C, // LANG
         Extensions  = 0x4E545845, // EXTN
         Sounds      = 0x444E4F53, // SOND
         AudioGroup  = 0x50524741, // AGRP
@@ -17,6 +18,7 @@ namespace Altar
         Backgrounds = 0x444E4742, // BGND
         Paths       = 0x48544150, // PATH
         Scripts     = 0x54504353, // SCPT
+        GLOB_Unk    = 0x424F4C47, // GLOB
         Shaders     = 0x52444853, // SHDR
         Fonts       = 0x544E4F46, // FONT
         Timelines   = 0x4E4C4D54, // TMLN
@@ -30,8 +32,6 @@ namespace Altar
         Strings     = 0x47525453, // STRG
         Textures    = 0x52545854, // TXTR
         Audio       = 0x4F445541, // AUDO
-        Language    = 0x474E414C, // LANG
-        GLOB_Unk    = 0x424F4C47, // GLOB
 
         Count = 24
     }
@@ -121,13 +121,6 @@ namespace Altar
         public SectionGeneral* General;
         public SectionOptions* Options;
 
-        public SectionUnknown* Extensions; // empty
-        public SectionUnknown* Shaders   ; // empty
-        public SectionUnknown* Timelines ; // empty
-        public SectionUnknown* DataFiles ; // empty
-        public SectionUnknown* Language  ; // empty
-        public SectionUnknown* GLOB_Unk; // empty?
-
         public SectionCountOffsets* Sounds      ;
         public SectionCountOffsets* Sprites     ;
         public SectionCountOffsets* Backgrounds ;
@@ -172,19 +165,6 @@ namespace Altar
                     return (SectionHeader*)General;
                 case SectionHeaders.Options:
                     return (SectionHeader*)Options;
-
-                case SectionHeaders.Extensions:
-                    return (SectionHeader*)Extensions;
-                case SectionHeaders.Shaders:
-                    return (SectionHeader*)Shaders;
-                case SectionHeaders.Timelines:
-                    return (SectionHeader*)Timelines;
-                case SectionHeaders.DataFiles:
-                    return (SectionHeader*)DataFiles;
-                case SectionHeaders.Language:
-                    return (SectionHeader*)Language;
-                case SectionHeaders.GLOB_Unk:
-                    return (SectionHeader*)GLOB_Unk;
 
                 case SectionHeaders.Sounds:
                     return (SectionHeader*)Sounds;

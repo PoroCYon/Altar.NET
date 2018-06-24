@@ -149,17 +149,21 @@ namespace Altar.Unpack
         static RoomObjInst ReadRoomObjInst(GMFileContent content, IntPtr p)
         {
             var entry = (RoomObjInstEntry*)p;
+
             var oi = new RoomObjInst();
+
             oi.Index   = entry->Index;
             oi.Name    = StringFromOffset(content, entry->Name);
             oi.Unk1    = entry->Unk1;
             oi.Unk2    = entry->Unk2;
             oi.Unk3    = entry->Unk3;
+
             oi.Instances = new uint[entry->InstCount];
             for (uint i = 0; i < oi.Instances.Length; i++)
             {
                 oi.Instances[i] = (&entry->Instances)[i];
             }
+
             return oi;
         }
 
@@ -746,7 +750,7 @@ namespace Altar.Unpack
                 return ret;
             });
         }
-        //TODO: unused stuff might contain info about local vars?
+
         public static ReferenceDef[] GetRefDefsWithLength(GMFileContent content, SectionRefDefs* section)
         {
             return GetRefDefsInternal(content, section, 1, section->Entries.NameOffset /* actually length, because reasons */, 12, p =>

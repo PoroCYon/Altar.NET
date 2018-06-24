@@ -3,7 +3,7 @@ using CommandLine.Text;
 
 namespace Altar
 {
-    class ExportOptions
+    public class ExportOptions
     {
         // free short flags: lvxyz
 

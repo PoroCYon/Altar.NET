@@ -353,7 +353,7 @@ namespace Altar.Recomp
                         }
                         else
                         {
-                            Console.Error.WriteLine("Can't use label " + gotoinst.Label);
+                            Console.Error.WriteLine($"Error in {name}: Can't use label {gotoinst.Label}");
                             break;
                         }
                         var relTarget = (int)absTarget - (int)size;
@@ -371,7 +371,7 @@ namespace Altar.Recomp
                         };
                         break;
                     default:
-                        Console.Error.WriteLine("Unknown instruction type " + type + "!");
+                        Console.Error.WriteLine($"Error in {name}: Unknown instruction type {type}!");
                         continue;
                 }
                 binaryInstructions.Add(bininst);
@@ -552,20 +552,27 @@ namespace Altar.Recomp
             IList<ReferenceDef> variableStartOffsetsAndCounts;
             ResolveReferenceOffsets(data, variableReferences, stringIndices, true, out variableStartOffsetsAndCounts);
 
-            // I tried my best at guessing what these should be, but it wasn't enough.
-            // I suspect it may have to do with variable type, since getting
-            // one wrong resulted in "tried to index something that isn't an
-            // array" (or something to that effect).
-            for (int i = 0; i < variableStartOffsetsAndCounts.Count; i++)
+            if (f.RefData.Variables == null || f.RefData.Variables.Length == 0)
             {
-                var v = variableStartOffsetsAndCounts[i];
-                if (i < f.RefData.Variables.Length &&
-                    v.Name == f.RefData.Variables[i].Name)// &&
-                                                          //(v.InstanceType == f.RefData.Variables[i].InstanceType || v.InstanceType >= InstanceType.StackTopOrGlobal))
+                Console.Error.WriteLine("Warning: Variable definitions not pre-loaded. Linking may be inaccurate or lose information.");
+            }
+            else
+            {
+                // I tried my best at guessing what these should be, but it wasn't enough.
+                // I suspect it may have to do with variable type, since getting
+                // one wrong resulted in "tried to index something that isn't an
+                // array" (or something to that effect).
+                for (int i = 0; i < variableStartOffsetsAndCounts.Count; i++)
                 {
-                    v.unknown2 = f.RefData.Variables[i].unknown2;
-                    v.InstanceType = f.RefData.Variables[i].InstanceType;
-                    variableStartOffsetsAndCounts[i] = v;
+                    var v = variableStartOffsetsAndCounts[i];
+                    if (i < f.RefData.Variables.Length &&
+                        v.Name == f.RefData.Variables[i].Name)// &&
+                                                              //(v.InstanceType == f.RefData.Variables[i].InstanceType || v.InstanceType >= InstanceType.StackTopOrGlobal))
+                    {
+                        v.unknown2 = f.RefData.Variables[i].unknown2;
+                        v.InstanceType = f.RefData.Variables[i].InstanceType;
+                        variableStartOffsetsAndCounts[i] = v;
+                    }
                 }
             }
 

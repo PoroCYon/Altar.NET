@@ -13,38 +13,20 @@ namespace Altar.Repack
 {
     public static class Deserialize
     {
-        static T[] DeserializeArray<T>(JsonData jArr, Func<JsonData, T> converter)
+        static T[] DeserializeArray<T>(JsonData j, Func<JsonData, T> converter)
         {
-            if (jArr == null)
-                throw new ArgumentNullException(nameof(jArr));
+            if (j == null)
+                throw new ArgumentNullException(nameof(j));
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
-
-            var j = ((JsonData)jArr);
 
             var r = new T[j.Count];
 
             for (int i = 0; i < j.Count; i++)
-                r[i] = converter(jArr[i]);
+                r[i] = converter(j[i]);
 
             return r;
         }
-        /*static T[] DeserializeArray<T>(dynamic  jArr, Func<dynamic , T> converter)
-        {
-            if (jArr      == null)
-                throw new ArgumentNullException(nameof(jArr     ));
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-
-            var j = ((JsonData)jArr);
-
-            var r = new T[j.Count];
-
-            for (int i = 0; i < j.Count; i++)
-                r[i] = converter(jArr[i]);
-
-            return r;
-        }*/
 
         static Colour ParseColour(JsonData j)
         {
@@ -86,13 +68,13 @@ namespace Altar.Repack
             throw new FormatException($"Invalid colour format: invalid type {j.JsonType}");
         }
 
-        static Point        DeserializePoint  (JsonData j) => new Point  ((int)j["x"], (int)j["y"]);
-        static PointF       DeserializePointF (JsonData j) => new PointF ((float)j["x"], (float)j["y"]);
+        static Point        DeserializePoint  (JsonData j) => new Point  ((int)   j["x"], (int)   j["y"]);
+        static PointF       DeserializePointF (JsonData j) => new PointF ((float) j["x"], (float) j["y"]);
         static Point16      DeserializePoint16(JsonData j) => new Point16((ushort)j["x"], (ushort)j["y"]);
-        static Point        DeserializeSize   (JsonData j) => new Point  ((int)j["width"], (int)j["height"]);
-        static PointF       DeserializeSizeF  (JsonData j) => new PointF ((float)j["width"], (float)j["height"]);
+        static Point        DeserializeSize   (JsonData j) => new Point  ((int)   j["width"], (int)   j["height"]);
+        static PointF       DeserializeSizeF  (JsonData j) => new PointF ((float) j["width"], (float) j["height"]);
         static Point16      DeserializeSize16 (JsonData j) => new Point16((ushort)j["width"], (ushort)j["height"]);
-        static Rectangle    DeserializeRect   (JsonData j) => new Rectangle   ((int)j["x"], (int)j["y"], (int)j["width"], (int)j["height"]);
+        static Rectangle    DeserializeRect   (JsonData j) => new Rectangle   ((int)   j["x"], (int)   j["y"], (int)   j["width"], (int)   j["height"]);
         static Rectangle16  DeserializeRect16 (JsonData j) => new Rectangle16 ((ushort)j["x"], (ushort)j["y"], (ushort)j["width"], (ushort)j["height"]);
         static BoundingBox  DeserializeBBox   (JsonData j) => new BoundingBox ((uint)j["top"], (uint)j["left"], (uint)j["right"], (uint)j["bottom"]);
         static BoundingBox2 DeserializeBBox2  (JsonData j) => new BoundingBox2((uint)j["left"], (uint)j["right"], (uint)j["bottom"], (uint)j["top"]);
@@ -136,7 +118,7 @@ namespace Altar.Repack
                 Speed    = DeserializePoint(j["speed"])
             };
 
-            if (((JsonData)j).Has("bg"))
+            if (j.Has("bg"))
             {
                 var i = Array.FindIndex(bgs, b => b.Name == (string)j["bg"]);
 
@@ -171,7 +153,7 @@ namespace Altar.Repack
                 Speed     = DeserializePoint(j["speed"])
             };
 
-            if (((JsonData)j).Has("obj"))
+            if (j.Has("obj"))
             {
                 var i = Array.FindIndex(objs, oi => oi.Name == (string)j["obj"]);
 
@@ -188,7 +170,7 @@ namespace Altar.Repack
             {
                 Position     = DeserializePoint(j["pos"]),
                 Scale        = DeserializePointF(j["scale"]),
-                Colour       = ParseColour((JsonData)j["colour"]),
+                Colour       = ParseColour(j["colour"]),
                 Rotation     = (float)j["rotation"],
                 InstanceID   = (uint)j["instanceid"],
                 CreateCodeID = (uint)j["createcodeid"]
@@ -209,7 +191,7 @@ namespace Altar.Repack
                 SourcePosition = DeserializePoint(j["sourcepos"]),
                 Size           = DeserializeSize(j["size"]),
                 Scale          = DeserializePointF(j["scale"]),
-                Colour         = ParseColour((JsonData)j["colour"]),
+                Colour         = ParseColour(j["colour"]),
                 Depth          = (uint)j["tiledepth"],
                 InstanceID     = (uint)j["instanceid"]
             };
@@ -233,23 +215,23 @@ namespace Altar.Repack
             Name            = (string)j["name"],
             Version         = new Version((string)j["version"]),
             WindowSize      = DeserializeSize(j["windowsize"]),
-            LicenseMD5Hash  = DeserializeArray(j["licensemd5"], (Func<dynamic, byte>)(jd => (byte)jd)),
+            LicenseMD5Hash  = DeserializeArray(j["licensemd5"], jd => (byte)jd),
             LicenceCRC32    = (uint)j["licensecrc32"],
             DisplayName     = (string)j["displayname"],
             Timestamp       = DateTime.Parse((string)j["timestamp"], CultureInfo.InvariantCulture),
 
             ActiveTargets = (GameTargets)Enum.Parse(typeof(GameTargets), (string)j["targets"], true),
-            unknown       = DeserializeArray(j["unknown"], (Func<dynamic, uint>)(jd => (uint)jd)),
+            unknown       = DeserializeArray(j["unknown"], jd => (uint)jd),
             SteamAppID    = (uint)j["appid"],
             InfoFlags     = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
 
-            WeirdNumbers = DeserializeArray(j["numbers"], (Func<dynamic, uint>)(jd => (uint)jd))
+            WeirdNumbers = DeserializeArray(j["numbers"], jd => (uint)jd)
         };
         #endregion
         #region public static OptionInfo  DeserializeOptions(JsonData j)
         public static OptionInfo DeserializeOptions(JsonData j) => new OptionInfo
         {
-            Constants = ((JsonData)j["constants"]).ToDictionary()
+            Constants = j["constants"].ToDictionary()
                 .ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value),
 
             InfoFlags = (InfoFlags)Enum.Parse(typeof(InfoFlags), (string)j["flags"], true),
@@ -298,8 +280,8 @@ namespace Altar.Repack
             Size             = DeserializeSize(j["size"]),
             Bounding         = DeserializeBBox2(j["bounding"]),
             Origin           = DeserializePoint(j["origin"]),
-            TextureIndices   = j.Has("textures") ? DeserializeArray(j["textures"], (Func<dynamic, uint>)(jd => (uint)jd)) : null,
-            CollisionMasks   = j.Has("colmasks") ? DeserializeArray(j["colmasks"], (Func<JsonData, bool[,]>)DeserializeColMask) : null,
+            TextureIndices   = j.Has("textures") ? DeserializeArray(j["textures"], jd => (uint)jd) : null,
+            CollisionMasks   = j.Has("colmasks") ? DeserializeArray(j["colmasks"], DeserializeColMask) : null,
             Version          = j.Has("unknown1") ? 2 : 1,
             UnknownFloat     = j.Has("unknown1") ? (float)j["unknown1"] : 0.0f
         };
@@ -352,15 +334,15 @@ namespace Altar.Repack
                 Depth        = (int)j["depth"],
                 IsPersistent = (bool)j["persist"],
 
-                ParentId  = ((JsonData)j).Has("parent") ? (uint?)objNameToId((string)j["parent"]) : null,
-                TexMaskId = ((JsonData)j).Has("texmask") ? (uint?)j["texmask"] : null,
+                ParentId  = j.Has("parent") ? (uint?)objNameToId((string)j["parent"]) : null,
+                TexMaskId = j.Has("texmask") ? (uint?)j["texmask"] : null,
 
-                Physics = ((JsonData)j).Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j["physics"]) : null,
+                Physics = j.Has("physics") ? (ObjectPhysics?)DeserializeObjPhysics(j["physics"]) : null,
 
                 IsSensor       = (bool)j["sensor"],
                 CollisionShape = (CollisionShape)Enum.Parse(typeof(CollisionShape), (string)j["colshape"], true),
 
-                OtherFloats = DeserializeArray(j["data"], (Func<dynamic, float>)(d => (float)d)),
+                OtherFloats = DeserializeArray(j["data"], d => (float)d),
                 ShapePoints = DeserializeArray(j["points"],
                     (Func<dynamic, int[][]>)(d => DeserializeArray(d,
                         (Func<dynamic, int[]>)(e => DeserializeArray(e,
@@ -423,6 +405,8 @@ namespace Altar.Repack
 
         // strings, vars and funcs are compiled using the other things
 
+        private static JsonData LoadJson(string baseDir, string filename) => JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, filename)));
+
         public static GMFile /* errors: different return type? */ ReadFile(string baseDir, JsonData projFile)
         {
             var f = new GMFile();
@@ -430,47 +414,120 @@ namespace Altar.Repack
             // ROOM: depends on OBJT, BGND
             // SCPT: depends on CODE
 
-            //TODO: implement, emit error if field is not found -> intercept exns from dynamic stuff
-            //TODO: (-> surround every call PER FILE with a try/catch)
+            if (projFile.Has("chunkorder") && projFile["chunkorder"].IsArray)
+            {
+                f.ChunkOrder = DeserializeArray(projFile["chunkorder"], jd => SectionHeadersExtensions.FromChunkName((string)jd));
+            }
+            else
+            {
+                Console.Error.WriteLine("Warning: Project file doesn't have a chunk order. You should export with a newer Altar.NET version.");
+                f.ChunkOrder = new SectionHeaders[] {
+                    SectionHeaders.General     ,
+                    SectionHeaders.Options     ,
+                    SectionHeaders.Language    ,
+                    SectionHeaders.Extensions  ,
+                    SectionHeaders.Sounds      ,
+                    SectionHeaders.AudioGroup  ,
+                    SectionHeaders.Sprites     ,
+                    SectionHeaders.Backgrounds ,
+                    SectionHeaders.Paths       ,
+                    SectionHeaders.Scripts     ,
+                    SectionHeaders.GLOB_Unk    ,
+                    SectionHeaders.Shaders     ,
+                    SectionHeaders.Fonts       ,
+                    SectionHeaders.Timelines   ,
+                    SectionHeaders.Objects     ,
+                    SectionHeaders.Rooms       ,
+                    SectionHeaders.DataFiles   ,
+                    SectionHeaders.TexturePage ,
+                    SectionHeaders.Code        ,
+                    SectionHeaders.Variables   ,
+                    SectionHeaders.Functions   ,
+                    SectionHeaders.Strings     ,
+                    SectionHeaders.Textures    ,
+                    SectionHeaders.Audio
+                };
+            }
 
             if (projFile.Has("general"))
             {
                 Console.WriteLine("Loading general...");
-                f.General = DeserializeGeneral(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["general"])))));
+                try
+                {
+                    f.General = DeserializeGeneral(LoadJson(baseDir, (string)(projFile["general"])));
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading general:");
+                    Console.Error.WriteLine(e);
+                }
             }
             if (projFile.Has("options"))
             {
                 Console.WriteLine("Loading options...");
-                f.Options = DeserializeOptions(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["options"])))));
+                try
+                {
+                    f.Options = DeserializeOptions(LoadJson(baseDir, (string)(projFile["options"])));
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading options:");
+                    Console.Error.WriteLine(e);
+                }
             }
             if (projFile.Has("strings"))
             {
                 Console.WriteLine("Loading strings...");
-                f.Strings = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["strings"])))), jd => (string)jd.ToString());
+                try
+                {
+                    f.Strings = DeserializeArray(LoadJson(baseDir, (string)(projFile["strings"])), jd => (string)jd);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading strings:");
+                    Console.Error.WriteLine(e);
+                }
             }
 
-            ReferenceDef[] variables=null, functions=null;
+            var variables = new ReferenceDef[0];
+            var functions = new ReferenceDef[0];
             if (projFile.Has("variables"))
             {
                 Console.WriteLine("Loading variables...");
-                var vardata = JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["variables"]))));
-                variables = DeserializeArray(vardata.IsArray ? vardata : vardata["variables"], DeserializeReferenceDef);
-                if (vardata.Has("extra"))
+                try
                 {
-                    f.VariableExtra = DeserializeArray(vardata["extra"], jd=>(uint)jd);
+                    var vardata = LoadJson(baseDir, (string)(projFile["variables"]));
+                    variables = DeserializeArray(vardata.IsArray ? vardata : vardata["variables"], DeserializeReferenceDef);
+                    if (vardata.Has("extra"))
+                    {
+                        f.VariableExtra = DeserializeArray(vardata["extra"], jd => (uint)jd);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading variables:");
+                    Console.Error.WriteLine(e);
                 }
             }
             if (projFile.Has("functions"))
             {
                 Console.WriteLine("Loading functions...");
-                var funcdata = JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["functions"]))));
-                functions = DeserializeArray(funcdata.IsArray ? funcdata : funcdata["functions"], DeserializeReferenceDef);
-                if (funcdata.Has("locals"))
+                try
                 {
-                    f.FunctionLocals = DeserializeArray(funcdata["locals"], DeserializeFuncLocals);
+                    var funcdata = LoadJson(baseDir, (string)(projFile["functions"]));
+                    functions = DeserializeArray(funcdata.IsArray ? funcdata : funcdata["functions"], DeserializeReferenceDef);
+                    if (funcdata.Has("locals"))
+                    {
+                        f.FunctionLocals = DeserializeArray(funcdata["locals"], DeserializeFuncLocals);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading functions:");
+                    Console.Error.WriteLine(e);
                 }
             }
-            f.RefData = new Decomp.RefData { Variables = variables, Functions = functions };
+            f.RefData = new RefData { Variables = variables, Functions = functions };
 
             if (projFile.Has("textures"))
             {
@@ -479,22 +536,30 @@ namespace Altar.Repack
                 f.Textures = new TextureInfo[textures.Length];
                 for (int i = 0; i < textures.Length; i++)
                 {
-                    var texinfo = new TextureInfo
+                    try
                     {
-                        PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])))
-                    };
+                        var texinfo = new TextureInfo
+                        {
+                            PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])))
+                        };
 
-                    var bp = new UniquePtr(texinfo.PngData);
+                        var bp = new UniquePtr(texinfo.PngData);
 
-                    unsafe
-                    {
-                        var png = (PngHeader*)bp.BPtr;
+                        unsafe
+                        {
+                            var png = (PngHeader*)bp.BPtr;
 
-                        texinfo.Width = Utils.SwapEnd32(png->IHDR.Width);
-                        texinfo.Height = Utils.SwapEnd32(png->IHDR.Height);
+                            texinfo.Width = Utils.SwapEnd32(png->IHDR.Width);
+                            texinfo.Height = Utils.SwapEnd32(png->IHDR.Height);
+                        }
+
+                        f.Textures[i] = texinfo;
                     }
-
-                    f.Textures[i] = texinfo;
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {textures[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("tpags"))
@@ -509,7 +574,15 @@ namespace Altar.Repack
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + tpags.Length + C_PAREN);
-                    f.TexturePages[i] = DeserializeTPag(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(tpags[i])))));
+                    try
+                    {
+                        f.TexturePages[i] = DeserializeTPag(LoadJson(baseDir, (string)(tpags[i])));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {tpags[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("audio"))
@@ -519,11 +592,19 @@ namespace Altar.Repack
                 f.Audio = new AudioInfo[audio.Length];
                 for (int i = 0; i < audio.Length; i++)
                 {
-                    var audioinfo = new AudioInfo
+                    try
                     {
-                        Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])))
-                    };
-                    f.Audio[i] = audioinfo;
+                        var audioinfo = new AudioInfo
+                        {
+                            Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])))
+                        };
+                        f.Audio[i] = audioinfo;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {audio[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("sprites"))
@@ -538,8 +619,16 @@ namespace Altar.Repack
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + sprites.Length + C_PAREN);
-                    f.Sprites[i] = DeserializeSprite(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sprites[i])))));
-                    f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
+                    try
+                    {
+                        f.Sprites[i] = DeserializeSprite(LoadJson(baseDir, (string)(sprites[i])));
+                        f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {sprites[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("objs"))
@@ -555,11 +644,19 @@ namespace Altar.Repack
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + objs.Length + C_PAREN);
-                    f.Objects[i] = DeserializeObj(
-                        JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(objs[i])))),
-                        f.Sprites,
-                        s => (uint)Array.IndexOf(objNames, s));
-                    f.Objects[i].Name = objNames[i];
+                    try
+                    {
+                        f.Objects[i] = DeserializeObj(
+                                        LoadJson(baseDir, (string)(objs[i])),
+                                        f.Sprites,
+                                        s => (uint)Array.IndexOf(objNames, s));
+                        f.Objects[i].Name = objNames[i];
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {objs[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("code"))
@@ -576,20 +673,29 @@ namespace Altar.Repack
                 for (int i = 0; i < code.Length; i++)
                 {
                     Console.WriteLine((string)(code[i]));
-                    f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
-                        stringIndices, objectIndices);
-                    f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
-                    f.Code[i].ArgumentCount = 1;
-                    if (f.FunctionLocals != null)
+                    try
                     {
-                        for (int j = 0; j < f.FunctionLocals.Length; j++)
+                        f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
+                                        stringIndices, objectIndices);
+                        f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                        f.Code[i].ArgumentCount = 1;
+                        if (f.FunctionLocals != null)
                         {
-                            int fastIndex = (j + i) % f.FunctionLocals.Length;
-                            if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
+                            for (int j = 0; j < f.FunctionLocals.Length; j++)
                             {
-                                f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
+                                int fastIndex = (j + i) % f.FunctionLocals.Length;
+                                if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
+                                {
+                                    f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
+                                    break;
+                                }
                             }
                         }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {code[i]}:");
+                        Console.Error.WriteLine(e);
                     }
                 }
             }
@@ -600,8 +706,16 @@ namespace Altar.Repack
                 f.Sound = new SoundInfo[sounds.Length];
                 for (int i = 0; i < sounds.Length; i++)
                 {
-                    f.Sound[i] = DeserializeSound(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(sounds[i])))));
-                    f.Sound[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
+                    try
+                    {
+                        f.Sound[i] = DeserializeSound(LoadJson(baseDir, (string)(sounds[i])));
+                        f.Sound[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {sounds[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("bg"))
@@ -611,8 +725,16 @@ namespace Altar.Repack
                 f.Backgrounds = new BackgroundInfo[bg.Length];
                 for (int i = 0; i < bg.Length; i++)
                 {
-                    f.Backgrounds[i] = DeserializeBg(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(bg[i])))));
-                    f.Backgrounds[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
+                    try
+                    {
+                        f.Backgrounds[i] = DeserializeBg(LoadJson(baseDir, (string)(bg[i])));
+                        f.Backgrounds[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {bg[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("paths"))
@@ -622,8 +744,16 @@ namespace Altar.Repack
                 f.Paths = new PathInfo[paths.Length];
                 for (int i = 0; i < paths.Length; i++)
                 {
-                    f.Paths[i] = DeserializePath(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(paths[i])))));
-                    f.Paths[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
+                    try
+                    {
+                        f.Paths[i] = DeserializePath(LoadJson(baseDir, (string)(paths[i])));
+                        f.Paths[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {paths[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("scripts"))
@@ -633,8 +763,16 @@ namespace Altar.Repack
                 f.Scripts = new ScriptInfo[scripts.Length];
                 for (int i = 0; i < scripts.Length; i++)
                 {
-                    f.Scripts[i] = DeserializeScript(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(scripts[i])))), f.Code);
-                    f.Scripts[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
+                    try
+                    {
+                        f.Scripts[i] = DeserializeScript(LoadJson(baseDir, (string)(scripts[i])), f.Code);
+                        f.Scripts[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {scripts[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("fonts"))
@@ -644,8 +782,16 @@ namespace Altar.Repack
                 f.Fonts = new FontInfo[fonts.Length];
                 for (int i = 0; i < fonts.Length; i++)
                 {
-                    f.Fonts[i] = DeserializeFont(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(fonts[i])))));
-                    f.Fonts[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
+                    try
+                    {
+                        f.Fonts[i] = DeserializeFont(LoadJson(baseDir, (string)(fonts[i])));
+                        f.Fonts[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {fonts[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("rooms"))
@@ -660,14 +806,30 @@ namespace Altar.Repack
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + rooms.Length + C_PAREN);
-                    f.Rooms[i] = DeserializeRoom(JsonMapper.ToObject(File.ReadAllText(Path.Combine(baseDir, (string)(rooms[i])))), f.Backgrounds, f.Objects);
-                    f.Rooms[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
+                    try
+                    {
+                        f.Rooms[i] = DeserializeRoom(LoadJson(baseDir, (string)(rooms[i])), f.Backgrounds, f.Objects);
+                        f.Rooms[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {rooms[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             if (projFile.Has("audiogroups"))
             {
                 Console.WriteLine("Loading audio groups...");
-                f.AudioGroups = DeserializeArray(JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, (string)(projFile["audiogroups"])))), jd => (string)jd.ToString());
+                try
+                {
+                    f.AudioGroups = DeserializeArray(LoadJson(baseDir, (string)(projFile["audiogroups"])), jd => (string)jd);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error loading audio groups:");
+                    Console.Error.WriteLine(e);
+                }
             }
             return f;
         }

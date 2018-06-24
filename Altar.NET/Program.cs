@@ -106,12 +106,11 @@ namespace Altar
 
                 if (eo.ExportToProject)
                 {
-                    //eo.Disassemble = eo.String = eo.Variables = eo.Functions = false;
-
-                    eo.Audio = eo.Background /*= eo.Decompile*/= eo.Disassemble = eo.Font = eo.General
-                        = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
-                        = eo.String = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag = eo.DumpUnknownChunks
-                        = eo.AudioGroups = eo.Functions = eo.Variables = true;
+                    eo.Disassemble = eo.String = eo.Variables = eo.Functions
+                        = eo.Audio = eo.Background = eo.Font = eo.General
+                        = eo.Object = eo.Options = eo.Path = eo.Room = eo.Script
+                        = eo.Sound = eo.Sprite = eo.Texture = eo.TPag = eo.AudioGroups
+                        = eo.DumpUnknownChunks = true;
                 }
                 if (eo.Any)
                 {
@@ -170,7 +169,7 @@ namespace Altar
                 }
                 #endregion
                 #region AGRP
-                if (eo.AudioGroups && f.AudioGroups != null && f.AudioGroups.Length != 0)
+                if (eo.AudioGroups && f.AudioGroups != null)
                 {
                     WriteLine("Dumping audio groups...");
 
@@ -261,7 +260,9 @@ namespace Altar
 
                         File.WriteAllText(od + DIR_CODE + f.Code[i].Name + EXT_GML_ASM, Disassembler.DisplayInstructions(f, i, eo.AbsoluteAddresses));
 
-                        /*BinBuffer bb = new BinBuffer();
+                        /*
+                        // Dump binary code to separate files. Useful for debugging de-/re-assembly/de-/re-compilation.
+                        BinBuffer bb = new BinBuffer();
                         for (uint j = 0; j < f.Code[i].Instructions.Length; j++)
                         {
                             var instr = f.Code[i].Instructions[j];
@@ -270,7 +271,8 @@ namespace Altar
                             bb.Write((IntPtr)instr, (int)isize);
                         }
                         bb.Position = 0;
-                        File.WriteAllBytes(od + DIR_CODE + f.Code[i].Name + EXT_BIN, bb.ReadBytes(bb.Size));*/
+                        File.WriteAllBytes(od + DIR_CODE + f.Code[i].Name + EXT_BIN, bb.ReadBytes(bb.Size));
+                        */
                     }
                     Console.WriteLine();
                 }
@@ -431,15 +433,16 @@ namespace Altar
                     Console.WriteLine();
                 }
                 #endregion
-                List<IntPtr> chunks = new List<IntPtr>(6);
+                List<IntPtr> chunks = null;
 
                 if (eo.DumpUnknownChunks || eo.DumpAllChunks)
                 {
+                    chunks = new List<IntPtr>(6);
                     Action<IntPtr> DumpUnk = _unk =>
                     {
                         var unk = (SectionUnknown*)_unk;
 
-                        if (unk == null || unk->IsEmpty() && !eo.DumpEmptyChunks)
+                        if (unk == null || (unk->IsEmpty() && !eo.DumpEmptyChunks))
                             return;
 
                         WriteLine($"Dumping {unk->Header.MagicString()} chunk...");
@@ -456,31 +459,28 @@ namespace Altar
 
                     var c = f.Content;
 
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.General     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Options     );
-                    chunks.Add((IntPtr)c.Language  );
-                    chunks.Add((IntPtr)c.Extensions);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sounds      );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.AudioGroup  );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Sprites     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Backgrounds );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Paths       );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Scripts     );
-                    chunks.Add((IntPtr)c.GLOB_Unk  );
-                    chunks.Add((IntPtr)c.Shaders   );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Fonts       );
-                    chunks.Add((IntPtr)c.Timelines );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Objects     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Rooms       );
-                    chunks.Add((IntPtr)c.DataFiles );
+                    if (eo.DumpAllChunks)
+                    {
+                        chunks.Add((IntPtr)c.General     );
+                        chunks.Add((IntPtr)c.Options     );
+                        chunks.Add((IntPtr)c.Sounds      );
+                        chunks.Add((IntPtr)c.AudioGroup  );
+                        chunks.Add((IntPtr)c.Sprites     );
+                        chunks.Add((IntPtr)c.Backgrounds );
+                        chunks.Add((IntPtr)c.Paths       );
+                        chunks.Add((IntPtr)c.Scripts     );
+                        chunks.Add((IntPtr)c.Fonts       );
+                        chunks.Add((IntPtr)c.Objects     );
+                        chunks.Add((IntPtr)c.Rooms       );
                     
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.TexturePages);
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Code        );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Variables   );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Functions   );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Strings     );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Textures    );
-                    if (eo.DumpAllChunks) chunks.Add((IntPtr)c.Audio       );
+                        chunks.Add((IntPtr)c.TexturePages);
+                        chunks.Add((IntPtr)c.Code        );
+                        chunks.Add((IntPtr)c.Variables   );
+                        chunks.Add((IntPtr)c.Functions   );
+                        chunks.Add((IntPtr)c.Strings     );
+                        chunks.Add((IntPtr)c.Textures    );
+                        chunks.Add((IntPtr)c.Audio       );
+                    }
 
                     chunks.AddRange(c.UnknownChunks.Values);
 
@@ -492,30 +492,9 @@ namespace Altar
                 {
                     WriteLine("Emitting project file...");
 
-                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f, chunks)));
+                    File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f, eo, chunks)));
                 }
             }
-        }
-
-        // used to prove the chunk order doesn't matter
-        unsafe static void SwapChunks(GMFileContent f)
-        {
-            int EmptyChunkSize = sizeof(SectionUnknown);
-
-            var exntO = (long)f.Extensions - (long)f.RawData.BPtr;
-            var tmlnO = (long)f.Timelines  - (long)f.RawData.BPtr;
-
-            byte[] extnT = new byte[EmptyChunkSize];
-
-            ILHacks.Cpblk((IntPtr)f.Extensions, extnT, 0, EmptyChunkSize);
-            ILHacks.Cpblk((IntPtr)f.Timelines, (IntPtr)f.Extensions, EmptyChunkSize);
-            ILHacks.Cpblk(extnT, (IntPtr)f.Timelines, 0, EmptyChunkSize);
-
-            byte[] EVERYTHING = new byte[f.RawData.Size];
-
-            ILHacks.Cpblk(f.RawData.IPtr, EVERYTHING, 0, f.RawData.Size);
-
-            File.WriteAllBytes("data.fake.win", EVERYTHING);
         }
 
         // EXTN: SectionCountOffset<Extension>
@@ -558,15 +537,20 @@ namespace Altar
         static void Import(ImportOptions opt)
         {
             var file = Path.GetFullPath(opt.File);
-            
+
             if (!File.Exists(file))
-                throw new ParserException("File \"" + file + "\" not found.");
+                throw new FileNotFoundException("Project file not found", file);
 
             var baseDir = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar;
 
             JsonData projFile = JsonMapper.ToObject(File.OpenText(file));
             GMFile f = Deserialize.ReadFile(baseDir, projFile);
 
+            File.WriteAllBytes(Path.GetFullPath(opt.OutputFile), WriteFile(baseDir, projFile, f));
+        }
+
+        public static byte[] WriteFile(string baseDir, JsonData projFile, GMFile f)
+        {
             var stringsChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing strings...");
             IDictionary<string, int> stringOffsets = SectionWriter.WriteStrings(stringsChunk, f.Strings);
@@ -578,8 +562,6 @@ namespace Altar
             var codeChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing code...");
             var codeChunkStringOffsetOffsets = Assembler.WriteCodes(codeChunk, f, stringOffsets);
-
-            var output = Path.GetFullPath(opt.OutputFile);
 
             var offsets = new int[0];
             BBData writer = new BBData(new BinBuffer(), offsets);
@@ -593,11 +575,9 @@ namespace Altar
             var codeOffsetOffsets = new List<int>();
             int codeChunkPosition = 0;
 
-            foreach (var chunkFile in projFile["chunks"])
+            foreach (SectionHeaders chunkId in f.ChunkOrder)
             {
-                var chunkName = chunkFile.ToString().Substring(0, 4);
-                Console.WriteLine($"Writing {chunkName}...");
-                var chunkId = SectionHeadersExtensions.FromChunkName(chunkName);
+                Console.WriteLine($"Writing {chunkId}...");
                 BBData chunk = new BBData(new BinBuffer(), new int[0]);
                 int[] chunkStringOffsetOffsets = null;
                 int[] chunkTexpOffsetOffsets = null;
@@ -674,8 +654,43 @@ namespace Altar
                         SectionWriter.WriteAudio(chunk, f.Audio, writer.Buffer.Position);
                         break;
                     default:
-                        Console.Error.WriteLine($"Don't know how to handle {chunkName}, loading from dump");
-                        BinBuffer chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile.ToString())));
+                        var chunkName = chunkId.ToChunkName();
+                        Console.Error.WriteLine($"Note: Don't know how to handle {chunkName}");
+                        string chunkFile = null;
+                        if (projFile.Has("chunks") && projFile["chunks"].IsArray)
+                        {
+                            foreach (JsonData jd in projFile["chunks"])
+                            {
+                                if (jd.IsString)
+                                {
+                                    if (Path.GetFileNameWithoutExtension((string)jd) == chunkName)
+                                    {
+                                        chunkFile = (string)jd;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        BinBuffer chunkData;
+                        if (chunkFile == null)
+                        {
+                            Console.Error.WriteLine($"Note: Chunk {chunkName} was not dumped, assuming it's empty");
+                            chunkData = new BinBuffer();
+                        }
+                        else
+                        {
+                            Console.Error.WriteLine($"Note: Loading {chunkName} from dump");
+                            try
+                            {
+                                chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile)));
+                            }
+                            catch (Exception e)
+                            {
+                                Console.Error.WriteLine($"Error loading {chunkName}, using empty");
+                                Console.Error.WriteLine(e);
+                                chunkData = new BinBuffer();
+                            }
+                        }
                         chunk = new BBData(chunkData, new int[0]);
                         break;
                 }
@@ -735,7 +750,7 @@ namespace Altar
             }
 
             writer.Buffer.Position = 0;
-            File.WriteAllBytes(output, writer.Buffer.ReadBytes(writer.Buffer.Size));
+            return writer.Buffer.ReadBytes(writer.Buffer.Size);
         }
 
         [STAThread]
@@ -744,46 +759,30 @@ namespace Altar
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture =
                 CultureInfo.InvariantCulture;
 
-            //var t =
-            //    Recomp.Tokenizer.Tokenize(
-            //        File.ReadAllText(@"C:\Program Files (x86)\Steam\steamapps\Common\Undertale\datadump\code\gml_Script_SCR_TEXT.gml.asm")
-            //    );
-            //var p = AsmParser.Parse(t);
-
-            //var recons = String.Join(Environment.NewLine, p.Select(i => i.ToString()));
-
             var o = new Options();
             CLParser.Default.ParseArgumentsStrict(args, o, (verb, vo) =>
             {
                 if (vo == null)
                     return;
 
-                switch (verb)
+                try
                 {
-                    case "export":
-                        //try
-                        //{
+                    switch (verb)
+                    {
+                        case "export":
                             Export((ExportOptions)vo);
-                        /*}
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("An error occured:");
-                            Console.WriteLine(e);
-                        }*/
-                        break;
-                    case "import":
-                        //try
-                        //{
+                            break;
+                        case "import":
                             Import((ImportOptions)vo);
-                        /*}
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("An error occured:");
-                            Console.WriteLine(e);
-                        }*/
-                        break;
+                            break;
+                    }
                 }
-                Console.Out.WriteLine("Done");
+                catch (Exception)
+                {
+                    Console.Error.WriteLine($"An error occured during {verb}");
+                    throw;
+                }
+                Console.WriteLine("Done");
             });
         }
     }
