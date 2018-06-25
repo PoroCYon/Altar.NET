@@ -192,7 +192,7 @@ namespace Altar.Recomp
                 {
                     if (labelInst.LabelValue is string label)
                     {
-                        labels[label] = size*4;
+                        labels[label] = size * sizeof(int);
                     }
                 }
                 else
@@ -405,9 +405,9 @@ namespace Altar.Recomp
             }
         }
 
-        private static void WriteCodeInfo(BBData data, CodeInfo ci, IDictionary<string, int> stringOffsets, uint bytecodeVersion)
+        private static void WriteCodeInfo(BBData data, CodeInfo ci, StringsChunkBuilder strings, uint bytecodeVersion)
         {
-            data.Buffer.Write(stringOffsets[ci.Name]); // Name
+            data.Buffer.Write(strings.GetOffset(ci.Name)); // Name
             data.Buffer.Write(ci.Size); // Length
             if (bytecodeVersion > 0xE)
             {
@@ -430,7 +430,7 @@ namespace Altar.Recomp
             }
         }
 
-        public static int[] WriteCodes(BBData data, GMFile f, IDictionary<string, int> stringOffsets)
+        public static int[] WriteCodes(BBData data, GMFile f, StringsChunkBuilder strings)
         {
             int bytecodeSize = 0;
             foreach (var ci in f.Code)
@@ -444,7 +444,7 @@ namespace Altar.Recomp
             for (int i = 0; i < f.Code.Length; i++)
             {
                 BBData codedata = new BBData(new BinBuffer(), new int[0]);
-                WriteCodeInfo(codedata, f.Code[i], stringOffsets, f.General.BytecodeVersion);
+                WriteCodeInfo(codedata, f.Code[i], strings, f.General.BytecodeVersion);
                 datas[i] = codedata;
             }
 
@@ -543,14 +543,11 @@ namespace Altar.Recomp
                 allOffs.AddRange(datas[i].OffsetOffsets); // updated by Write
             }
 
-            IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(f.Strings.Length);
-            for (uint i = 0; i < f.Strings.Length; i++) stringIndices[f.Strings[i]] = i;
-
             IList<ReferenceDef> functionStartOffsetsAndCounts;
-            ResolveReferenceOffsets(data, functionReferences, stringIndices, false, out functionStartOffsetsAndCounts);
+            ResolveReferenceOffsets(data, functionReferences, strings, false, out functionStartOffsetsAndCounts);
 
             IList<ReferenceDef> variableStartOffsetsAndCounts;
-            ResolveReferenceOffsets(data, variableReferences, stringIndices, true, out variableStartOffsetsAndCounts);
+            ResolveReferenceOffsets(data, variableReferences, strings, true, out variableStartOffsetsAndCounts);
 
             if (f.RefData.Variables == null || f.RefData.Variables.Length == 0)
             {
@@ -588,7 +585,7 @@ namespace Altar.Recomp
         }
 
         public static void ResolveReferenceOffsets(BBData data,
-            IList<Tuple<ReferenceSignature, uint>> references, IDictionary<string, uint> stringIndices, bool extended,
+            IList<Tuple<ReferenceSignature, uint>> references, StringsChunkBuilder strings, bool extended,
             out IList<ReferenceDef> startOffsetsAndCounts)
         {
             startOffsetsAndCounts = new List<ReferenceDef>();
@@ -659,7 +656,7 @@ namespace Altar.Recomp
                             j++;
                         }
                     }
-                    diff = stringIndices[last.Item1.Name];
+                    diff = strings.GetIndex(last.Item1.Name);
                     data.Buffer.Position = (int)last.Item2 + 4;
                     existing = data.Buffer.ReadUInt32();
                     data.Buffer.Write(diff | existing);
