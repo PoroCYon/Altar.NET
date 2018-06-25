@@ -69,6 +69,95 @@ namespace Altar.Repack
         }
     }
 
+    public class StringsChunkBuilder
+    {
+        BBData stringsData;
+        IDictionary<string, int> stringOffsets;
+        IList<int> offsetList;
+        IDictionary<string, int> stringIndices;
+
+        public StringsChunkBuilder()
+        {
+            stringsData = new BBData(new BinBuffer(), new int[0]);
+            stringOffsets = new Dictionary<string, int>();
+            offsetList = new List<int>();
+            stringIndices = new Dictionary<string, int>();
+        }
+
+        private void WriteString(BBData data, String s)
+        {
+            data.Buffer.Write(s);
+            data.Buffer.WriteByte(0);
+        }
+
+        public int AddString(String s)
+        {
+            int offset = stringsData.Buffer.Position;
+            WriteString(stringsData, s);
+            stringOffsets[s] = offset;
+            stringIndices[s] = offsetList.Count;
+            offsetList.Add(offset);
+            return offset;
+        }
+
+        public void AddStrings(String[] strings)
+        {
+            foreach (var s in strings)
+            {
+                AddString(s);
+            }
+        }
+
+        public uint GetOffset(String s)
+        {
+            if (stringOffsets.TryGetValue(s, out int offset))
+            {
+                return (uint)offset;
+            }
+            else
+            {
+                return (uint)AddString(s);
+            }
+        }
+
+        public uint GetIndex(String s)
+        {
+            if (stringIndices.TryGetValue(s, out int idx))
+            {
+                return (uint)idx;
+            }
+            else
+            {
+                AddString(s);
+                return (uint)(offsetList.Count - 1);
+            }
+        }
+
+        public int[] WriteStringsChunk(BBData data)
+        {
+            var bb = data.Buffer;
+
+            bb.Write(offsetList.Count);
+
+            var allOffs = data.OffsetOffsets.ToList();
+
+            var offAcc = bb.Position + offsetList.Count * sizeof(int); // after all offsets
+            var offsets = new List<int>(offsetList.Count);
+            for (int i = 0; i < offsetList.Count; i++)
+            {
+                allOffs.Add(bb.Position);
+                bb.Write(offsetList[i] + offAcc);
+                offsets.Add(offsetList[i] + offAcc);
+            }
+
+            bb.Write(stringsData.Buffer);
+            allOffs.AddRange(stringsData.OffsetOffsets); // updated by Write
+
+            data.OffsetOffsets = allOffs.ToArray();
+            return offsets.ToArray();
+        }
+    }
+
     public static class SectionWriter
     {
         static void UpdateOffsets(BBData data, int parentOffset)
@@ -167,17 +256,17 @@ namespace Altar.Repack
         }
 
         public static int[] WriteList<T>(BBData data, T[] things,
-            Action<BBData, T, IDictionary<string, int>> writeThing,
-            IDictionary<string, int> stringOffsets)
+            Action<BBData, T, StringsChunkBuilder> writeThing,
+            StringsChunkBuilder strings)
         {
-            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, stringOffsets));
+            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, strings));
         }
 
         public static int[] WriteList<T>(BBData data, T[] things,
-            Action<BBData, T, IDictionary<string, int>, int[]> writeThing,
-            IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+            Action<BBData, T, StringsChunkBuilder, int[]> writeThing,
+            StringsChunkBuilder strings, int[] texPagOffsets)
         {
-            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, stringOffsets, texPagOffsets));
+            return WriteList(data, things, (thingdata, thing) => writeThing(thingdata, thing, strings, texPagOffsets));
         }
 
         public static void WriteChunk(BBData data, SectionHeaders chunk, BBData inner)
@@ -195,34 +284,15 @@ namespace Altar.Repack
             foreach (var kvp in chunks) WriteChunk(data, kvp.Key, kvp.Value);
         }
 
-        public static void WriteString(BBData data, String s)
-        {
-            var bb = data.Buffer;
-            bb.Write(s);
-            bb.WriteByte(0);
-        }
-
-        public static IDictionary<string, int> WriteStrings(BBData data, String[] strings)
-        {
-            int[] offsets = WriteList(data, strings, WriteString);
-
-            Dictionary<string, int> stringOffsets = new Dictionary<string, int>(strings.Length);
-            for (int i = 0; i < strings.Length; i++)
-            {
-                stringOffsets[strings[i]] = offsets[i];
-            }
-            return stringOffsets;
-        }
-
-        public static int[] WriteGeneral(BBData data, GeneralInfo ge, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
+        public static int[] WriteGeneral(BBData data, GeneralInfo ge, RoomInfo[] rooms, StringsChunkBuilder strings)
         {
             var ret = new SectionGeneral
             {
                 Debug = ge.IsDebug,
-                FilenameOffset = (uint)stringOffsets[ge.FileName],
-                ConfigOffset = (uint)stringOffsets[ge.Configuration],
-                NameOffset = (uint)stringOffsets[ge.Name],
-                DisplayNameOffset = (uint)stringOffsets[ge.DisplayName],
+                FilenameOffset = strings.GetOffset(ge.FileName),
+                ConfigOffset = strings.GetOffset(ge.Configuration),
+                NameOffset = strings.GetOffset(ge.Name),
+                DisplayNameOffset = strings.GetOffset(ge.DisplayName),
                 GameID = ge.GameID,
                 WindowSize = ge.WindowSize,
                 BytecodeVersion = (Int24)ge.BytecodeVersion,
@@ -306,7 +376,7 @@ namespace Altar.Repack
             return stringOffsetOffsets;
         }
 
-        public static int[] WriteOptions(BBData data, OptionInfo opt, IDictionary<string, int> stringOffsets)
+        public static int[] WriteOptions(BBData data, OptionInfo opt, StringsChunkBuilder strings)
         {
             var ret = new SectionOptions();
             var stringOffsetOffsets = new List<int>();
@@ -342,9 +412,9 @@ namespace Altar.Repack
                 foreach (var kvp in opt.Constants)
                 {
                     stringOffsetOffsets.Add(data.Buffer.Position + 8);
-                    data.Buffer.Write(stringOffsets[kvp.Key]);
+                    data.Buffer.Write(strings.GetOffset(kvp.Key));
                     stringOffsetOffsets.Add(data.Buffer.Position + 8);
-                    data.Buffer.Write(stringOffsets[kvp.Value]);
+                    data.Buffer.Write(strings.GetOffset(kvp.Value));
                 }
             }
 
@@ -402,12 +472,12 @@ namespace Altar.Repack
             });
         }
 
-        public static void WriteFont(BBData data, FontInfo fi, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+        public static void WriteFont(BBData data, FontInfo fi, StringsChunkBuilder strings, int[] texPagOffsets)
         {
             var fe = new FontEntry
             {
-                CodeName = fi.CodeName == null ? 0 : (uint)stringOffsets[fi.CodeName],
-                SystemName = (uint)stringOffsets[fi.SystemName],
+                CodeName = fi.CodeName == null ? 0 : strings.GetOffset(fi.CodeName),
+                SystemName = strings.GetOffset(fi.SystemName),
                 EmSize = fi.EmSize,
                 Bold = fi.IsBold ? DwordBool.True : DwordBool.False,
                 Italic = fi.IsItalic ? DwordBool.True : DwordBool.False,
@@ -433,12 +503,12 @@ namespace Altar.Repack
 
         public static void WriteFonts(BBData data,
             FontInfo[] fonts,
-            IDictionary<string, int> stringOffsets,
+            StringsChunkBuilder strings,
             int[] texPagOffsets,
             out int[] stringOffsetOffsets,
             out int[] texpOffsetOffsets)
         {
-            int[] offsets = WriteList(data, fonts, WriteFont, stringOffsets, texPagOffsets);
+            int[] offsets = WriteList(data, fonts, WriteFont, strings, texPagOffsets);
 
             stringOffsetOffsets = new int[fonts.Length * 2];
             texpOffsetOffsets = new int[fonts.Length];
@@ -494,11 +564,11 @@ namespace Altar.Repack
             return WriteList(data, texturePages, WriteTexturePage);
         }
 
-        private static void WriteObject(BBData data, ObjectInfo oi, IDictionary<string, int> stringOffsets)
+        private static void WriteObject(BBData data, ObjectInfo oi, StringsChunkBuilder strings)
         {
             var oe = new ObjectEntry
             {
-                Name = (uint)stringOffsets[oi.Name],
+                Name = strings.GetOffset(oi.Name),
                 SpriteIndex = oi.SpriteIndex,
                 Visible = oi.IsVisible ? DwordBool.True : DwordBool.False,
                 Solid = oi.IsSolid ? DwordBool.True : DwordBool.False,
@@ -563,9 +633,9 @@ namespace Altar.Repack
             );
         }
 
-        public static int[] WriteObjects(BBData data, ObjectInfo[] objects, IDictionary<string, int> stringOffsets)
+        public static int[] WriteObjects(BBData data, ObjectInfo[] objects, StringsChunkBuilder strings)
         {
-            int[] offsets = WriteList(data, objects, WriteObject, stringOffsets);
+            int[] offsets = WriteList(data, objects, WriteObject, strings);
             var stringOffsetOffsets = new int[objects.Length];
 
             for (int i = 0; i < objects.Length; i++)
@@ -575,13 +645,13 @@ namespace Altar.Repack
             return stringOffsetOffsets;
         }
 
-        private static void WriteSound(BBData data, SoundInfo si, IDictionary<string, int> stringOffsets, string[] audioGroups)
+        private static void WriteSound(BBData data, SoundInfo si, StringsChunkBuilder strings, string[] audioGroups)
         {
             var se = new SoundEntry
             {
-                NameOffset = si.Name == null ? 0 : (uint)stringOffsets[si.Name],
-                TypeOffset = si.Type == null ? 0 : (uint)stringOffsets[si.Type],
-                FileOffset = si.File == null ? 0 : (uint)stringOffsets[si.File],
+                NameOffset = si.Name == null ? 0 : strings.GetOffset(si.Name),
+                TypeOffset = si.Type == null ? 0 : strings.GetOffset(si.Type),
+                FileOffset = si.File == null ? 0 : strings.GetOffset(si.File),
 
                 Volume = si.VolumeMod,
                 Pitch = si.PitchMod,
@@ -597,9 +667,9 @@ namespace Altar.Repack
             data.Buffer.Write(se);
         }
 
-        public static int[] WriteSounds(BBData data, SoundInfo[] sounds, IDictionary<string, int> stringOffsets, string[] audioGroups)
+        public static int[] WriteSounds(BBData data, SoundInfo[] sounds, StringsChunkBuilder strings, string[] audioGroups)
         {
-            int[] offsets = WriteList(data, sounds, (sounddata, sound) => WriteSound(sounddata, sound, stringOffsets, audioGroups));
+            int[] offsets = WriteList(data, sounds, (sounddata, sound) => WriteSound(sounddata, sound, strings, audioGroups));
             var stringOffsetOffsets = new List<int>();
 
             for (int i = 0; i < sounds.Length; i++)
@@ -611,9 +681,9 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
-        public static int[] WriteAudioGroups(BBData data, string[] audioGroups, IDictionary<string, int> stringOffsets)
+        public static int[] WriteAudioGroups(BBData data, string[] audioGroups, StringsChunkBuilder strings)
         {
-            int[] offsets = WriteList(data, audioGroups, (groupdata, group) => groupdata.Buffer.Write(stringOffsets[group]));
+            int[] offsets = WriteList(data, audioGroups, (groupdata, group) => groupdata.Buffer.Write(strings.GetOffset(group)));
             var stringOffsetOffsets = new int[audioGroups.Length];
 
             for (int i = 0; i < audioGroups.Length; i++)
@@ -623,11 +693,11 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
-        private static void WriteSprite(BBData data, SpriteInfo si, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+        private static void WriteSprite(BBData data, SpriteInfo si, StringsChunkBuilder strings, int[] texPagOffsets)
         {
             var se = new SpriteEntry
             {
-                Name = (uint)stringOffsets[si.Name],
+                Name = strings.GetOffset(si.Name),
                 Size = si.Size,
                 Bounding = si.Bounding,
                 BBoxMode = si.BBoxMode,
@@ -701,12 +771,12 @@ namespace Altar.Repack
 
         public static void WriteSprites(BBData data,
             SpriteInfo[] sprites,
-            IDictionary<string, int> stringOffsets,
+            StringsChunkBuilder strings,
             int[] texPagOffsets,
             out int[] stringOffsetOffsets,
             out int[] texpOffsetOffsetsArray)
         {
-            int[] offsets = WriteList(data, sprites, WriteSprite, stringOffsets, texPagOffsets);
+            int[] offsets = WriteList(data, sprites, WriteSprite, strings, texPagOffsets);
             stringOffsetOffsets = new int[sprites.Length];
             var texpOffsetOffsetsList = new List<int>();
             for (int i = 0; i < sprites.Length; i++)
@@ -733,23 +803,23 @@ namespace Altar.Repack
             texpOffsetOffsetsArray = texpOffsetOffsetsList.ToArray();
         }
 
-        private static void WriteBackground(BBData data, BackgroundInfo bi, IDictionary<string, int> stringOffsets, int[] texPagOffsets)
+        private static void WriteBackground(BBData data, BackgroundInfo bi, StringsChunkBuilder strings, int[] texPagOffsets)
         {
             data.Buffer.Write(new BgEntry
             {
-                Name = (uint)stringOffsets[bi.Name],
+                Name = strings.GetOffset(bi.Name),
                 TextureOffset = bi.TexPageIndex.HasValue ? (uint)texPagOffsets[bi.TexPageIndex.Value] : 0
             });
         }
 
         public static void WriteBackgrounds(BBData data,
             BackgroundInfo[] backgrounds,
-            IDictionary<string, int> stringOffsets,
+            StringsChunkBuilder strings,
             int[] texPagOffsets,
             out int[] stringOffsetOffsets,
             out int[] texpOffsetOffsetsArray)
         {
-            int[] offsets = WriteList(data, backgrounds, WriteBackground, stringOffsets, texPagOffsets);
+            int[] offsets = WriteList(data, backgrounds, WriteBackground, strings, texPagOffsets);
             stringOffsetOffsets = new int[backgrounds.Length];
             var texpOffsetOffsetsList = new List<int>();
             for (int i = 0; i < backgrounds.Length; i++)
@@ -760,12 +830,12 @@ namespace Altar.Repack
             texpOffsetOffsetsArray = texpOffsetOffsetsList.ToArray();
         }
 
-        private static void WritePath(BBData data, PathInfo pi, IDictionary<string, int> stringOffsets)
+        private static void WritePath(BBData data, PathInfo pi, StringsChunkBuilder strings)
         {
             var tmp = new BinBuffer();
             tmp.Write(new PathEntry
             {
-                Name = (uint)stringOffsets[pi.Name],
+                Name = strings.GetOffset(pi.Name),
                 IsSmooth = pi.IsSmooth ? DwordBool.True : DwordBool.False,
                 IsClosed = pi.IsClosed ? DwordBool.True : DwordBool.False,
                 Precision = pi.Precision,
@@ -778,9 +848,9 @@ namespace Altar.Repack
                 data.Buffer.Write(pt);
         }
 
-        public static int[] WritePaths(BBData data, PathInfo[] paths, IDictionary<string, int> stringOffsets)
+        public static int[] WritePaths(BBData data, PathInfo[] paths, StringsChunkBuilder strings)
         {
-            int[] offsets = WriteList(data, paths, WritePath, stringOffsets);
+            int[] offsets = WriteList(data, paths, WritePath, strings);
             var stringOffsetOffsets = new int[paths.Length];
 
             for (int i = 0; i < paths.Length; i++)
@@ -790,18 +860,18 @@ namespace Altar.Repack
             return stringOffsetOffsets;
         }
 
-        private static void WriteScript(BBData data, ScriptInfo si, IDictionary<string, int> stringOffsets)
+        private static void WriteScript(BBData data, ScriptInfo si, StringsChunkBuilder strings)
         {
             data.Buffer.Write(new ScriptEntry
             {
-                Name = (uint)stringOffsets[si.Name],
+                Name = strings.GetOffset(si.Name),
                 CodeId = si.CodeId
             });
         }
 
-        public static int[] WriteScripts(BBData data, ScriptInfo[] scripts, IDictionary<string, int> stringOffsets)
+        public static int[] WriteScripts(BBData data, ScriptInfo[] scripts, StringsChunkBuilder strings)
         {
-            int[] offsets = WriteList(data, scripts, WriteScript, stringOffsets);
+            int[] offsets = WriteList(data, scripts, WriteScript, strings);
             var stringOffsetOffsets = new int[scripts.Length];
             for (int i = 0; i < scripts.Length; i++)
             {
@@ -872,7 +942,7 @@ namespace Altar.Repack
             });
         }
 
-        private static void WriteRoomObjInst(BBData data, RoomObjInst roi, IDictionary<string, int> stringOffsets)
+        private static void WriteRoomObjInst(BBData data, RoomObjInst roi, StringsChunkBuilder strings)
         {
             data.Buffer.Write(new RoomObjInstEntry
             {
@@ -881,7 +951,7 @@ namespace Altar.Repack
                 Unk2 = roi.Unk2,
                 Unk3 = roi.Unk3,
                 InstCount = (uint)roi.Instances.Length,
-                Name = (uint)stringOffsets[roi.Name]
+                Name = strings.GetOffset(roi.Name)
             });
             data.Buffer.Position -= 4;
             foreach (var id in roi.Instances)
@@ -890,12 +960,12 @@ namespace Altar.Repack
             }
         }
 
-        private static void WriteRoom(BBData data, RoomInfo ri, IDictionary<string, int> stringOffsets)
+        private static void WriteRoom(BBData data, RoomInfo ri, StringsChunkBuilder strings)
         {
             var re = new RoomEntry
             {
-                Name = (uint)stringOffsets[ri.Name],
-                Caption = ri.Caption == null ? 0 : (uint)stringOffsets[ri.Caption],
+                Name = strings.GetOffset(ri.Name),
+                Caption = ri.Caption == null ? 0 : strings.GetOffset(ri.Caption),
                 Size = ri.Size,
                 Speed = ri.Speed,
                 Persistent = ri.IsPersistent ? DwordBool.True : DwordBool.False,
@@ -956,7 +1026,7 @@ namespace Altar.Repack
                 data.Buffer.Position = objInstOffsetOffset;
                 data.Buffer.Write(data.Buffer.Size);
                 data.Buffer.Position = data.Buffer.Size;
-                WriteList(data, ri.ObjInst, WriteRoomObjInst, stringOffsets);
+                WriteList(data, ri.ObjInst, WriteRoomObjInst, strings);
             }
             
             // Unknown stuff for 2.0
@@ -964,9 +1034,9 @@ namespace Altar.Repack
             //    data.Buffer.Write(0x3F3F3F3F);
         }
 
-        public static int[] WriteRooms(BBData data, RoomInfo[] rooms, IDictionary<string, int> stringOffsets)
+        public static int[] WriteRooms(BBData data, RoomInfo[] rooms, StringsChunkBuilder strings)
         {
-            int[] offsets = WriteList(data, rooms, WriteRoom, stringOffsets);
+            int[] offsets = WriteList(data, rooms, WriteRoom, strings);
             var stringOffsetOffsets = new List<int>();
             for (int i = 0; i < rooms.Length; i++)
             {
@@ -991,21 +1061,21 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
-        private static void WriteRefDef(BBData data, ReferenceDef rd, IDictionary<string, int> stringOffsets)
+        private static void WriteRefDef(BBData data, ReferenceDef rd, StringsChunkBuilder strings)
         {
             data.Buffer.Write(new RefDefEntry
             {
-                NameOffset = (uint)stringOffsets[rd.Name],
+                NameOffset = strings.GetOffset(rd.Name),
                 Occurrences = rd.Occurrences,
                 FirstAddress = rd.FirstOffset
             });
         }
 
-        private static void WriteRefDefWithOthers(BBData data, ReferenceDef rd, IDictionary<string, int> stringOffsets)
+        private static void WriteRefDefWithOthers(BBData data, ReferenceDef rd, StringsChunkBuilder strings)
         {
             data.Buffer.Write(new RefDefEntryWithOthers
             {
-                NameOffset = (uint)stringOffsets[rd.Name],
+                NameOffset = strings.GetOffset(rd.Name),
                 InstanceType = (int)rd.InstanceType,
                 _pad1 = rd.unknown2,
                 Occurrences = rd.Occurrences,
@@ -1014,7 +1084,7 @@ namespace Altar.Repack
         }
 
         public static void WriteRefDefs(BBData data, ReferenceDef[] variables,
-            IDictionary<string, int> stringOffsets,
+            StringsChunkBuilder strings,
             bool IsOldBCVersion, bool isFunction,
             out int[] stringOffsetOffsets, out int[] codeOffsetOffsets)
         {
@@ -1031,20 +1101,20 @@ namespace Altar.Repack
                     stringOffsetOffsets[i] = data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntry), "NameOffset") + 8;
                     if (variables[i].FirstOffset != 0xFFFFFFFF)
                         codeOffsetOffsetsList.Add(data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntry), "FirstAddress") + 8);
-                    WriteRefDef(data, variables[i], stringOffsets);
+                    WriteRefDef(data, variables[i], strings);
                 }
                 else
                 {
                     stringOffsetOffsets[i] = data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntryWithOthers), "NameOffset") + 8;
                     if (variables[i].FirstOffset != 0xFFFFFFFF)
                         codeOffsetOffsetsList.Add(data.Buffer.Position + (int)Marshal.OffsetOf(typeof(RefDefEntryWithOthers), "FirstAddress") + 8);
-                    WriteRefDefWithOthers(data, variables[i], stringOffsets);
+                    WriteRefDefWithOthers(data, variables[i], strings);
                 }
             }
             codeOffsetOffsets = codeOffsetOffsetsList.ToArray();
         }
 
-        public static int[] WriteFunctionLocals(BBData data, FunctionLocalsInfo[] functions, IDictionary<string, int> stringOffsets)
+        public static int[] WriteFunctionLocals(BBData data, FunctionLocalsInfo[] functions, StringsChunkBuilder strings)
         {
             var stringOffsetOffsets = new List<int>();
 
@@ -1054,14 +1124,14 @@ namespace Altar.Repack
             {
                 data.Buffer.Write((uint)func.LocalNames.Length);
                 stringOffsetOffsets.Add(data.Buffer.Position + 8);
-                data.Buffer.Write((uint)stringOffsets[func.FunctionName]);
+                data.Buffer.Write(strings.GetOffset(func.FunctionName));
                 for (uint i = 0; i < func.LocalNames.Length; i++)
                 {
                     stringOffsetOffsets.Add(data.Buffer.Position + 12);
                     data.Buffer.Write(new FunctionLocalEntry
                     {
                         Index = i,
-                        Name = (uint)stringOffsets[func.LocalNames[i]]
+                        Name = strings.GetOffset(func.LocalNames[i])
                     });
                 }
             }

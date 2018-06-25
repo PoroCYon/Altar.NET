@@ -551,9 +551,9 @@ namespace Altar
 
         public static byte[] WriteFile(string baseDir, JsonData projFile, GMFile f)
         {
-            var stringsChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing strings...");
-            IDictionary<string, int> stringOffsets = SectionWriter.WriteStrings(stringsChunk, f.Strings);
+            var stringsChunkBuilder = new StringsChunkBuilder();
+            stringsChunkBuilder.AddStrings(f.Strings);
 
             var texpChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing textures...");
@@ -561,7 +561,7 @@ namespace Altar
 
             var codeChunk = new BBData(new BinBuffer(), new int[0]);
             Console.WriteLine($"Preparing code...");
-            var codeChunkStringOffsetOffsets = Assembler.WriteCodes(codeChunk, f, stringOffsets);
+            var codeChunkStringOffsetOffsets = Assembler.WriteCodes(codeChunk, f, stringsChunkBuilder);
 
             var offsets = new int[0];
             BBData writer = new BBData(new BinBuffer(), offsets);
@@ -569,7 +569,7 @@ namespace Altar
             writer.Buffer.Write(0);
 
             var stringOffsetOffsets = new List<int>();
-            int stringsChunkPosition = 0;
+            int stringsDataPosition = 0;
             var texpOffsetOffsets = new List<int>();
             int texpChunkPosition = 0;
             var codeOffsetOffsets = new List<int>();
@@ -585,40 +585,40 @@ namespace Altar
                 switch (chunkId)
                 {
                     case SectionHeaders.General:
-                        chunkStringOffsetOffsets = SectionWriter.WriteGeneral(chunk, f.General, f.Rooms, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteGeneral(chunk, f.General, f.Rooms, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Options:
-                        chunkStringOffsetOffsets = SectionWriter.WriteOptions(chunk, f.Options, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteOptions(chunk, f.Options, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Sounds:
-                        chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringOffsets, f.AudioGroups);
+                        chunkStringOffsetOffsets = SectionWriter.WriteSounds(chunk, f.Sound, stringsChunkBuilder, f.AudioGroups);
                         break;
                     case SectionHeaders.AudioGroup:
-                        chunkStringOffsetOffsets = SectionWriter.WriteAudioGroups(chunk, f.AudioGroups, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteAudioGroups(chunk, f.AudioGroups, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Sprites:
-                        SectionWriter.WriteSprites(chunk, f.Sprites, stringOffsets, texPagOffsets,
+                        SectionWriter.WriteSprites(chunk, f.Sprites, stringsChunkBuilder, texPagOffsets,
                             out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
                         break;
                     case SectionHeaders.Backgrounds:
-                        SectionWriter.WriteBackgrounds(chunk, f.Backgrounds, stringOffsets, texPagOffsets,
+                        SectionWriter.WriteBackgrounds(chunk, f.Backgrounds, stringsChunkBuilder, texPagOffsets,
                             out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
                         break;
                     case SectionHeaders.Paths:
-                        chunkStringOffsetOffsets = SectionWriter.WritePaths(chunk, f.Paths, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WritePaths(chunk, f.Paths, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Scripts:
-                        chunkStringOffsetOffsets = SectionWriter.WriteScripts(chunk, f.Scripts, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteScripts(chunk, f.Scripts, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Fonts:
-                        SectionWriter.WriteFonts(chunk, f.Fonts, stringOffsets, texPagOffsets,
+                        SectionWriter.WriteFonts(chunk, f.Fonts, stringsChunkBuilder, texPagOffsets,
                             out chunkStringOffsetOffsets, out chunkTexpOffsetOffsets);
                         break;
                     case SectionHeaders.Objects:
-                        chunkStringOffsetOffsets = SectionWriter.WriteObjects(chunk, f.Objects, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteObjects(chunk, f.Objects, stringsChunkBuilder);
                         break;
                     case SectionHeaders.Rooms:
-                        chunkStringOffsetOffsets = SectionWriter.WriteRooms(chunk, f.Rooms, stringOffsets);
+                        chunkStringOffsetOffsets = SectionWriter.WriteRooms(chunk, f.Rooms, stringsChunkBuilder);
                         break;
                     case SectionHeaders.TexturePage:
                         chunk = texpChunk;
@@ -633,19 +633,19 @@ namespace Altar
                         if (f.VariableExtra != null)
                             foreach (var e in f.VariableExtra)
                                 chunk.Buffer.Write(e);
-                        SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringOffsets, f.General.IsOldBCVersion, false,
+                        SectionWriter.WriteRefDefs(chunk, f.RefData.Variables, stringsChunkBuilder, f.General.IsOldBCVersion, false,
                             out chunkStringOffsetOffsets, out chunkCodeOffsetOffsets);
                         break;
                     case SectionHeaders.Functions:
-                        SectionWriter.WriteRefDefs(chunk, f.RefData.Functions, stringOffsets, f.General.IsOldBCVersion, true,
+                        SectionWriter.WriteRefDefs(chunk, f.RefData.Functions, stringsChunkBuilder, f.General.IsOldBCVersion, true,
                             out chunkStringOffsetOffsets, out chunkCodeOffsetOffsets);
-                        chunkStringOffsetOffsets = chunkStringOffsetOffsets.Concat(SectionWriter.WriteFunctionLocals(chunk, f.FunctionLocals, stringOffsets)).ToArray();
+                        chunkStringOffsetOffsets = chunkStringOffsetOffsets.Concat(SectionWriter.WriteFunctionLocals(chunk, f.FunctionLocals, stringsChunkBuilder)).ToArray();
                         break;
                     case SectionHeaders.Strings:
+                        var stringOffsets = stringsChunkBuilder.WriteStringsChunk(chunk);
+                        stringsDataPosition = writer.Buffer.Position + stringOffsets[0] + 12;
                         // for Textures chunk up next
-                        SectionWriter.Pad(stringsChunk, 0x80, writer.Buffer.Position + 8);
-                        chunk = stringsChunk;
-                        stringsChunkPosition = writer.Buffer.Position + 12;
+                        SectionWriter.Pad(chunk, 0x80, writer.Buffer.Position + 8);
                         break;
                     case SectionHeaders.Textures:
                         SectionWriter.WriteTextures(chunk, f.Textures);
@@ -730,7 +730,7 @@ namespace Altar
                 writer.Buffer.Position = stringOffset;
                 var o = writer.Buffer.ReadInt32();
                 //bb.Position -= sizeof(int);
-                writer.Buffer.Write(o + stringsChunkPosition);
+                writer.Buffer.Write(o + stringsDataPosition);
             }
 
             foreach (var texpOffset in texpOffsetOffsets)
