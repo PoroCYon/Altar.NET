@@ -69,19 +69,17 @@ namespace Altar.Repack
         }
     }
 
-    public class StringsChunkBuilder
+    public class StringsChunkBuilder : Deserialize.StringsListBuilder
     {
         BBData stringsData;
         IDictionary<string, int> stringOffsets;
         IList<int> offsetList;
-        IDictionary<string, int> stringIndices;
 
         public StringsChunkBuilder()
         {
             stringsData = new BBData(new BinBuffer(), new int[0]);
             stringOffsets = new Dictionary<string, int>();
             offsetList = new List<int>();
-            stringIndices = new Dictionary<string, int>();
         }
 
         private void WriteString(BBData data, String s)
@@ -90,22 +88,14 @@ namespace Altar.Repack
             data.Buffer.WriteByte(0);
         }
 
-        public int AddString(String s)
+        public override int AddString(String s)
         {
+            base.AddString(s);
             int offset = stringsData.Buffer.Position;
             WriteString(stringsData, s);
             stringOffsets[s] = offset;
-            stringIndices[s] = offsetList.Count;
             offsetList.Add(offset);
             return offset;
-        }
-
-        public void AddStrings(String[] strings)
-        {
-            foreach (var s in strings)
-            {
-                AddString(s);
-            }
         }
 
         public uint GetOffset(String s)
@@ -117,19 +107,6 @@ namespace Altar.Repack
             else
             {
                 return (uint)AddString(s);
-            }
-        }
-
-        public uint GetIndex(String s)
-        {
-            if (stringIndices.TryGetValue(s, out int idx))
-            {
-                return (uint)idx;
-            }
-            else
-            {
-                AddString(s);
-                return (uint)(offsetList.Count - 1);
             }
         }
 

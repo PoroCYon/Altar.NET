@@ -5,13 +5,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using static Altar.Repack.Deserialize;
 
 namespace Altar.Recomp
 {
     public static class Assembler
     {
         public static CodeInfo DeserializeCodeFromFile(string filename, uint bcv,
-            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
+            StringsListBuilder strings, IDictionary<string, uint> objectIndices)
         {
             IEnumerable<Instruction> instructions;
             if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_ASM))
@@ -28,7 +29,7 @@ namespace Altar.Recomp
                 throw new InvalidDataException("Unknown code format for '" + filename + "'");
             }
             return DeserializeAssembly(Path.GetFileNameWithoutExtension(filename), instructions, bcv,
-                stringIndices, objectIndices);
+                strings, objectIndices);
         }
 
         private static InstanceType GetInstanceType(InstanceType instanceType, string objName, IDictionary<string, uint> objectIndices)
@@ -182,7 +183,7 @@ namespace Altar.Recomp
         }
 
         private static CodeInfo DeserializeAssembly(string name, IEnumerable<Instruction> instructions, uint bcv,
-            IDictionary<string, uint> stringIndices, IDictionary<string, uint> objectIndices)
+            StringsListBuilder strings, IDictionary<string, uint> objectIndices)
         {
             uint size = 0;
             var labels = new Dictionary<string, uint>();
@@ -275,7 +276,7 @@ namespace Altar.Recomp
                                     bp.ValueRest = BitConverter.ToUInt64(BitConverter.GetBytes(unchecked((long)(p.Value))), 0);
                                     break;
                                 case DataType.String:
-                                    bp.ValueRest = stringIndices[(string)p.Value];
+                                    bp.ValueRest = strings.GetIndex((string)p.Value);
                                     break;
                             }
                         }
