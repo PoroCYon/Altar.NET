@@ -407,6 +407,51 @@ namespace Altar.Repack
 
         private static JsonData LoadJson(string baseDir, string filename) => JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, filename)));
 
+        public class StringsListBuilder
+        {
+            IDictionary<string, int> stringIndices;
+            IList<string> stringList;
+
+            public StringsListBuilder()
+            {
+                stringIndices = new Dictionary<string, int>();
+                stringList = new List<string>();
+            }
+
+            public virtual int AddString(String s)
+            {
+                stringIndices[s] = stringList.Count;
+                stringList.Add(s);
+                return 0;
+            }
+
+            public void AddStrings(String[] strings)
+            {
+                foreach (var s in strings)
+                {
+                    AddString(s);
+                }
+            }
+
+            public uint GetIndex(String s)
+            {
+                if (stringIndices.TryGetValue(s, out int idx))
+                {
+                    return (uint)idx;
+                }
+                else
+                {
+                    AddString(s);
+                    return (uint)(stringList.Count - 1);
+                }
+            }
+
+            public string[] GetStrings()
+            {
+                return stringList.ToArray();
+            }
+        }
+
         public static GMFile /* errors: different return type? */ ReadFile(string baseDir, JsonData projFile)
         {
             var f = new GMFile();
@@ -665,8 +710,8 @@ namespace Altar.Repack
                 var code = projFile["code"].ToArray();
                 f.Code = new CodeInfo[code.Length];
 
-                IDictionary<string, uint> stringIndices = new Dictionary<string, uint>(f.Strings.Length);
-                for (uint i = 0; i < f.Strings.Length; i++) stringIndices[f.Strings[i]] = i;
+                var strings = new StringsListBuilder();
+                strings.AddStrings(f.Strings);
                 IDictionary<string, uint> objectIndices = new Dictionary<string, uint>(f.Objects.Length);
                 for (uint i = 0; i < f.Objects.Length; i++) objectIndices[f.Objects[i].Name] = i;
 
@@ -676,7 +721,7 @@ namespace Altar.Repack
                     try
                     {
                         f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
-                                        stringIndices, objectIndices);
+                                        strings, objectIndices);
                         f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
                         f.Code[i].ArgumentCount = 1;
                         if (f.FunctionLocals != null)
@@ -698,6 +743,8 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+
+                f.Strings = strings.GetStrings();
             }
             if (projFile.Has("sounds"))
             {
