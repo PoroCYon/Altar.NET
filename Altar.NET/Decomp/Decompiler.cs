@@ -8,7 +8,7 @@ namespace Altar.Decomp
 {
     public unsafe static class Decompiler
     {
-        struct CodeBlock
+        public struct CodeBlock
         {
             public AnyInstruction*[] Instructions;
             public BranchType Type;
@@ -47,8 +47,15 @@ namespace Altar.Decomp
                             ret.Add(p);
                     }
 
+                    var a = ins->Goto.Offset.UValue * 4;
+                    if ((a & 0xFF000000) != 0)
+                    {
+                        a &= 0x00FFFFFF;
+                        a -= 0x01000000;
+                    }
+
                     // goto targets
-                    p = (IntPtr)((long)ins + ins->Goto.Offset * 4L);
+                    p = (IntPtr)((long)ins + unchecked((int)a));
 
                     if (!ret.Contains(p))
                         ret.Add(p);
@@ -64,7 +71,7 @@ namespace Altar.Decomp
 
             return ret_;
         }
-        static CodeBlock[] SplitBlocks (CodeInfo code, uint bcv)
+        public static CodeBlock[] SplitBlocks (CodeInfo code, uint bcv)
         {
             var blocks = new List<CodeBlock>();
             var instr = code.Instructions;
@@ -332,6 +339,7 @@ namespace Altar.Decomp
                 #endregion
 
                 GeneralOpCode opc;
+                Expression[] ind;
                 switch (opc = ins->OpCode.General(bcv))
                 {
                     #region dup, pop
@@ -471,16 +479,34 @@ namespace Altar.Decomp
                             break;
                         }
 
-                        var ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
+                        ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
+                        string ownername = null;
+                        Expression value = null;
+                        if (se.Instance == InstanceType.StackTopOrGlobal && se.DestVar.Type == VariableType.StackTop)
+                        {
+                            if (se.Types.Type1 != DataType.Variable)
+                                value = Pop();
+                            ownername = Pop().ToString();
+                            if (se.Types.Type1 == DataType.Variable)
+                                value = Pop();
+                        }
+                        else
+                        {
+                            if (se.Instance > InstanceType.StackTopOrGlobal)
+                            {
+                                ownername = SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name;
+                            }
+                            value = Pop();
+                        }
                         AddStmt(new SetStatement
                         {
                             OriginalType = se.Types.Type1,
                             ReturnType   = se.Types.Type2,
                             Type         = se.DestVar.Type,
                             OwnerType    = se.Instance,
-                            OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name : null,
+                            OwnerName    = ownername,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                            Value        = Pop(),
+                            Value        = value,
                             ArrayIndices = ind ?? TryGetIndices(se.DestVar.Type)
                         });
                         break;
@@ -491,8 +517,9 @@ namespace Altar.Decomp
                             #region variable
                             case ExpressionType.Variable:
                                 var vt = ((Reference*)&pps->ValueRest)->Type;
+                                ind = TryGetIndices(vt);
 
-                                stack.Push(/*vt == VariableType.StackTop &&*/ (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
+                                stack.Push(vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
                                     ? new MemberExpression
                                     {
                                         Owner        = Pop(),
@@ -501,7 +528,7 @@ namespace Altar.Decomp
                                         OwnerType    = (InstanceType)ps.Value,
                                         OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name : null,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndices = TryGetIndices(vt)
+                                        ArrayIndices = ind
                                     }
                                     : new VariableExpression
                                     {
@@ -509,7 +536,7 @@ namespace Altar.Decomp
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndices = TryGetIndices(vt)
+                                        ArrayIndices = ind
                                     });
                                 break;
                             #endregion
@@ -559,7 +586,7 @@ namespace Altar.Decomp
                                     ReturnType = cl.ReturnType,
                                     Type       = cl.Function.Type,
                                     Function   = rdata.Functions[rdata.FuncAccessors[(IntPtr)ins]],
-                                    Arguments  = PopMany(cl.Arguments).Reverse().ToArray()
+                                    Arguments  = PopMany(cl.Arguments).ToArray()
                                 });
                                 break;
                             #endregion
