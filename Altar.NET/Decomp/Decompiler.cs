@@ -309,6 +309,7 @@ namespace Altar.Decomp
                 Expression[] ind;
                 Expression owner;
                 string ownername;
+                InstanceType ownertype;
                 switch (opc = ins->OpCode.General(bcv))
                 {
                     #region dup, pop
@@ -471,7 +472,7 @@ namespace Altar.Decomp
                         {
                             ind = ind.Skip(1).ToArray();
                         }
-                        InstanceType ownertype = se.Instance;
+                        ownertype = se.Instance;
                         if (owner != null)
                         {
                             if (owner is LiteralExpression lo)
@@ -526,23 +527,24 @@ namespace Altar.Decomp
                                     owner = Pop();
                                 }
                                 ownername = null;
-                                if (se.Instance > InstanceType.StackTopOrGlobal)
-                                {
-                                    ownername = SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name;
-                                }
-                                else if (owner != null)
+                                ownertype = (InstanceType)ps.Value;
+                                if (owner != null)
                                 {
                                     if (owner is LiteralExpression lo)
                                     {
                                         if (lo.ReturnType == DataType.Int16)
                                         {
-                                            ownername = SectionReader.GetObjectInfo(content, (uint)(short)lo.Value, true).Name;
+                                            ownertype = (InstanceType)(short)lo.Value;
                                         }
                                         else if (lo.ReturnType == DataType.Int32)
                                         {
-                                            ownername = SectionReader.GetObjectInfo(content, (uint)(int)lo.Value, true).Name;
+                                            ownertype = (InstanceType)(int)lo.Value;
                                         }
                                     }
+                                }
+                                if (ownertype > InstanceType.StackTopOrGlobal)
+                                {
+                                    ownername = SectionReader.GetObjectInfo(content, (uint)ownertype, true).Name;
                                 }
 
                                 stack.Push((InstanceType)ps.Value == InstanceType.StackTopOrGlobal
@@ -551,7 +553,7 @@ namespace Altar.Decomp
                                         Owner        = owner,
                                         ReturnType   = ps.Type,
                                         Type         = vt,
-                                        OwnerType    = (InstanceType)ps.Value,
+                                        OwnerType    = ownertype,
                                         OwnerName    = ownername,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                                         ArrayIndices = ind
@@ -560,10 +562,10 @@ namespace Altar.Decomp
                                     {
                                         ReturnType   = ps.Type,
                                         Type         = vt,
-                                        OwnerType    = (InstanceType)ps.Value,
+                                        OwnerType    = ownertype,
+                                        OwnerName    = ownername,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndices = ind,
-                                        OwnerName    = ownername
+                                        ArrayIndices = ind
                                     });
                                 break;
                             #endregion
