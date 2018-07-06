@@ -186,7 +186,7 @@ namespace Altar.Decomp
 
         public override string ToString()
         {
-            var a = Owner + COLON + Variable.Name;
+            var a = (OwnerType >= InstanceType.StackTopOrGlobal ? Owner.ToString() : OwnerType.ToPrettyString()) + COLON + Variable.Name;
             
             return a + (Type == VariableType.Array && ArrayIndices != null
                     ? O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET
