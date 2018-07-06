@@ -250,67 +250,34 @@ namespace Altar.Decomp
             };
             Func<VariableType, Expression[]> TryGetIndices = vt =>
             {
-                Expression index = null;
-
-                var dimentions = 0;
-                if (vt == VariableType.Array)
+                if (vt != VariableType.Array)
                 {
-                    index = Pop();
-
-                    var arrInd = Pop();
-
-                    if ((arrInd is LiteralExpression) && ((LiteralExpression)arrInd).Value is short)
-                    {
-                        var s = (short)((LiteralExpression)arrInd).Value;
-
-                        switch (s)
-                        {
-                            case -1:
-                                dimentions = 2;
-                                break;
-                            case -5:
-                                dimentions = 1;
-                                break;
-                        }
-                    }
-
-                    if (dimentions == 0)
-                    {
-                        stack.Push(arrInd);
-                        stack.Push(index);
-
-                        index = null;
-                    }
+                    return null;
                 }
 
-                if (index == null)
-                    return null;
+                var index = Pop();
+                var instance = Pop();
 
                 // analyse index for specified dimention
-                switch (dimentions)
+                if (index is BinaryOperatorExpression && ((BinaryOperatorExpression)index).Operator == BinaryOperator.Addition)
                 {
-                    case 2:
-                        if (index is BinaryOperatorExpression && ((BinaryOperatorExpression)index).Operator == BinaryOperator.Addition)
-                        {
-                            var boe = (BinaryOperatorExpression)index;
+                    var boe = (BinaryOperatorExpression)index;
 
-                            var a = boe.Arg1;
-                            var b = boe.Arg2;
+                    var a = boe.Arg1;
+                    var b = boe.Arg2;
 
-                            if (a is BinaryOperatorExpression && ((BinaryOperatorExpression)a).Operator == BinaryOperator.Multiplication)
-                            {
-                                var a_ = (BinaryOperatorExpression)a;
-                                var c = a_.Arg2;
+                    if (a is BinaryOperatorExpression && ((BinaryOperatorExpression)a).Operator == BinaryOperator.Multiplication)
+                    {
+                        var a_ = (BinaryOperatorExpression)a;
+                        var c = a_.Arg2;
 
-                                if (c is LiteralExpression && ((LiteralExpression)c).ReturnType == DataType.Int32
-                                        && (int /* should be */)((LiteralExpression)c).Value == 32000)
-                                    return new[] { a_.Arg1, b };
-                            }
-                        }
-                        break;
+                        if (c is LiteralExpression && ((LiteralExpression)c).ReturnType == DataType.Int32
+                                && (int /* should be */)((LiteralExpression)c).Value == 32000)
+                            return new[] { instance, a_.Arg1, b };
+                    }
                 }
 
-                return new[] { index };
+                return new[] { instance, index };
             };
 
             for (int i = 0; i < instr.Length; i++)
@@ -340,6 +307,8 @@ namespace Altar.Decomp
 
                 GeneralOpCode opc;
                 Expression[] ind;
+                Expression owner;
+                string ownername;
                 switch (opc = ins->OpCode.General(bcv))
                 {
                     #region dup, pop
@@ -479,35 +448,63 @@ namespace Altar.Decomp
                             break;
                         }
 
-                        ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
-                        string ownername = null;
+                        owner = null;
                         Expression value = null;
+                        ind = TryGetIndices(se.DestVar.Type); // call before Value's pop
                         if (se.Instance == InstanceType.StackTopOrGlobal && se.DestVar.Type == VariableType.StackTop)
                         {
                             if (se.Types.Type1 != DataType.Variable)
                                 value = Pop();
-                            ownername = Pop().ToString();
+                            owner = Pop();
                             if (se.Types.Type1 == DataType.Variable)
                                 value = Pop();
                         }
                         else
                         {
-                            if (se.Instance > InstanceType.StackTopOrGlobal)
-                            {
-                                ownername = SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name;
-                            }
                             value = Pop();
+                        }
+                        if (se.Instance == InstanceType.StackTopOrGlobal && ind != null)
+                        {
+                            owner = ind[0];
+                        }
+                        if (ind != null)
+                        {
+                            ind = ind.Skip(1).ToArray();
+                        }
+                        InstanceType ownertype = se.Instance;
+                        if (owner != null)
+                        {
+                            if (owner is LiteralExpression lo)
+                            {
+                                if (lo.ReturnType == DataType.Int16)
+                                {
+                                    ownertype = (InstanceType)(short)lo.Value;
+                                }
+                                else if (lo.ReturnType == DataType.Int32)
+                                {
+                                    ownertype = (InstanceType)(int)lo.Value;
+                                }
+                            }
+                        }
+                        ownername = null;
+                        if (ownertype > InstanceType.StackTopOrGlobal)
+                        {
+                            ownername = SectionReader.GetObjectInfo(content, (uint)ownertype, true).Name;
+                        }
+                        else if (owner != null && ownertype == InstanceType.StackTopOrGlobal)
+                        {
+                            ownername = owner.ToString();
                         }
                         AddStmt(new SetStatement
                         {
                             OriginalType = se.Types.Type1,
                             ReturnType   = se.Types.Type2,
                             Type         = se.DestVar.Type,
-                            OwnerType    = se.Instance,
+                            OwnerType    = ownertype,
                             OwnerName    = ownername,
                             Target       = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                             Value        = value,
-                            ArrayIndices = ind ?? TryGetIndices(se.DestVar.Type)
+                            ArrayIndices = ind
                         });
                         break;
                     #endregion
@@ -518,15 +515,44 @@ namespace Altar.Decomp
                             case ExpressionType.Variable:
                                 var vt = ((Reference*)&pps->ValueRest)->Type;
                                 ind = TryGetIndices(vt);
+                                owner = null;
+                                if (ind != null)
+                                {
+                                    owner = ind[0];
+                                    ind = ind.Skip(1).ToArray();
+                                }
+                                else if (vt == VariableType.StackTop)
+                                {
+                                    owner = Pop();
+                                }
+                                ownername = null;
+                                if (se.Instance > InstanceType.StackTopOrGlobal)
+                                {
+                                    ownername = SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name;
+                                }
+                                else if (owner != null)
+                                {
+                                    if (owner is LiteralExpression lo)
+                                    {
+                                        if (lo.ReturnType == DataType.Int16)
+                                        {
+                                            ownername = SectionReader.GetObjectInfo(content, (uint)(short)lo.Value, true).Name;
+                                        }
+                                        else if (lo.ReturnType == DataType.Int32)
+                                        {
+                                            ownername = SectionReader.GetObjectInfo(content, (uint)(int)lo.Value, true).Name;
+                                        }
+                                    }
+                                }
 
-                                stack.Push(vt == VariableType.StackTop && (InstanceType)ps.Value == InstanceType.StackTopOrGlobal
+                                stack.Push((InstanceType)ps.Value == InstanceType.StackTopOrGlobal
                                     ? new MemberExpression
                                     {
-                                        Owner        = Pop(),
+                                        Owner        = owner,
                                         ReturnType   = ps.Type,
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
-                                        OwnerName    = se.Instance > InstanceType.StackTopOrGlobal ? SectionReader.GetObjectInfo(content, (uint)se.Instance, true).Name : null,
+                                        OwnerName    = ownername,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
                                         ArrayIndices = ind
                                     }
@@ -536,7 +562,8 @@ namespace Altar.Decomp
                                         Type         = vt,
                                         OwnerType    = (InstanceType)ps.Value,
                                         Variable     = rdata.Variables[rdata.VarAccessors[(IntPtr)ins]],
-                                        ArrayIndices = ind
+                                        ArrayIndices = ind,
+                                        OwnerName    = ownername
                                     });
                                 break;
                             #endregion
