@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Decomp\ILEmitter.cs" />
     <Compile Include="Recomp\Assembler.cs" />
     <Compile Include="Recomp\Tokenizer.cs" />
     <Compile Include="_BinBuffer\BinBuffer.cs" />
