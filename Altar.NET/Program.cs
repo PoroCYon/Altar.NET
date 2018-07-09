@@ -701,16 +701,16 @@ namespace Altar
                         else
                         {
                             Console.Error.WriteLine($"Note: Loading {chunkName} from dump");
-                            //try
+                            try
                             {
                                 chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile)));
                             }
-                            /*catch (Exception e)
+                            catch (Exception e)
                             {
                                 Console.Error.WriteLine($"Error loading {chunkName}, using empty");
                                 Console.Error.WriteLine(e);
                                 chunkData = new BinBuffer();
-                            }*/
+                            }
                         }
                         chunk = new BBData(chunkData, new int[0]);
                         break;
