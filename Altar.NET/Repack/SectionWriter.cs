@@ -1038,6 +1038,46 @@ namespace Altar.Repack
             return stringOffsetOffsets.ToArray();
         }
 
+        private static void WriteShader(BBData data, ShaderInfo si, StringsChunkBuilder strings)
+        {
+            var se = new ShaderEntry
+            {
+                Name = strings.GetOffset(si.Name),
+                VertexAttributeCount = (uint)si.VertexAttributes.Length,
+                UnknownFlags = 0x80000001
+            };
+            unsafe
+            {
+                for (int i = 0; i < si.Sources.Length; i++)
+                {
+                    se.Sources[i] = strings.GetOffset(si.Sources[i]);
+                }
+            }
+            var tmp = new BinBuffer();
+            tmp.Write(se);
+            data.Buffer.Write(tmp, 0, tmp.Size - 4, 0);
+            foreach (var attr in si.VertexAttributes)
+            {
+                data.Buffer.Write(strings.GetOffset(attr));
+            }
+            data.Buffer.Write(2); // Unknown
+            for (int i = 0; i < 12; i++)
+            {
+                data.Buffer.Write(0);
+            }
+        }
+
+        public static int[] WriteShaders(BBData data, ShaderInfo[] shaders, StringsChunkBuilder strings)
+        {
+            int[] offsets = WriteList(data, shaders, WriteShader, strings);
+            var stringOffsetOffsets = new int[shaders.Length];
+            for (int i = 0; i < shaders.Length; i++)
+            {
+                stringOffsetOffsets[i] = offsets[i] + (int)Marshal.OffsetOf(typeof(ScriptEntry), "Name") + 8;
+            }
+            return stringOffsetOffsets;
+        }
+
         private static void WriteRefDef(BBData data, ReferenceDef rd, StringsChunkBuilder strings)
         {
             data.Buffer.Write(new RefDefEntry

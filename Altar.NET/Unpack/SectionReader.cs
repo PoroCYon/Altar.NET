@@ -676,6 +676,29 @@ namespace Altar.Unpack
 
             return StringFromOffset(content, *(uint*)ag); // it's just a name
         }
+        public static ShaderInfo GetShaderInfo(GMFileContent content, uint id)
+        {
+            if (id >= content.Shaders->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var sh = (ShaderEntry*)GMFile.PtrFromOffset(content, (&content.Shaders->Offsets)[id]);
+
+            var ret = new ShaderInfo();
+
+            ret.Name = StringFromOffset(content, sh->Name);
+            ret.Sources = new string[6];
+            for (uint i = 0; i < ret.Sources.Length; i++)
+            {
+                ret.Sources[i] = StringFromOffset(content, sh->Sources[i]);
+            }
+            ret.VertexAttributes = new string[sh->VertexAttributeCount];
+            for (uint i = 0; i < sh->VertexAttributeCount; i++)
+            {
+                ret.VertexAttributes[i] = StringFromOffset(content, (&sh->VertexAttribute)[i]);
+            }
+
+            return ret;
+        }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)
         {

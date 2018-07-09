@@ -100,8 +100,8 @@ namespace Altar
                         || eo.Audio  || eo.Background || eo.Decompile || eo.Font || eo.General
                         || eo.Object || eo.Options || eo.Path || eo.Room || eo.Script
                         || eo.Sound  || eo.Sprite  || eo.Texture || eo.TPag || eo.AudioGroups
-                        || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks || eo.DumpEmptyChunks
-                        || eo.DumpAllChunks))
+                        || eo.Shader || eo.ExportToProject || eo.Any || eo.DumpUnknownChunks
+                        || eo.DumpEmptyChunks || eo.DumpAllChunks))
                     eo.Any = true;
 
                 if (eo.ExportToProject)
@@ -110,7 +110,7 @@ namespace Altar
                         = eo.Audio = eo.Background = eo.Font = eo.General
                         = eo.Object = eo.Options = eo.Path = eo.Room = eo.Script
                         = eo.Sound = eo.Sprite = eo.Texture = eo.TPag = eo.AudioGroups
-                        = eo.DumpUnknownChunks = true;
+                        = eo.Shader = eo.DumpUnknownChunks = true;
                 }
                 if (eo.Any)
                 {
@@ -120,7 +120,7 @@ namespace Altar
                         = eo.Object = eo.Options = eo.Path    = eo.Room = eo.Script
                         = eo.Sound  = eo.Sprite  = eo.Texture = eo.TPag
                         = eo.String = eo.Variables = eo.Functions = eo.DumpUnknownChunks
-                        = eo.AudioGroups = true;
+                        = eo.AudioGroups = eo.Shader = true;
                 }
                 #endregion
 
@@ -433,6 +433,23 @@ namespace Altar
                     Console.WriteLine();
                 }
                 #endregion
+                #region SHDR
+                if (eo.Shader && f.Shaders != null)
+                {
+                    WrAndGetC("Exporting shaders... ", out cl, out ct);
+
+                    if (!Directory.Exists(od + DIR_SHDR))
+                        Directory.CreateDirectory(od + DIR_SHDR);
+
+                    for (int i = 0; i < f.Shaders.Length; i++)
+                    {
+                        SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Shaders.Length + C_PAREN);
+
+                        File.WriteAllText(od + DIR_SHDR + f.Shaders[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeShader(f.Shaders[i])));
+                    }
+                    Console.WriteLine();
+                }
+                #endregion
                 List<IntPtr> chunks = null;
 
                 if (eo.DumpUnknownChunks || eo.DumpAllChunks)
@@ -472,6 +489,7 @@ namespace Altar
                         chunks.Add((IntPtr)c.Fonts       );
                         chunks.Add((IntPtr)c.Objects     );
                         chunks.Add((IntPtr)c.Rooms       );
+                        chunks.Add((IntPtr)c.Shaders     );
                     
                         chunks.Add((IntPtr)c.TexturePages);
                         chunks.Add((IntPtr)c.Code        );
@@ -653,6 +671,9 @@ namespace Altar
                     case SectionHeaders.Audio:
                         SectionWriter.WriteAudio(chunk, f.Audio, writer.Buffer.Position);
                         break;
+                    case SectionHeaders.Shaders:
+                        chunkStringOffsetOffsets = SectionWriter.WriteShaders(chunk, f.Shaders, stringsChunkBuilder);
+                        break;
                     default:
                         var chunkName = chunkId.ToChunkName();
                         Console.Error.WriteLine($"Note: Don't know how to handle {chunkName}");
@@ -680,16 +701,16 @@ namespace Altar
                         else
                         {
                             Console.Error.WriteLine($"Note: Loading {chunkName} from dump");
-                            try
+                            //try
                             {
                                 chunkData = new BinBuffer(File.ReadAllBytes(Path.Combine(baseDir, chunkFile)));
                             }
-                            catch (Exception e)
+                            /*catch (Exception e)
                             {
                                 Console.Error.WriteLine($"Error loading {chunkName}, using empty");
                                 Console.Error.WriteLine(e);
                                 chunkData = new BinBuffer();
-                            }
+                            }*/
                         }
                         chunk = new BBData(chunkData, new int[0]);
                         break;
