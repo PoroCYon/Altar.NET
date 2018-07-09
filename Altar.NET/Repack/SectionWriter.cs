@@ -1070,12 +1070,20 @@ namespace Altar.Repack
         public static int[] WriteShaders(BBData data, ShaderInfo[] shaders, StringsChunkBuilder strings)
         {
             int[] offsets = WriteList(data, shaders, WriteShader, strings);
-            var stringOffsetOffsets = new int[shaders.Length];
+            var stringOffsetOffsets = new List<int>(shaders.Length);
             for (int i = 0; i < shaders.Length; i++)
             {
-                stringOffsetOffsets[i] = offsets[i] + (int)Marshal.OffsetOf(typeof(ScriptEntry), "Name") + 8;
+                stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Name") + 8);
+                for (int j = 0; j < shaders[i].Sources.Length; j++)
+                {
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Sources") + 8 + j * sizeof(uint));
+                }
+                for (int j = 0; j < shaders[i].VertexAttributes.Length; j++)
+                {
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "VertexAttribute") + 8 + j * sizeof(uint));
+                }
             }
-            return stringOffsetOffsets;
+            return stringOffsetOffsets.ToArray();
         }
 
         private static void WriteRefDef(BBData data, ReferenceDef rd, StringsChunkBuilder strings)
