@@ -720,7 +720,7 @@ namespace Altar.Repack
                 }
                 else
                 {
-                    data.Buffer.Write(si.SeparateColMasks ? (uint)si.CollisionMasks.Length : 1);
+                    data.Buffer.Write((uint)si.CollisionMasks.Length);
                     foreach (var mask in si.CollisionMasks)
                     {
                         int w = mask.GetLength(0);

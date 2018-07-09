@@ -316,7 +316,7 @@ namespace Altar.Unpack
             SpriteCollisionMask* masks =
                 (SpriteCollisionMask*)((ulong)&tex->Offsets + sizeof(uint) * tex->Count);
 
-            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+            uint amt = masks->MaskCount;
             //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
 
             if (amt < 0x100) // guesstimate
