@@ -440,9 +440,9 @@ namespace Altar
             Restitution,
             Group,
             LinearDamping,
-            AngularDamping,
-            Unknown0,
-            Friction;
+            AngularDamping;
+        public int Unknown0;
+        public float Friction;
         public int Unknown1;
         public float Kinematic;
     }

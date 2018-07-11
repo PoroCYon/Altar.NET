@@ -99,7 +99,7 @@ namespace Altar.Repack
             AngularDamping = (float)j["angulardamp"],
             Friction       = (float)j["friction"],
             Kinematic      = (float)j["kinematic"],
-            Unknown0       = (float)j["unk0"],
+            Unknown0       = (int)j["unk0"],
             Unknown1       = (int)j["unk1"]
         };
         #endregion
