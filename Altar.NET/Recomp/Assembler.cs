@@ -341,7 +341,10 @@ namespace Altar.Recomp
                         }
                         else if (gotoinst.Label is string)
                         {
-                            absTarget = labels[(string)gotoinst.Label];
+                            if (!labels.TryGetValue((string)gotoinst.Label, out absTarget))
+                            {
+                                throw new KeyNotFoundException($"No such label {gotoinst.Label}");
+                            }
                         }
                         else if (gotoinst.Label == null)
                         {

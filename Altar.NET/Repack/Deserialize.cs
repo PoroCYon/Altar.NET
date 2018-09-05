@@ -405,7 +405,20 @@ namespace Altar.Repack
 
         // strings, vars and funcs are compiled using the other things
 
-        private static JsonData LoadJson(string baseDir, string filename) => JsonMapper.ToObject(File.OpenText(Path.Combine(baseDir, filename)));
+        private static string GetPath(string baseDir, string filename)
+        {
+            string modPath = Path.Combine(baseDir, "mods", Path.GetFileName(filename));
+            if (File.Exists(modPath))
+            {
+                Console.WriteLine("Using mod " + filename);
+                return modPath;
+            }
+            else
+            {
+                return Path.Combine(baseDir, filename);
+            }
+        }
+        private static JsonData LoadJson(string baseDir, string filename) => JsonMapper.ToObject(File.OpenText(GetPath(baseDir, filename)));
 
         public class StringsListBuilder
         {
@@ -585,7 +598,7 @@ namespace Altar.Repack
                     {
                         var texinfo = new TextureInfo
                         {
-                            PngData = File.ReadAllBytes(Path.Combine(baseDir, (string)(textures[i])))
+                            PngData = File.ReadAllBytes(GetPath(baseDir, (string)(textures[i])))
                         };
 
                         var bp = new UniquePtr(texinfo.PngData);
@@ -641,7 +654,7 @@ namespace Altar.Repack
                     {
                         var audioinfo = new AudioInfo
                         {
-                            Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])))
+                            Wave = File.ReadAllBytes(GetPath(baseDir, (string)(audio[i])))
                         };
                         f.Audio[i] = audioinfo;
                     }
@@ -718,29 +731,21 @@ namespace Altar.Repack
                 for (int i = 0; i < code.Length; i++)
                 {
                     Console.WriteLine((string)(code[i]));
-                    try
+                    f.Code[i] = Assembler.DeserializeCodeFromFile(GetPath(baseDir, (string)(code[i])), f.General.BytecodeVersion,
+                                    strings, objectIndices);
+                    f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                    f.Code[i].ArgumentCount = 1;
+                    if (f.FunctionLocals != null)
                     {
-                        f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
-                                        strings, objectIndices);
-                        f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
-                        f.Code[i].ArgumentCount = 1;
-                        if (f.FunctionLocals != null)
+                        for (int j = 0; j < f.FunctionLocals.Length; j++)
                         {
-                            for (int j = 0; j < f.FunctionLocals.Length; j++)
+                            int fastIndex = (j + i) % f.FunctionLocals.Length;
+                            if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
                             {
-                                int fastIndex = (j + i) % f.FunctionLocals.Length;
-                                if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
-                                {
-                                    f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
-                                    break;
-                                }
+                                f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
+                                break;
                             }
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        Console.Error.WriteLine($"Error loading {code[i]}:");
-                        Console.Error.WriteLine(e);
                     }
                 }
 
