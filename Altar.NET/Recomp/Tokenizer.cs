@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace Altar.Recomp
@@ -24,7 +25,7 @@ namespace Altar.Recomp
 
         static string Unescape(string s) =>
             s.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\b", "\b")
-             .Replace("\\r" , "\r").Replace("\\n" , "\n").Replace("\\t", "\t");
+             .Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
 
         public static TokenKind KindOf(TokenType type)
         {
@@ -45,6 +46,11 @@ namespace Altar.Recomp
 
             throw new ArgumentOutOfRangeException($"Invalid token type '{type}'. Is the KindOf method updated?");
         }
+
+        public static IDictionary<string, TokenType> tokenTypeMap = Enum.GetNames(typeof(TokenType))
+            .AsQueryable()
+            .Zip(Enum.GetValues(typeof(TokenType)).Cast<TokenType>(), (name, val) => new Tuple<string, TokenType>(name.ToUpperInvariant(), val))
+            .ToDictionary(nv => nv.Item1, nv => nv.Item2);
 
         public static IEnumerable<Token> Tokenize(string code)
         {
@@ -278,12 +284,16 @@ namespace Altar.Recomp
                     #endregion
 
                     default:
-                        if (Utils.TryParseEnum(w, true, false, false, ref type))
+                        if (tokenTypeMap.TryGetValue(w.ToUpperInvariant(), out type))
                         {
                             // ignore
                             if ((type <= TokenType.PushI16 && type > TokenType.Cmp) || type > TokenType.Local)
                                 type = NullTokenType;
                                 //throw new FormatException($"Unexpected token '{type}' at line {line} and column {col}.");
+                        }
+                        else
+                        {
+                            type = NullTokenType;
                         }
 
                         if (type == NullTokenType)
