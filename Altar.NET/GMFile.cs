@@ -100,6 +100,11 @@ namespace Altar
             get;
             internal set;
         }
+        public ShaderInfo     [] Shaders
+        {
+            get;
+            internal set;
+        }
 
         public IDictionary<uint, uint> AudioSoundMap
         {
@@ -162,6 +167,7 @@ namespace Altar
             Textures     = new TextureInfo    [0];
             Audio        = new AudioInfo      [0];
             AudioGroups  = new string         [0];
+            Shaders      = new ShaderInfo     [0];
 
             FunctionLocals = new FunctionLocalsInfo[0];
             VariableExtra  = new uint              [0];
@@ -235,6 +241,7 @@ namespace Altar
             Textures     = TryReadMany(f.Textures    , i => SectionReader.GetTextureInfo   (f, i));
             Audio        = TryReadMany(f.Audio       , i => SectionReader.GetAudioInfo     (f, i));
             AudioGroups  = TryReadMany(f.AudioGroup  , i => SectionReader.GetAudioGroupInfo(f, i));
+            Shaders      = TryReadMany(f.Shaders     , i => SectionReader.GetShaderInfo    (f, i));
 
             AudioSoundMap = new Dictionary<uint, uint>();
             if (Sound != null)
@@ -373,6 +380,9 @@ namespace Altar
                         break;
                     case SectionHeaders.AudioGroup:
                         ret.AudioGroup   = (SectionCountOffsets*)hdr;
+                        break;
+                    case SectionHeaders.Shaders:
+                        ret.Shaders      = (SectionCountOffsets*)hdr;
                         break;
                     default:
                         var unk = (SectionUnknown*)hdr;

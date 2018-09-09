@@ -455,6 +455,15 @@ namespace Altar.Unpack
 
             return r;
         }
+        public static JsonData SerializeShader(ShaderInfo shdr)
+        {
+            var r = CreateObj();
+
+            r["sources"   ] = SerializeArray(shdr.Sources         , Utils.Identity);
+            r["attributes"] = SerializeArray(shdr.VertexAttributes, Utils.Identity);
+
+            return r;
+        }
 
         public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
         public static JsonData SerializeAudioGroups(GMFile f) => SerializeArray(f.AudioGroups, Utils.Identity);
@@ -576,6 +585,7 @@ namespace Altar.Unpack
             if (f.Fonts       != null && eo.Font      ) r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
             if (f.Objects     != null && eo.Object    ) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
             if (f.Rooms       != null && eo.Room      ) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
+            if (f.Shaders     != null && eo.Shader    ) r["shaders"] = SerializeArray(f.Shaders    , s => SR.DIR_SHDR + s.Name     + SR.EXT_JSON);
 
             if (f.AudioGroups != null && eo.AudioGroups) r["audiogroups"] = "audiogroups.json";
 
