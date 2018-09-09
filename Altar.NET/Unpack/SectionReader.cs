@@ -316,7 +316,7 @@ namespace Altar.Unpack
             SpriteCollisionMask* masks =
                 (SpriteCollisionMask*)((ulong)&tex->Offsets + sizeof(uint) * tex->Count);
 
-            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
+            uint amt = masks->MaskCount;
             //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
 
             if (amt < 0x100) // guesstimate
@@ -478,7 +478,7 @@ namespace Altar.Unpack
             ret.IsSensor       = oe->IsSensor.IsTrue();
             ret.CollisionShape = oe->CollisionShape;
 
-            var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
+            var hasMore  = oe->Rest.ShapePoints_IfMoreFloats.Count < 0x00000FFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
 
             if (nameonly)
@@ -675,6 +675,29 @@ namespace Altar.Unpack
             var ag = GMFile.PtrFromOffset(content, (&content.AudioGroup->Offsets)[id]);
 
             return StringFromOffset(content, *(uint*)ag); // it's just a name
+        }
+        public static ShaderInfo GetShaderInfo(GMFileContent content, uint id)
+        {
+            if (id >= content.Shaders->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var sh = (ShaderEntry*)GMFile.PtrFromOffset(content, (&content.Shaders->Offsets)[id]);
+
+            var ret = new ShaderInfo();
+
+            ret.Name = StringFromOffset(content, sh->Name);
+            ret.Sources = new string[6];
+            for (uint i = 0; i < ret.Sources.Length; i++)
+            {
+                ret.Sources[i] = StringFromOffset(content, sh->Sources[i]);
+            }
+            ret.VertexAttributes = new string[sh->VertexAttributeCount];
+            for (uint i = 0; i < sh->VertexAttributeCount; i++)
+            {
+                ret.VertexAttributes[i] = StringFromOffset(content, (&sh->VertexAttribute)[i]);
+            }
+
+            return ret;
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)

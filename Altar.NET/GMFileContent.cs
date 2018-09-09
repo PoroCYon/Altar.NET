@@ -135,6 +135,7 @@ namespace Altar
         public SectionCountOffsets* Textures    ;
         public SectionCountOffsets* Audio       ;
         public SectionCountOffsets* AudioGroup  ;
+        public SectionCountOffsets* Shaders     ;
 
         public SectionRefDefs* Functions;
         public SectionRefDefs* Variables;
@@ -194,6 +195,8 @@ namespace Altar
                     return (SectionHeader*)Audio;
                 case SectionHeaders.AudioGroup:
                     return (SectionHeader*)AudioGroup;
+                case SectionHeaders.Shaders:
+                    return (SectionHeader*)Shaders;
 
                 case SectionHeaders.Functions:
                     return (SectionHeader*)Functions;
