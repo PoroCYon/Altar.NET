@@ -81,6 +81,7 @@
             DIR_SPR  = "sprite/" ,
             DIR_FNT  = "font/"   ,
             DIR_PATH = "path/"   ,
+            DIR_SHDR = "shader/" ,
 
             VAR  = "var" ,
             INST = "inst",
