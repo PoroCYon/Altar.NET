@@ -398,12 +398,13 @@ namespace Altar.Recomp
         {
             foreach (var inst in instructions)
             {
+                var ins_ = inst;
                 var instdata = new BinBuffer();
                 instdata.Write(inst);
                 uint size;
                 unsafe
                 {
-                    size = DisasmExt.Size(&inst, bytecodeVersion) * 4;
+                    size = DisasmExt.Size(&ins_, bytecodeVersion) * 4;
                 }
                 data.Buffer.Write(instdata, 0, (int)size, 0);
             }

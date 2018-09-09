@@ -99,7 +99,7 @@ namespace Altar.Repack
             AngularDamping = (float)j["angulardamp"],
             Friction       = (float)j["friction"],
             Kinematic      = (float)j["kinematic"],
-            Unknown0       = (float)j["unk0"],
+            Unknown0       = (int)j["unk0"],
             Unknown1       = (int)j["unk1"]
         };
         #endregion
@@ -383,6 +383,13 @@ namespace Altar.Repack
             Destination   = DeserializeRect16 (j["dest"]),
             Size          = DeserializeSize16 (j["size"]),
             SpritesheetId = (uint)j["sheetid"]
+        };
+        #endregion
+        #region public static ShaderInfo DeserializeShader(JsonData j)
+        public static ShaderInfo DeserializeShader(JsonData j) => new ShaderInfo
+        {
+            Sources          = DeserializeArray(j["sources"   ], d => (string)d),
+            VertexAttributes = DeserializeArray(j["attributes"], d => (string)d)
         };
         #endregion
 
@@ -881,6 +888,25 @@ namespace Altar.Repack
                 {
                     Console.Error.WriteLine("Error loading audio groups:");
                     Console.Error.WriteLine(e);
+                }
+            }
+            if (projFile.Has("shaders"))
+            {
+                Console.WriteLine("Loading shaders...");
+                var shaders = projFile["shaders"].ToArray();
+                f.Shaders = new ShaderInfo[shaders.Length];
+                for (int i = 0; i < shaders.Length; i++)
+                {
+                    try
+                    {
+                        f.Shaders[i] = DeserializeShader(LoadJson(baseDir, (string)(shaders[i])));
+                        f.Shaders[i].Name = Path.GetFileNameWithoutExtension((string)(shaders[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {shaders[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
             return f;
