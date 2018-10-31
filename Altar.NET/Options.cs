@@ -3,6 +3,13 @@ using CommandLine.Text;
 
 namespace Altar
 {
+    public class ExportAgrpOptions
+    {
+        [Option('f', "file", Required=true,DefaultValue="audiogroup1.dat",HelpText="Input file (default: 'audiogroup1.dat')")]
+        public string File{get;set;}
+        [Option('o',"out",Required=true,DefaultValue=".",HelpText="Output directory (default: current)")]
+        public string OutputDirectory{get;set;}
+    }
     public class ExportOptions
     {
         // free short flags: lvxyz
@@ -220,6 +227,9 @@ namespace Altar
             get;
             set;
         }
+
+        [VerbOption("export-agrp", HelpText="Export contents of an audio group file (eg. audiogroup1.dat).")]
+        public ExportAgrpOptions ExportAgrp{get;set;}
 
         [HelpVerbOption]
         public string GetUsage(string v) => HelpText.AutoBuild(this, v);
