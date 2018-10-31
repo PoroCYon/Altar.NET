@@ -167,7 +167,7 @@ namespace Altar
             VariableExtra  = new uint              [0];
             ChunkOrder     = new SectionHeaders    [0];
         }
-        static T[] TryReadMany<T>(SectionCountOffsets* hdr, Func<uint, T> readOne)
+        internal static T[] TryReadMany<T>(SectionCountOffsets* hdr, Func<uint, T> readOne)
         {
             if (hdr == null || hdr->Header.IsEmpty()) return ArrayExt<T>.Empty;
 
@@ -429,6 +429,72 @@ namespace Altar
         public static bool IsEmpty(     SectionHeader* header) => header->Size <= 4;
         [DebuggerStepThrough]
         public static bool IsEmpty(     SectionHeader  header) => header. Size <= 4;
+    }
+    public unsafe class AGRPFile : IDisposable
+    {
+        public AGRPFileContent Content{get;private set;}
+
+        public uint NameOffset{get;internal set;}
+        public byte[][] Waves{get;internal set;}
+
+        internal AGRPFile() {
+            Waves=new byte[0][];
+        }
+
+        internal AGRPFile(AGRPFileContent f) {
+            Content = f;
+
+            Waves=GMFile.TryReadMany(f.Audo, i=>SectionReader.GetAgrpAudo(f, i));
+        }
+
+        public void Dispose()
+        {
+            if (Content != null)
+            {
+                Content.Dispose();
+                Content = null;
+            }
+        }
+
+        public static AGRPFile GetFile(byte[] data) {
+            var ret =new AGRPFileContent();
+            var hdr_bp=new UniquePtr(data);
+            byte* hdr_b=hdr_bp.BPtr;
+
+            var basePtr= (SectionHeader*)hdr_b;
+
+            ret.Form=basePtr;
+
+            if (ret.Form->Identity!=SectionHeaders.Form)
+                throw new InvalidDataException(ERR_NO_FORM);
+
+            SectionHeader*
+                hdr=basePtr+1,
+                hdrEnd=(SectionHeader*)((IntPtr)basePtr+(int)ret.Form->Size);
+
+            int headersMet=0;
+
+            while(hdr<hdrEnd) {
+                switch(hdr->Identity) {
+                    case SectionHeaders.Audio:
+                        ret.Audo=(SectionCountOffsets*)hdr;
+                        break;
+                    default:
+                        Console.WriteLine("Unexpected chunk in audiogroup.dat: "
+                                + hdr->Identity.ToChunkName());
+                        break;
+                }
+
+                headersMet++;
+                hdr=unchecked((SectionHeader*)((IntPtr)hdr+(int)hdr->Size)+1);
+            }
+
+            ret.RawData=hdr_bp;
+            return new AGRPFile(ret);
+        }
+        public static AGRPFile GetFile(string path) => GetFile(File.ReadAllBytes(path));
+        [DebuggerStepThrough]
+        public static void* PtrFromOffset(AGRPFileContent file, long offset) => file.RawData.BPtr + offset;
     }
     public static class GMFileExt
     {

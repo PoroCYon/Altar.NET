@@ -32,7 +32,7 @@ namespace Altar.Unpack
 
             return (long)++chunk + 0x4 - (long)png;
         }
-        
+
         internal static string ReadString(byte* ptr)
         {
             var length = *(UInt32*)ptr;
@@ -675,6 +675,18 @@ namespace Altar.Unpack
             var ag = GMFile.PtrFromOffset(content, (&content.AudioGroup->Offsets)[id]);
 
             return StringFromOffset(content, *(uint*)ag); // it's just a name
+        }
+        public static byte[] GetAgrpAudo(AGRPFileContent c,uint id){
+            if (id >= c.Audo->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var au=(AudioEntry*)AGRPFile.PtrFromOffset(c,(&c.Audo->Offsets)[id]);
+
+            byte[] ret = new byte[au->Length];
+
+            Marshal.Copy((IntPtr)(&au->Data), ret, 0, ret.Length);
+
+            return ret;
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)
