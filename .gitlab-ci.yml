@@ -1,0 +1,23 @@
+image: mono:latest
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - nuget restore -NonInteractive
+
+release:
+  stage: deploy
+  only:
+    - master
+  artifacts:
+    paths:
+      - bin/Release/altar.exe
+  script:
+    - msbuild /m Altar.NET.sln /p:Configuration=Release
+    
+debug:
+  stage: test
+  script:
+    - msbuild /m Altar.NET.sln /p:Configuration=Debug

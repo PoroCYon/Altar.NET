@@ -21,13 +21,14 @@ namespace Altar
 
     unsafe static class Program
     {
+        static bool quiet, nopp;
         static ExportOptions eos;
 
         static void Write    (string s) { if (!eos.Quiet) Console.Write    (s); }
         static void WriteLine(string s) { if (!eos.Quiet) Console.WriteLine(s); }
         static void GetCurPos(out int l, out int t)
         {
-            if (eos.NoPrecProg)
+            if (nopp)
             {
                 l = t = 0;
                 return;
@@ -38,12 +39,12 @@ namespace Altar
         }
         static void SetCurPos(int l, int t)
         {
-            if (!eos.NoPrecProg)
+            if (!nopp)
                 Console.SetCursorPosition(l, t);
         }
         static void SetCAndWr(int l, int t, string s)
         {
-            if (!eos.Quiet && !eos.NoPrecProg)
+            if (!quiet && !nopp)
             {
                 Console.SetCursorPosition(l, t);
                 Console.Write(s);
@@ -51,11 +52,11 @@ namespace Altar
         }
         static void WrAndGetC(string s, out int l, out int t)
         {
-            if (!eos.Quiet)
+            if (!quiet)
             {
                 Console.Write(s);
 
-                if (eos.NoPrecProg)
+                if (nopp)
                 {
                     l = t = 0;
                     return;
@@ -125,6 +126,8 @@ namespace Altar
                 #endregion
 
                 eos = eo;
+                quiet=eo.Quiet;
+                nopp=eo.NoPrecProg;
 
                 // ---
                 #region GEN8
@@ -774,6 +777,25 @@ namespace Altar
             return writer.Buffer.ReadBytes(writer.Buffer.Size);
         }
 
+        static void ExportAgrp(ExportAgrpOptions opt) {
+            var file=Path.GetFullPath(opt.File);
+            var outd=Path.GetFullPath(opt.OutputDirectory);
+
+            if (!Directory.Exists(outd))Directory.CreateDirectory(outd);
+            if (!File.Exists(file))throw new ParserException("File \"" + file + "\" doesn't exist.");
+
+            nopp=quiet=false;
+            using (var f=AGRPFile.GetFile(file)){
+                int cl = 0, ct = 0;
+                WrAndGetC("Exporting AGRP audio... ", out cl, out ct);
+                for (int i =0; i<f.Waves.Length;++i){
+                    SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Waves.Length + C_PAREN);
+                    File.WriteAllBytes("audo" + i.ToString("D3") + ".wav", f.Waves[i]);
+                }
+            }
+            Console.WriteLine();
+        }
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -795,6 +817,9 @@ namespace Altar
                             break;
                         case "import":
                             Import((ImportOptions)vo);
+                            break;
+                        case "export-agrp":
+                            ExportAgrp((ExportAgrpOptions)vo);
                             break;
                     }
                 }
