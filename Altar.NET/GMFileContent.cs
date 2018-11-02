@@ -231,5 +231,34 @@ namespace Altar
             Disposing();
         }
     }
+
+
+    public unsafe class AGRPFileContent : IDisposable
+    {
+        public UniquePtr RawData;
+
+        public SectionHeader* Form;
+
+        public SectionCountOffsets* Audo; // not the same as a data.win AGRP!
+
+        void Disposing()
+        {
+            if (RawData != null)
+            {
+                RawData.Dispose();
+                RawData = null;
+            }
+        }
+
+        public void Dispose()
+        {
+            Disposing();
+            GC.SuppressFinalize(this);
+        }
+        ~AGRPFileContent()
+        {
+            Disposing();
+        }
+    }
 }
 
