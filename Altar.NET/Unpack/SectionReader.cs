@@ -32,7 +32,7 @@ namespace Altar.Unpack
 
             return (long)++chunk + 0x4 - (long)png;
         }
-        
+
         internal static string ReadString(byte* ptr)
         {
             var length = *(UInt32*)ptr;
@@ -676,6 +676,7 @@ namespace Altar.Unpack
 
             return StringFromOffset(content, *(uint*)ag); // it's just a name
         }
+
         public static ShaderInfo GetShaderInfo(GMFileContent content, uint id)
         {
             if (id >= content.Shaders->Count)
@@ -696,6 +697,19 @@ namespace Altar.Unpack
             {
                 ret.VertexAttributes[i] = StringFromOffset(content, (&sh->VertexAttribute)[i]);
             }
+
+            return ret;
+        }
+
+        public static byte[] GetAgrpAudo(AGRPFileContent c,uint id){
+            if (id >= c.Audo->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var au=(AudioEntry*)AGRPFile.PtrFromOffset(c,(&c.Audo->Offsets)[id]);
+
+            byte[] ret = new byte[au->Length];
+
+            Marshal.Copy((IntPtr)(&au->Data), ret, 0, ret.Length);
 
             return ret;
         }
