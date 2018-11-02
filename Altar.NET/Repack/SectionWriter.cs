@@ -435,7 +435,7 @@ namespace Altar.Repack
             }
             data.OffsetOffsets = data.OffsetOffsets.Concat(secondaryOffsets).ToArray();
 
-            Pad(data, 8, 0);
+            Pad(data, 4, 0);
         }
 
         private static void WriteFontCharEntry(BBData data, FontCharacter fc)

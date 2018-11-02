@@ -38,9 +38,9 @@ namespace Altar.Decomp
 
         abstract class StackValue
         {
-            protected DataType dataType;
+            public DataType dataType;
 
-            public StackValue(DataType dt)
+            protected StackValue(DataType dt)
             {
                 dataType = dt;
             }
@@ -88,14 +88,20 @@ namespace Altar.Decomp
             public override string ShortString() => value.Escape();
         }
 
+        struct ILBlock {
+            public string label;
+            public string code;
+            public StackValue[] stackRemaining;
+            public StackValue[] stackDebt;
+        }
+
         static int RewriteBlock(Decompiler.CodeBlock block, long firstI, int tempReg, uint bcv, RefData rdata, GMFileContent content,
-            out string s, out StackValue[] stackRemaining, out StackValue[] stackDebt)
+            out ILBlock il)
         {
             var sb = new StringBuilder();
             var stack = new Stack<StackValue>();
             var debt = new Stack<StackValue>();
-            sb.Append(((long)block.Instructions[0] - firstI).ToString(SR.HEX_FM6))
-                .AppendLine(SR.COLON);
+
             StackValue Pop()
             {
                 if (stack.Count > 0)
@@ -363,9 +369,13 @@ namespace Altar.Decomp
                     .Append("br label %")
                     .AppendLine((((long)lastinst + DisasmExt.Size(lastinst, bcv) * 4) - firstI).ToString(SR.HEX_FM6));
             }
-            s = sb.ToString();
-            stackRemaining = stack.ToArray();
-            stackDebt = debt.ToArray();
+            il = new ILBlock
+            {
+                label = ((long)block.Instructions[0] - firstI).ToString(SR.HEX_FM6) + SR.COLON,
+                code = sb.ToString(),
+                stackRemaining = stack.ToArray(),
+                stackDebt = debt.ToArray()
+            };
             return tempReg;
         }
 
@@ -423,15 +433,42 @@ namespace Altar.Decomp
             }
 
             int tempReg = 0;
+            ILBlock[] ilBlocks = new ILBlock[blocks.Length];
 
-            foreach (var block in blocks)
+            for (int i = 0; i < blocks.Length; i++)
             {
-                string s;
-                StackValue[] stackRemaining;
-                StackValue[] stackDebt;
-                tempReg = RewriteBlock(block, (long)code.Instructions[0], tempReg, bcv, rdata, gm.Content,
-                    out s, out stackRemaining, out stackDebt);
-                sb.Append(s);
+                tempReg = RewriteBlock(blocks[i], (long)code.Instructions[0], tempReg, bcv, rdata, gm.Content,
+                    out ilBlocks[i]);
+            }
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (ilBlocks[i].stackDebt.Length == 0)
+                {
+                    continue;
+                }
+
+                var fromBlocks = new List<int>();
+                for (int j = 0; j < blocks.Length; j++)
+                {
+                    if (blocks[j].BranchTo == blocks[i].Instructions[0])
+                    {
+                        fromBlocks.Add(j);
+                    }
+                }
+
+                sb.AppendLine(ilBlocks[i].label);
+                for (int j = 0; j < ilBlocks[i].stackDebt.Length; j++)
+                {
+                    sb.Append(SR.INDENT4)
+                           .Append(ilBlocks[i].stackDebt[j].ShortString())
+                           .Append(" = phi ")
+                           .Append(types[(int)ilBlocks[i].stackDebt[j].dataType]);
+                    foreach (var from in fromBlocks)
+                    {
+
+                    }
+                }
+                sb.Append(ilBlocks[i].code);
             }
 
             if (returntype == "void")
