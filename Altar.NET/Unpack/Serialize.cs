@@ -231,9 +231,9 @@ namespace Altar.Unpack
             var r = CreateObj();
             r["name"     ] = oi.Name;
             r["index"    ] = oi.Index;
-            r["unk1"     ] = oi.Unk1;
-            r["unk2"     ] = oi.Unk2;
-            r["unk3"     ] = oi.Unk3;
+            r["unk1"     ] = oi.Unk1 ;
+            r["depth"    ] = oi.Depth;
+            r["unk3"     ] = oi.Unk3 ;
             r["instances"] = SerializeArray(oi.Instances, Utils.Identity);
             return r;
         }

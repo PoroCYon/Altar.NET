@@ -154,15 +154,15 @@ namespace Altar.Unpack
 
             oi.Index   = entry->Index;
             oi.Name    = StringFromOffset(content, entry->Name);
-            oi.Unk1    = entry->Unk1;
-            oi.Unk2    = entry->Unk2;
-            oi.Unk3    = entry->Unk3;
+            oi.Unk1    = entry->Unk1 ;
+            oi.Depth   = entry->Depth;
+            oi.Unk3    = entry->Unk3 ;
 
-            oi.Instances = new uint[entry->InstCount];
-            for (uint i = 0; i < oi.Instances.Length; i++)
-            {
+            uint isn = entry->InstCount;
+            if (isn > 0x8000) isn = 0; // workaround for GM2
+            oi.Instances = new uint[isn];
+            for (uint i = 0; i < isn; i++)
                 oi.Instances[i] = (&entry->Instances)[i];
-            }
 
             return oi;
         }
@@ -325,6 +325,7 @@ namespace Altar.Unpack
             SpriteCollisionMask* masks =
                 (SpriteCollisionMask*)((ulong)&tex->Offsets + sizeof(uint) * tex->Count);
 
+            // TODO: store this in a different way. this is wasteful as fuck.
             uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
             //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
 

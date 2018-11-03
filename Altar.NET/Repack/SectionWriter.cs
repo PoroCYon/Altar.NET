@@ -924,9 +924,9 @@ namespace Altar.Repack
             data.Buffer.Write(new RoomObjInstEntry
             {
                 Index = roi.Index,
-                Unk1 = roi.Unk1,
-                Unk2 = roi.Unk2,
-                Unk3 = roi.Unk3,
+                Unk1  = roi.Unk1 ,
+                Depth = roi.Depth,
+                Unk3  = roi.Unk3 ,
                 InstCount = (uint)roi.Instances.Length,
                 Name = strings.GetOffset(roi.Name)
             });

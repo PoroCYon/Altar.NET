@@ -275,7 +275,7 @@ namespace Altar
         public string Name;
         public uint Index;
         public uint Unk1;
-        public uint Unk2;
+        public uint Depth;
         public uint Unk3;
         public uint[] Instances;
     }

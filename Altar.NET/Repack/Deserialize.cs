@@ -136,9 +136,9 @@ namespace Altar.Repack
                 Index     = (uint)j["index"],
                 Instances = DeserializeArray(j["instances"], i => (uint)i),
                 Name      = (string)j["name"],
-                Unk1      = (uint)j["unk1"],
-                Unk2      = (uint)j["unk2"],
-                Unk3      = (uint)j["unk3"]
+                Unk1      = (uint)j["unk1" ],
+                Depth     = (uint)j["depth"],
+                Unk3      = (uint)j["unk3" ]
             };
         }
 

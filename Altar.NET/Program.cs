@@ -186,7 +186,7 @@ namespace Altar
                     for (int i = 1; i < f.AudioGroups.Length; ++i)
                     {
                         WrAndGetC(DASH_ + f.AudioGroups[i] + O_PAREN + i +
-                                SLASH + f.AudioGroups.Length + C_PAREN + SPACE_S,
+                                SLASH + (f.AudioGroups.Length - 1) + C_PAREN + SPACE_S,
                                 out cl, out ct);
 
                         var agrpfn = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar
@@ -199,10 +199,13 @@ namespace Altar
 
                         var infoTable = new Dictionary<int, SoundInfo>();
 
-                        foreach (var s in f.Sound)
+                        for (uint iii = 0; iii < f.Sound.Length; ++iii)
+                        {
+                            var s = f.Sound[iii];
                             if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1
                                     && s.GroupID == i)
                                 infoTable[s.AudioID] = s;
+                        }
 
                         var odgrp = od + DIR_AGRP + f.AudioGroups[i];
                         if (!Directory.Exists(odgrp))

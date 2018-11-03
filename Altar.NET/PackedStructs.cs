@@ -375,7 +375,7 @@ namespace Altar
         public uint Name;
         public uint Index;
         public uint Unk1;
-        public uint Unk2;
+        public uint Depth;
         fixed uint _pad1[4];
         public uint Unk3;
         public uint InstCount;
