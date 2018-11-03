@@ -9,11 +9,13 @@ namespace Altar
     {
         public struct Etor : IEnumerator<T>
         {
+            bool firstest;
             uint curind;
             LazyArray<T> arr;
 
             internal Etor(LazyArray<T> arr)
             {
+                firstest = true;
                 curind = 0;
                 this.arr = arr;
             }
@@ -23,11 +25,17 @@ namespace Altar
 
             public bool MoveNext()
             {
+                if (firstest)
+                {
+                    firstest = false;
+                    return true;
+                }
                 ++curind;
                 return curind < arr.Length;
             }
             public void Reset()
             {
+                firstest = true;
                 curind = 0;
             }
 

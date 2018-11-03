@@ -306,7 +306,7 @@ namespace Altar
     {
         public string GMLName;
         public uint ID;
-        public ExtensionType Type;
+        public ExtensionCC CallingConvention;
         public ExtensionFFIType ReturnType;
         public string SymbolName;
         public ExtensionFFIType[] Arguments;
