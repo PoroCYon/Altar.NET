@@ -208,14 +208,14 @@ namespace Altar
                         if (!Directory.Exists(odgrp))
                             Directory.CreateDirectory(odgrp);
 
-                        using (var af = AGRPFile.GetFile(agrpfn))
+                        using (var af = GMFile.GetFile(agrpfn))
                         {
-                            for (int j = 0; j < af.Waves.Length; ++j)
+                            for (int j = 0; j < af.Audio.Length; ++j)
                             {
                                 SetCAndWr(cl, ct, O_PAREN + (j + 1) + SLASH +
-                                        (af.Waves.Length - 1) + C_PAREN);
+                                        (af.Audio.Length - 1) + C_PAREN);
                                 File.WriteAllBytes(odgrp + Path.DirectorySeparatorChar
-                                        + infoTable[j].Name + SR.EXT_WAV, af.Waves[j]);
+                                        + infoTable[j].Name + SR.EXT_WAV, af.Audio[j].Wave);
                             }
                         }
                         Console.WriteLine();
@@ -506,29 +506,9 @@ namespace Altar
                     var c = f.Content;
 
                     if (eo.DumpAllChunks)
-                    {
-                        chunks.Add((IntPtr)c.General     );
-                        chunks.Add((IntPtr)c.Options     );
-                        chunks.Add((IntPtr)c.Sounds      );
-                        chunks.Add((IntPtr)c.AudioGroup  );
-                        chunks.Add((IntPtr)c.Sprites     );
-                        chunks.Add((IntPtr)c.Backgrounds );
-                        chunks.Add((IntPtr)c.Paths       );
-                        chunks.Add((IntPtr)c.Scripts     );
-                        chunks.Add((IntPtr)c.Fonts       );
-                        chunks.Add((IntPtr)c.Objects     );
-                        chunks.Add((IntPtr)c.Rooms       );
+                        chunks.AddRange(c.Chunks.Values);
 
-                        chunks.Add((IntPtr)c.TexturePages);
-                        chunks.Add((IntPtr)c.Code        );
-                        chunks.Add((IntPtr)c.Variables   );
-                        chunks.Add((IntPtr)c.Functions   );
-                        chunks.Add((IntPtr)c.Strings     );
-                        chunks.Add((IntPtr)c.Textures    );
-                        chunks.Add((IntPtr)c.Audio       );
-                    }
-
-                    chunks.AddRange(c.UnknownChunks.Values);
+                    // TODO: how to filter out unknowns?
 
                     for (int i = 0; i < chunks.Count; i++)
                         DumpUnk(chunks[i]);
@@ -799,31 +779,6 @@ namespace Altar
             return writer.Buffer.ReadBytes(writer.Buffer.Size);
         }
 
-        static void ExportAgrp(ExportAgrpOptions opt)
-        {
-            var file = Path.GetFullPath(opt.File);
-            var outd = Path.GetFullPath(opt.OutputDirectory);
-
-            if (!Directory.Exists(outd))
-                Directory.CreateDirectory(outd);
-            if (!File.Exists(file))
-                throw new ParserException("File \"" + file + "\" doesn't exist.");
-
-            nopp = quiet = false; // TODO: add these flags
-                                  // or better yet, make agrps work with `export`
-            using (var f = AGRPFile.GetFile(file))
-            {
-                int cl = 0, ct = 0;
-                WrAndGetC("Exporting AGRP audio... ", out cl, out ct);
-                for (int i = 0; i < f.Waves.Length; ++i)
-                {
-                    SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Waves.Length + C_PAREN);
-                    File.WriteAllBytes("audo" + i.ToString("D3") + ".wav", f.Waves[i]);
-                }
-            }
-            Console.WriteLine();
-        }
-
         [STAThread]
         static void Main(string[] args)
         {
@@ -845,9 +800,6 @@ namespace Altar
                             break;
                         case "import":
                             Import((ImportOptions)vo);
-                            break;
-                        case "export-agrp":
-                            ExportAgrp((ExportAgrpOptions)vo);
                             break;
                     }
                 }
