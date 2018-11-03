@@ -430,21 +430,37 @@ namespace Altar
         [DebuggerStepThrough]
         public static bool IsEmpty(     SectionHeader  header) => header. Size <= 4;
     }
+    // TODO: make GMFile not depend on the general data anymore, so we can just
+    //       use that code to export detached agrps, too
     public unsafe class AGRPFile : IDisposable
     {
-        public AGRPFileContent Content{get;private set;}
-
-        public uint NameOffset{get;internal set;}
-        public byte[][] Waves{get;internal set;}
-
-        internal AGRPFile() {
-            Waves=new byte[0][];
+        public AGRPFileContent Content
+        {
+            get;
+            private set;
         }
 
-        internal AGRPFile(AGRPFileContent f) {
+        public uint NameOffset
+        {
+            get;
+            internal set;
+        }
+        public byte[][] Waves
+        {
+            get;
+            internal set;
+        }
+
+        internal AGRPFile()
+        {
+            Waves = new byte[0][];
+        }
+
+        internal AGRPFile(AGRPFileContent f)
+        {
             Content = f;
 
-            Waves=GMFile.TryReadMany(f.Audo, i=>SectionReader.GetAgrpAudo(f, i));
+            Waves = GMFile.TryReadMany(f.Audo, i => SectionReader.GetAgrpAudo(f, i));
         }
 
         public void Dispose()
@@ -456,28 +472,31 @@ namespace Altar
             }
         }
 
-        public static AGRPFile GetFile(byte[] data) {
-            var ret =new AGRPFileContent();
-            var hdr_bp=new UniquePtr(data);
-            byte* hdr_b=hdr_bp.BPtr;
+        public static AGRPFile GetFile(byte[] data)
+        {
+            var ret = new AGRPFileContent();
+            var hdr_bp = new UniquePtr(data);
+            byte* hdr_b = hdr_bp.BPtr;
 
-            var basePtr= (SectionHeader*)hdr_b;
+            var basePtr = (SectionHeader*)hdr_b;
 
-            ret.Form=basePtr;
+            ret.Form = basePtr;
 
             if (ret.Form->Identity!=SectionHeaders.Form)
                 throw new InvalidDataException(ERR_NO_FORM);
 
             SectionHeader*
-                hdr=basePtr+1,
-                hdrEnd=(SectionHeader*)((IntPtr)basePtr+(int)ret.Form->Size);
+                hdr = basePtr + 1,
+                hdrEnd = (SectionHeader*)((IntPtr)basePtr + (int)ret.Form->Size);
 
-            int headersMet=0;
+            int headersMet = 0;
 
-            while(hdr<hdrEnd) {
-                switch(hdr->Identity) {
+            while (hdr < hdrEnd)
+            {
+                switch (hdr->Identity)
+                {
                     case SectionHeaders.Audio:
-                        ret.Audo=(SectionCountOffsets*)hdr;
+                        ret.Audo = (SectionCountOffsets*)hdr;
                         break;
                     default:
                         Console.WriteLine("Unexpected chunk in audiogroup.dat: "
@@ -486,10 +505,10 @@ namespace Altar
                 }
 
                 headersMet++;
-                hdr=unchecked((SectionHeader*)((IntPtr)hdr+(int)hdr->Size)+1);
+                hdr = unchecked((SectionHeader*)((IntPtr)hdr + (int)hdr->Size) + 1);
             }
 
-            ret.RawData=hdr_bp;
+            ret.RawData = hdr_bp;
             return new AGRPFile(ret);
         }
         public static AGRPFile GetFile(string path) => GetFile(File.ReadAllBytes(path));

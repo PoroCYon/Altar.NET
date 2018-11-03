@@ -252,6 +252,7 @@ namespace Altar.Unpack
                     ? String.Empty
                     : GetAudioGroupInfo(content, (uint)se->GroupID);
 
+            ret.GroupID      =  se->GroupID;
             ret.AudioID      =  se->AudioID;
             ret.IsEmbedded   = (se->Flags & SoundEntryFlags.Embedded  ) != 0;
             ret.IsCompressed = (se->Flags & SoundEntryFlags.Compressed) != 0;
