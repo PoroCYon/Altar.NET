@@ -223,6 +223,7 @@ namespace Altar
                         }
                         Console.WriteLine();
                     }
+                    f.AudioGroups.Clear();
                 }
                 #endregion
 
@@ -244,6 +245,7 @@ namespace Altar
                         File.WriteAllBytes(od + DIR_TEX + i + EXT_PNG, f.Textures[i].PngData);
                     }
                     Console.WriteLine();
+                    f.Textures.Clear();
                 }
                 #endregion
                 #region AUDO
@@ -268,6 +270,7 @@ namespace Altar
                         File.WriteAllBytes(od + DIR_WAV + infoTable[i].Name + SR.EXT_WAV, f.Audio[i].Wave);
                     }
                     Console.WriteLine();
+                    f.Audio.Clear();
                 }
                 #endregion
                 #region CODE
@@ -325,6 +328,7 @@ namespace Altar
                     }
                     Console.WriteLine();
                 }
+                if (f.Code != null) f.Code.Clear();
                 #endregion
 
                 #region SCPT
@@ -342,6 +346,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SCR + f.Scripts[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeScript(f.Scripts[i], f.Code)));
                     }
                     Console.WriteLine();
+                    f.Scripts.Clear();
                 }
                 #endregion
                 #region TPAG
@@ -359,6 +364,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeTPag(f.TexturePages[i])));
                     }
                     Console.WriteLine();
+                    f.TexturePages.Clear();
                 }
                 #endregion
                 #region SPRT
@@ -376,6 +382,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSprite(f.Sprites[i])));
                     }
                     Console.WriteLine();
+                    f.Sprites.Clear();
                 }
                 #endregion
                 #region SOND
@@ -393,6 +400,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SND + f.Sound[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSound(f.Sound[i])));
                     }
                     Console.WriteLine();
+                    f.Sound.Clear();
                 }
                 #endregion
 
@@ -446,6 +454,9 @@ namespace Altar
                     }
                     Console.WriteLine();
                 }
+                if (f.Backgrounds != null)f.Backgrounds.Clear();
+                if (f.Objects != null) f.Objects.Clear();
+                if (f.Rooms != null) f.Rooms.Clear();
                 #endregion
 
                 #region FONT
@@ -463,6 +474,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_FNT + f.Fonts[i].CodeName + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeFont(f.Fonts[i])));
                     }
                     Console.WriteLine();
+                    f.Fonts.Clear();
                 }
                 #endregion
                 #region PATH
@@ -480,6 +492,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_PATH + f.Paths[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializePath(f.Paths[i])));
                     }
                     Console.WriteLine();
+                    f.Paths.Clear();
                 }
                 #endregion
                 List<IntPtr> chunks = null;
