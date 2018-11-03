@@ -5,10 +5,18 @@ namespace Altar
 {
     public class ExportAgrpOptions
     {
-        [Option('f', "file", Required=true,DefaultValue="audiogroup1.dat",HelpText="Input file (default: 'audiogroup1.dat')")]
-        public string File{get;set;}
-        [Option('o',"out",Required=true,DefaultValue=".",HelpText="Output directory (default: current)")]
-        public string OutputDirectory{get;set;}
+        [Option('f', "file", Required = true, DefaultValue = "audiogroup1.dat", HelpText="Input file (default: 'audiogroup1.dat')")]
+        public string File
+        {
+            get;
+            set;
+        }
+        [Option('o', "out", Required = true, DefaultValue = ".", HelpText = "Output directory (default: current)")]
+        public string OutputDirectory
+        {
+            get;
+            set;
+        }
     }
     public class ExportOptions
     {
@@ -189,6 +197,13 @@ namespace Altar
         }
         [Option("noprecprog", HelpText = "Doesn't output precise progress on large chunks.")]
         public bool NoPrecProg
+        {
+            get;
+            set;
+        }
+
+        [Option("detachedagrp", HelpText = "Export data from detached audio group files, too. These files must reside in the same directory as the input file, and must be called 'audiogroup${n}.dat'.")]
+        public bool DetachedAgrp
         {
             get;
             set;
