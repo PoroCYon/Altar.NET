@@ -717,7 +717,7 @@ namespace Altar.Unpack
                     ExtensionFunctionInfo fff;
                     fff.GMLName = StringFromOffset(c, efff->GMLName);
                     fff.ID         = efff->ID        ;
-                    fff.Type       = efff->Type      ;
+                    fff.CallingConvention = efff->CallingConvention;
                     fff.ReturnType = efff->ReturnType;
                     fff.SymbolName = StringFromOffset(c, efff->SymbolName);
 

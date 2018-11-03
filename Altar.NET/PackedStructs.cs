@@ -564,12 +564,16 @@ namespace Altar
         String = 1,
         Double = 2
     }
+    public enum ExtensionCC : uint
+    {
+        Cdecl = 0x0C
+    }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ExtensionFunctionEntry
     {
         public uint GMLName;
         public uint ID;
-        public ExtensionType Type; // is this the correct type?
+        public ExtensionCC CallingConvention;
         public ExtensionFFIType ReturnType;
         public uint SymbolName;
         public uint ArgumentCount;
