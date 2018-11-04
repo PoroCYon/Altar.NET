@@ -29,6 +29,11 @@ all: bin/$(TARGET)/$(OUTPUT)
 
 release: all
 
+clean:
+	@rm -vf bin/$(TARGET)/*.{exe,dll,pdb,mdb}
+	$(MAKE) -C Altar.NET clean
+	$(MAKE) -C Altar.NET.Util clean
+
 .PHONY: all release clean debug Altar.NET/bin/$(TARGET)/altar.exe \
     Altar.NET.Util/bin/$(TARGET)/Altar.NET.Util.dll
 
