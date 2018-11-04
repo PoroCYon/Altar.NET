@@ -26,7 +26,7 @@ debug: LIBS += $(UTILLIB)
 debug: CSFLAGS += $(patsubst %,-r:%,$(LIBS))
 debug: bin/Debug/$(OUTPUT)
 
-$(UTILLIB): ../Altar.NET.Util
+$(UTILLIB): ../Altar.NET.Util $(shell dirname $(UTILLIB))/
 	$(MAKE) -C "$<" $(shell echo $(TARGET) | tr A-Z a-z)
 
 bin/%/$(OUTPUT): bin/%/ $(INFILES) $(UTILLIB)

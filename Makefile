@@ -14,9 +14,9 @@ INPUTS := Altar.NET/bin/$(TARGET)/altar.exe \
 ILREPACK := ILRepack/ILRepack.exe
 ILRFLAGS := /union /target:exe
 
-Altar.NET/bin/$(TARGET)/altar.exe: Altar.NET/
+Altar.NET/bin/$(TARGET)/altar.exe: Altar.NET/ Altar.NET/bin/$(TARGET)/
 	$(MAKE) -C "$<" "$(TARGET_)"
-Altar.NET.Util/bin/$(TARGET)/Altar.NET.Util.dll: Altar.NET.Util/
+Altar.NET.Util/bin/$(TARGET)/Altar.NET.Util.dll: Altar.NET.Util/ Altar.NET.Util/bin/$(TARGET)/
 	$(MAKE) -C "$<" "$(TARGET_)"
 
 %/:
