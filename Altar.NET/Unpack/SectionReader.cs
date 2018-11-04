@@ -248,8 +248,8 @@ namespace Altar.Unpack
             ret.PitchMod  = se->Pitch ;
 
             ret.Group =
-                ~se->GroupID < 0
-                    ? String.Empty
+                se->GroupID < 0
+                    ? null
                     : GetAudioGroupInfo(content, (uint)se->GroupID);
 
             ret.AudioID      =  se->AudioID;
