@@ -27,7 +27,10 @@ bin/$(TARGET):
 bin/%/$(OUTPUT): bin/%/ $(INPUTS)
 	$(MONO) $(ILREPACK) $(ILRFLAGS) "/out:$@" $(INPUTS)
 
-all: bin/$(TARGET)/ bin/$(TARGET)/$(OUTPUT)
+utils/lsiff: utils/
+	$(MAKE) -C lsiff
+
+all: bin/$(TARGET)/ bin/$(TARGET)/$(OUTPUT) utils/lsiff
 
 release: all
 
@@ -37,5 +40,5 @@ clean:
 	$(MAKE) -C Altar.NET.Util clean
 
 .PHONY: all release clean debug Altar.NET/bin/$(TARGET)/altar.exe \
-    Altar.NET.Util/bin/$(TARGET)/Altar.NET.Util.dll
+    Altar.NET.Util/bin/$(TARGET)/Altar.NET.Util.dll utils/lsiff
 
