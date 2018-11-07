@@ -131,7 +131,7 @@ namespace Altar
 
                 // ---
                 #region GEN8
-                if (eo.General)
+                if (eo.General && f.Content.General != null)
                 {
                     WriteLine("Exporting manifest file...");
 
@@ -139,7 +139,7 @@ namespace Altar
                 }
                 #endregion
                 #region OPTN
-                if (eo.Options)
+                if (eo.Options && f.Content.Options != null)
                 {
                     WriteLine("Exporting options...");
 
