@@ -154,15 +154,15 @@ namespace Altar.Unpack
 
             oi.Index   = entry->Index;
             oi.Name    = StringFromOffset(content, entry->Name);
-            oi.Unk1    = entry->Unk1;
-            oi.Unk2    = entry->Unk2;
-            oi.Unk3    = entry->Unk3;
+            oi.Unk1    = entry->Unk1 ;
+            oi.Depth   = entry->Depth;
+            oi.Unk3    = entry->Unk3 ;
 
-            oi.Instances = new uint[entry->InstCount];
-            for (uint i = 0; i < oi.Instances.Length; i++)
-            {
+            uint isn = entry->InstCount;
+            if (isn > 0x8000) isn = 0; // workaround for GM2
+            oi.Instances = new uint[isn];
+            for (uint i = 0; i < isn; i++)
                 oi.Instances[i] = (&entry->Instances)[i];
-            }
 
             return oi;
         }
@@ -230,6 +230,14 @@ namespace Altar.Unpack
 
             return ret;
         }
+        public static GlobalInfo GetGlobalInfo(GMFileContent c)
+        {
+            uint[] codeIDs = new uint[c.Globals->Count];
+            for (uint i = 0; i < codeIDs.Length; ++i)
+                codeIDs[i] = (&c.Globals->CodeIDs)[i];
+
+            return new GlobalInfo { GlobalCodeIDs = codeIDs };
+        }
 
         public static SoundInfo       GetSoundInfo  (GMFileContent content, uint id)
         {
@@ -252,6 +260,7 @@ namespace Altar.Unpack
                     ? null
                     : GetAudioGroupInfo(content, (uint)se->GroupID);
 
+            ret.GroupID      =  se->GroupID;
             ret.AudioID      =  se->AudioID;
             ret.IsEmbedded   = (se->Flags & SoundEntryFlags.Embedded  ) != 0;
             ret.IsCompressed = (se->Flags & SoundEntryFlags.Compressed) != 0;
@@ -316,7 +325,8 @@ namespace Altar.Unpack
             SpriteCollisionMask* masks =
                 (SpriteCollisionMask*)((ulong)&tex->Offsets + sizeof(uint) * tex->Count);
 
-            uint amt = masks->MaskCount;
+            // TODO: store this in a different way. this is wasteful as fuck.
+            uint amt = ret.SeparateColMasks ? masks->MaskCount : 1;
             //Console.WriteLine("amt="+amt.ToString(SR.HEX_FM8) + " at " + ((ulong)&masks->MaskCount - (ulong)content.RawData.BPtr).ToString(SR.HEX_FM8));
 
             if (amt < 0x100) // guesstimate
@@ -676,42 +686,137 @@ namespace Altar.Unpack
 
             return StringFromOffset(content, *(uint*)ag); // it's just a name
         }
-
-        public static ShaderInfo GetShaderInfo(GMFileContent content, uint id)
+        public static ExtensionInfo GetExtensionInfo(GMFileContent c, uint id)
         {
-            if (id >= content.Shaders->Count)
+            if (id >= c.Extensions->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var sh = (ShaderEntry*)GMFile.PtrFromOffset(content, (&content.Shaders->Offsets)[id]);
+            var ex = (ExtensionEntry*)GMFile.PtrFromOffset(c, (&c.Extensions->Offsets)[id]);
 
-            var ret = new ShaderInfo();
+            ExtensionInfo ei;
+            ei.     Name = StringFromOffset(c, ex->     Name);
+            ei.ClassName = StringFromOffset(c, ex->ClassName);
 
-            ret.Name = StringFromOffset(content, sh->Name);
-            ret.Sources = new string[6];
-            for (uint i = 0; i < ret.Sources.Length; i++)
+            var efi = new ExtensionFileInfo[ex->Includes.Count];
+            for (uint i = 0; i < efi.Length; ++i)
             {
-                ret.Sources[i] = StringFromOffset(content, sh->Sources[i]);
-            }
-            ret.VertexAttributes = new string[sh->VertexAttributeCount];
-            for (uint i = 0; i < sh->VertexAttributeCount; i++)
-            {
-                ret.VertexAttributes[i] = StringFromOffset(content, (&sh->VertexAttribute)[i]);
+                var efx = (ExtensionFileEntry*)GMFile.PtrFromOffset(c, (&ex->Includes.Offsets)[i]);
+
+                ExtensionFileInfo ii;
+                ii.Filename = StringFromOffset(c, efx->Filename);
+                ii.KillSymbol = StringFromOffset(c, efx->KillSymbol);
+                ii.InitSymbol = StringFromOffset(c, efx->InitSymbol);
+                ii.Type = efx->Type;
+
+                var effi = new ExtensionFunctionInfo[efx->Functions.Count];
+                for (uint j = 0; j < effi.Length; ++j)
+                {
+                    var efff = (ExtensionFunctionEntry*)GMFile.PtrFromOffset(c,
+                            (&efx->Functions.Offsets)[j]);
+
+                    ExtensionFunctionInfo fff;
+                    fff.GMLName = StringFromOffset(c, efff->GMLName);
+                    fff.ID         = efff->ID        ;
+                    fff.CallingConvention = efff->CallingConvention;
+                    fff.ReturnType = efff->ReturnType;
+                    fff.SymbolName = StringFromOffset(c, efff->SymbolName);
+
+                    var args = new ExtensionFFIType[efff->ArgumentCount];
+                    // TODO: memcpy much?
+                    for (uint k = 0; k < args.Length; ++k)
+                        args[k] = (&efff->ArgumentTypes)[k];
+
+                    fff.Arguments = args;
+                }
+
+                ii.Functions = effi;
             }
 
+            ei.Includes = efi;
+
+            return ei;
+        }
+        public static TimelineInfo GetTimelineInfo(GMFileContent c, uint id)
+        {
+            if (id >= c.Timelines->Count)
+                throw new ArgumentOutOfRangeException(nameof(id));
+
+            var tl = (TimelineEntry*)GMFile.PtrFromOffset(c, (&c.Timelines->Offsets)[id]);
+
+            TimelineInfo ti;
+
+            ti.Name = StringFromOffset(c, tl->Name);
+
+            var ks = new TimelineKeyframe[tl->KeyframeCount];
+            for (uint i = 0; i < ks.Length; ++i)
+            {
+                var tk = &((&tl->Keyframes)[i]);
+                var tes = (CountOffsetsPair*)GMFile.PtrFromOffset(c, tk->OffsetToEvents);
+
+                ks[i].Time = tk->Time;
+
+                var ees = new uint[tes->Count];
+                for (uint j = 0; j < ees.Length; ++j)
+                    ees[j] = ((TimelineEventEntry*)GMFile.PtrFromOffset(c,
+                                (&tes->Offsets)[i]))->EventID;
+
+                ks[i].EventIDs = ees;
+            }
+
+            ti.Keyframes = ks;
+
+            return ti;
+        }
+        static ShaderProgramSource GetVxFxStrings(GMFileContent c, ShaderVxFxStrings vfs)
+        {
+            ShaderProgramSource ret;
+            ret.VertexShader = StringFromOffset(c, vfs.VertexSource);
+            ret.FragmentShader = StringFromOffset(c, vfs.FragmentSource);
             return ret;
         }
-
-        public static byte[] GetAgrpAudo(AGRPFileContent c,uint id){
-            if (id >= c.Audo->Count)
+        static byte[] ReadByteArray(GMFileContent c, uint off, uint len)
+        {
+            byte[] r = new byte[len];
+            Marshal.Copy((IntPtr)GMFile.PtrFromOffset(c, off), r, 0, unchecked((int)len));
+            return r;
+        }
+        static ShaderProgramBlob GetVxFxBlobs(GMFileContent c, ShaderVxFxBlobs vfb)
+        {
+            ShaderProgramBlob ret;
+            ret.VertexShader = ReadByteArray(c, vfb.VertexData, vfb.VertexLength);
+            ret.FragmentShader = ReadByteArray(c, vfb.FragmentData, vfb.FragmentLength);
+            return ret;
+        }
+        public static ShaderInfo GetShaderInfo(GMFileContent c, uint id)
+        {
+            if (id >= c.Shaders->Count)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            var au=(AudioEntry*)AGRPFile.PtrFromOffset(c,(&c.Audo->Offsets)[id]);
+            var sh = (ShaderEntry*)GMFile.PtrFromOffset(c, (&c.Shaders->Offsets)[id]);
 
-            byte[] ret = new byte[au->Length];
+            var si = new ShaderInfo();
 
-            Marshal.Copy((IntPtr)(&au->Data), ret, 0, ret.Length);
+            si.Name = StringFromOffset(c, sh->Name);
+            si.Type = sh->Type.Decode();
 
-            return ret;
+            si.Code.GLSL_ES = GetVxFxStrings(c, sh->GLSL_ES);
+            si.Code.GLSL    = GetVxFxStrings(c, sh->GLSL   );
+            si.Code.HLSL9   = GetVxFxStrings(c, sh->HLSL9  );
+          //si.Code.HLSL11  = GetVxFxBlobs  (c, sh->HLSL11 , length=???); // TODO
+
+            var ats = new string[sh->AttributeCount];
+            for (uint i = 0; i < ats.Length; ++i)
+                ats[i] = StringFromOffset(c, (&sh->Attributes)[i]);
+
+            si.Attributes = ats;
+
+            var sh2 = (ShaderEntry2*)&((&sh->Attributes)[sh->AttributeCount]);
+
+            si.Code.PSSL   = GetVxFxBlobs(c, sh2->PSSL  );
+            si.Code.Cg     = GetVxFxBlobs(c, sh2->Cg    );
+            si.Code.Cg_PS3 = GetVxFxBlobs(c, sh2->Cg_PS3);
+
+            return si;
         }
 
         public static byte[][] ListToByteArrays(GMFileContent content, SectionCountOffsets* list, long elemLen = 0)

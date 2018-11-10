@@ -17,6 +17,7 @@
             O_PAREN   = "(" ,
             TILDE     = "~" ,
             DASH      = "-" ,
+            DASH_     = "- ",
             PLUS      = "+" ,
             AMP       = "&" ,
             SLASH     = "/" ,
@@ -81,7 +82,7 @@
             DIR_SPR  = "sprite/" ,
             DIR_FNT  = "font/"   ,
             DIR_PATH = "path/"   ,
-            DIR_SHDR = "shader/" ,
+            DIR_AGRP = "agrp/"   ,
 
             VAR  = "var" ,
             INST = "inst",
@@ -102,6 +103,8 @@
             EXIT  = "exit"   ,
             MAGIC = "!magic" ,
             SET_S = "set "   ,
+            AGRPF = "audiogroup",
+            D_DAT = ".dat",
 
             REMAIN = "rem"        ,
             ASSERT = "assert_neq:",

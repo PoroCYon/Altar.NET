@@ -136,9 +136,9 @@ namespace Altar.Repack
                 Index     = (uint)j["index"],
                 Instances = DeserializeArray(j["instances"], i => (uint)i),
                 Name      = (string)j["name"],
-                Unk1      = (uint)j["unk1"],
-                Unk2      = (uint)j["unk2"],
-                Unk3      = (uint)j["unk3"]
+                Unk1      = (uint)j["unk1" ],
+                Depth     = (uint)j["depth"],
+                Unk3      = (uint)j["unk3" ]
             };
         }
 
@@ -484,7 +484,7 @@ namespace Altar.Repack
                     SectionHeaders.Backgrounds ,
                     SectionHeaders.Paths       ,
                     SectionHeaders.Scripts     ,
-                    SectionHeaders.GLOB_Unk    ,
+                    SectionHeaders.Globals     ,
                     SectionHeaders.Shaders     ,
                     SectionHeaders.Fonts       ,
                     SectionHeaders.Timelines   ,
@@ -497,7 +497,8 @@ namespace Altar.Repack
                     SectionHeaders.Functions   ,
                     SectionHeaders.Strings     ,
                     SectionHeaders.Textures    ,
-                    SectionHeaders.Audio
+                    SectionHeaders.Audio       ,
+                    SectionHeaders.EmbedImage  ,
                 };
             }
 
@@ -666,15 +667,15 @@ namespace Altar.Repack
                 var ct = Console.CursorTop;
 
                 var sprites = projFile["sprites"].ToArray();
-                f.Sprites = new SpriteInfo[sprites.Length];
+                var ss = new SpriteInfo[sprites.Length];
                 for (int i = 0; i < sprites.Length; i++)
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + sprites.Length + C_PAREN);
                     try
                     {
-                        f.Sprites[i] = DeserializeSprite(LoadJson(baseDir, (string)(sprites[i])));
-                        f.Sprites[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
+                        ss[i] = DeserializeSprite(LoadJson(baseDir, (string)(sprites[i])));
+                        ss[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
                     }
                     catch (Exception e)
                     {
@@ -682,6 +683,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Sprites = ss;
             }
             if (projFile.Has("objs"))
             {
@@ -691,18 +693,18 @@ namespace Altar.Repack
 
                 var objs = projFile["objs"].ToArray();
                 var objNames = objs.Select(o => Path.GetFileNameWithoutExtension((string)o)).ToArray();
-                f.Objects = new ObjectInfo[objs.Length];
+                var os = new ObjectInfo[objs.Length];
                 for (int i = 0; i < objs.Length; i++)
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + objs.Length + C_PAREN);
                     try
                     {
-                        f.Objects[i] = DeserializeObj(
+                        os[i] = DeserializeObj(
                                         LoadJson(baseDir, (string)(objs[i])),
                                         f.Sprites,
                                         s => (uint)Array.IndexOf(objNames, s));
-                        f.Objects[i].Name = objNames[i];
+                        os[i].Name = objNames[i];
                     }
                     catch (Exception e)
                     {
@@ -710,12 +712,13 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Objects = os;
             }
             if (projFile.Has("code"))
             {
                 Console.WriteLine("Loading code...");
                 var code = projFile["code"].ToArray();
-                f.Code = new CodeInfo[code.Length];
+                var cs = new CodeInfo[code.Length];
 
                 var strings = new StringsListBuilder();
                 strings.AddStrings(f.Strings);
@@ -727,10 +730,10 @@ namespace Altar.Repack
                     Console.WriteLine((string)(code[i]));
                     try
                     {
-                        f.Code[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
+                        cs[i] = Assembler.DeserializeCodeFromFile(Path.Combine(baseDir, (string)(code[i])), f.General.BytecodeVersion,
                                         strings, objectIndices);
-                        f.Code[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
-                        f.Code[i].ArgumentCount = 1;
+                        cs[i].Name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension((string)(code[i])));
+                        cs[i].ArgumentCount = 1;
                         if (f.FunctionLocals != null)
                         {
                             for (int j = 0; j < f.FunctionLocals.Length; j++)
@@ -738,7 +741,7 @@ namespace Altar.Repack
                                 int fastIndex = (j + i) % f.FunctionLocals.Length;
                                 if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
                                 {
-                                    f.Code[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
+                                    cs[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
                                     break;
                                 }
                             }
@@ -750,6 +753,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Code = cs;
 
                 f.Strings = strings.GetStrings();
             }
@@ -757,13 +761,13 @@ namespace Altar.Repack
             {
                 Console.WriteLine("Loading sounds...");
                 var sounds = projFile["sounds"].ToArray();
-                f.Sound = new SoundInfo[sounds.Length];
+                var ss = new SoundInfo[sounds.Length];
                 for (int i = 0; i < sounds.Length; i++)
                 {
                     try
                     {
-                        f.Sound[i] = DeserializeSound(LoadJson(baseDir, (string)(sounds[i])));
-                        f.Sound[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
+                        ss[i] = DeserializeSound(LoadJson(baseDir, (string)(sounds[i])));
+                        ss[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
                     }
                     catch (Exception e)
                     {
@@ -771,18 +775,19 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Sound = ss;
             }
             if (projFile.Has("bg"))
             {
                 Console.WriteLine("Loading backgrounds...");
                 var bg = projFile["bg"].ToArray();
-                f.Backgrounds = new BackgroundInfo[bg.Length];
+                var bs = new BackgroundInfo[bg.Length];
                 for (int i = 0; i < bg.Length; i++)
                 {
                     try
                     {
-                        f.Backgrounds[i] = DeserializeBg(LoadJson(baseDir, (string)(bg[i])));
-                        f.Backgrounds[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
+                        bs[i] = DeserializeBg(LoadJson(baseDir, (string)(bg[i])));
+                        bs[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
                     }
                     catch (Exception e)
                     {
@@ -790,18 +795,19 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Backgrounds = bs;
             }
             if (projFile.Has("paths"))
             {
                 Console.WriteLine("Loading paths...");
                 var paths = projFile["paths"].ToArray();
-                f.Paths = new PathInfo[paths.Length];
+                var ps = new PathInfo[paths.Length];
                 for (int i = 0; i < paths.Length; i++)
                 {
                     try
                     {
-                        f.Paths[i] = DeserializePath(LoadJson(baseDir, (string)(paths[i])));
-                        f.Paths[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
+                        ps[i] = DeserializePath(LoadJson(baseDir, (string)(paths[i])));
+                        ps[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
                     }
                     catch (Exception e)
                     {
@@ -809,18 +815,19 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Paths = ps;
             }
             if (projFile.Has("scripts"))
             {
                 Console.WriteLine("Loading scripts...");
                 var scripts = projFile["scripts"].ToArray();
-                f.Scripts = new ScriptInfo[scripts.Length];
+                var ss = new ScriptInfo[scripts.Length];
                 for (int i = 0; i < scripts.Length; i++)
                 {
                     try
                     {
-                        f.Scripts[i] = DeserializeScript(LoadJson(baseDir, (string)(scripts[i])), f.Code);
-                        f.Scripts[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
+                        ss[i] = DeserializeScript(LoadJson(baseDir, (string)(scripts[i])), f.Code);
+                        ss[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
                     }
                     catch (Exception e)
                     {
@@ -828,18 +835,19 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Scripts = ss;
             }
             if (projFile.Has("fonts"))
             {
                 Console.WriteLine("Loading fonts...");
                 var fonts = projFile["fonts"].ToArray();
-                f.Fonts = new FontInfo[fonts.Length];
+                var fs = new FontInfo[fonts.Length];
                 for (int i = 0; i < fonts.Length; i++)
                 {
                     try
                     {
-                        f.Fonts[i] = DeserializeFont(LoadJson(baseDir, (string)(fonts[i])));
-                        f.Fonts[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
+                        fs[i] = DeserializeFont(LoadJson(baseDir, (string)(fonts[i])));
+                        fs[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
                     }
                     catch (Exception e)
                     {
@@ -847,6 +855,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Fonts = fs;
             }
             if (projFile.Has("rooms"))
             {
@@ -855,15 +864,15 @@ namespace Altar.Repack
                 var ct = Console.CursorTop;
 
                 var rooms = projFile["rooms"].ToArray();
-                f.Rooms = new RoomInfo[rooms.Length];
+                var rs = new RoomInfo[rooms.Length];
                 for (int i = 0; i < rooms.Length; i++)
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + rooms.Length + C_PAREN);
                     try
                     {
-                        f.Rooms[i] = DeserializeRoom(LoadJson(baseDir, (string)(rooms[i])), f.Backgrounds, f.Objects);
-                        f.Rooms[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
+                        rs[i] = DeserializeRoom(LoadJson(baseDir, (string)(rooms[i])), f.Backgrounds, f.Objects);
+                        rs[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
                     }
                     catch (Exception e)
                     {
@@ -871,6 +880,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Rooms = rs;
             }
             if (projFile.Has("audiogroups"))
             {

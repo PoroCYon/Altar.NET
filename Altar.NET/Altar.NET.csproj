@@ -82,6 +82,7 @@
     <Compile Include="Structs.cs" />
     <Compile Include="Recomp\TokenTypes.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="LazyArray.cs" />
     <Compile Include="_LitJson\IJsonWrapper.cs" />
     <Compile Include="_LitJson\JsonData.cs" />
     <Compile Include="_LitJson\JsonException.cs" />

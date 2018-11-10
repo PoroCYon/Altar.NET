@@ -162,7 +162,7 @@ namespace Altar.Unpack
             return r;
         }
 
-        static JsonData SerializeRoomBg  (RoomBackground bg  , BackgroundInfo[] bgs )
+        static JsonData SerializeRoomBg  (RoomBackground bg  , LazyArray<BackgroundInfo> bgs )
         {
             var r = CreateObj();
 
@@ -179,7 +179,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        static JsonData SerializeRoomView(RoomView       view, ObjectInfo    [] objs)
+        static JsonData SerializeRoomView(RoomView       view, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -194,7 +194,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        static JsonData SerializeRoomObj (RoomObject     obj , ObjectInfo    [] objs)
+        static JsonData SerializeRoomObj (RoomObject     obj , LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -209,7 +209,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        static JsonData SerializeRoomTile(RoomTile       tile, BackgroundInfo[] bgs )
+        static JsonData SerializeRoomTile(RoomTile       tile, LazyArray<BackgroundInfo> bgs )
         {
             var r = CreateObj();
 
@@ -231,9 +231,9 @@ namespace Altar.Unpack
             var r = CreateObj();
             r["name"     ] = oi.Name;
             r["index"    ] = oi.Index;
-            r["unk1"     ] = oi.Unk1;
-            r["unk2"     ] = oi.Unk2;
-            r["unk3"     ] = oi.Unk3;
+            r["unk1"     ] = oi.Unk1 ;
+            r["depth"    ] = oi.Depth;
+            r["unk3"     ] = oi.Unk3 ;
             r["instances"] = SerializeArray(oi.Instances, Utils.Identity);
             return r;
         }
@@ -361,7 +361,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        public static JsonData SerializeScript(ScriptInfo     scpt, CodeInfo[] code)
+        public static JsonData SerializeScript(ScriptInfo     scpt, LazyArray<CodeInfo> code)
         {
             var r = CreateObj();
 
@@ -372,7 +372,7 @@ namespace Altar.Unpack
         public static JsonData SerializeFont  (FontInfo       font)
         {
             var r = CreateObj();
-            
+
             r["sysname"  ] = font.SystemName;
             r["emsize"   ] = font.EmSize;
             r["bold"     ] = font.IsBold;
@@ -387,7 +387,7 @@ namespace Altar.Unpack
             return r;
         }
 
-        public static JsonData SerializeObj   (ObjectInfo objt, SpriteInfo[] sprites, ObjectInfo[] objs)
+        public static JsonData SerializeObj   (ObjectInfo objt, LazyArray<SpriteInfo> sprites, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -415,7 +415,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        public static JsonData SerializeRoom  (RoomInfo room, BackgroundInfo[] bgs, ObjectInfo[] objs)
+        public static JsonData SerializeRoom  (RoomInfo room, LazyArray<BackgroundInfo> bgs, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
