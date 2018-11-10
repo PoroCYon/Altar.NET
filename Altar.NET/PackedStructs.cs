@@ -428,17 +428,6 @@ namespace Altar
         public uint Length;
         public byte Data;
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct ShaderEntry
-    {
-        public uint Name;
-        public uint UnknownFlags;
-        public fixed uint Sources[6];
-        fixed uint _pad[2];
-        public uint VertexAttributeCount;
-        public uint VertexAttribute;
-        // After vert attrs: unknown 0x00000002, 12x 0x00000000
-    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ObjectPhysics

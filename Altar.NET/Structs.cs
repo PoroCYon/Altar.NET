@@ -223,13 +223,6 @@ namespace Altar
     {
         public byte[] Wave;
     }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ShaderInfo
-    {
-        public string Name;
-        public string[] Sources;
-        public string[] VertexAttributes;
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RoomBackground

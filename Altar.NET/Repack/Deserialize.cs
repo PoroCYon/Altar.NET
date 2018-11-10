@@ -385,11 +385,27 @@ namespace Altar.Repack
             SpritesheetId = (uint)j["sheetid"]
         };
         #endregion
+
+        public static ShaderProgramSource DeserializeShaderProgramSource(JsonData j) => new ShaderProgramSource
+        {
+            VertexShader = (string)j["vertex"],
+            FragmentShader = (string)j["fragment"]
+        };
+
+        public static ShaderCode DeserializeShaderCode(JsonData j) => new ShaderCode
+        {
+            GLSL_ES = DeserializeShaderProgramSource(j["glsles"]),
+            GLSL    = DeserializeShaderProgramSource(j["glsl"  ]),
+            HLSL9   = DeserializeShaderProgramSource(j["hlsl9" ])
+                // TODO: HLSL11, PSSL, Cg, Cg_PS3
+        };
+
         #region public static ShaderInfo DeserializeShader(JsonData j)
         public static ShaderInfo DeserializeShader(JsonData j) => new ShaderInfo
         {
-            Sources          = DeserializeArray(j["sources"   ], d => (string)d),
-            VertexAttributes = DeserializeArray(j["attributes"], d => (string)d)
+            Type       = (ShaderType)Enum.Parse(typeof(ShaderType), (string)j["type"]),
+            Code       = DeserializeShaderCode(j["code"]),
+            Attributes = DeserializeArray(j["attributes"], d => (string)d)
         };
         #endregion
 
@@ -899,13 +915,13 @@ namespace Altar.Repack
             {
                 Console.WriteLine("Loading shaders...");
                 var shaders = projFile["shaders"].ToArray();
-                f.Shaders = new ShaderInfo[shaders.Length];
+                var ss = new ShaderInfo[shaders.Length];
                 for (int i = 0; i < shaders.Length; i++)
                 {
                     try
                     {
-                        f.Shaders[i] = DeserializeShader(LoadJson(baseDir, (string)(shaders[i])));
-                        f.Shaders[i].Name = Path.GetFileNameWithoutExtension((string)(shaders[i]));
+                        ss[i] = DeserializeShader(LoadJson(baseDir, (string)(shaders[i])));
+                        ss[i].Name = Path.GetFileNameWithoutExtension((string)(shaders[i]));
                     }
                     catch (Exception e)
                     {
@@ -913,6 +929,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Shaders = ss;
             }
             return f;
         }
