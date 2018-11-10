@@ -28,7 +28,7 @@ namespace Altar
                 if (firstest)
                 {
                     firstest = false;
-                    return true;
+                    return arr.max > 0;
                 }
                 ++curind;
                 return curind < arr.Length;
@@ -65,7 +65,8 @@ namespace Altar
         {
             get
             {
-                if (ind >= max) throw new IndexOutOfRangeException();
+                if (ind >= max)
+                    throw new IndexOutOfRangeException("ind="+ind+"/"+max);
 
                 KeyValuePair<bool, T> v;
                 if (cache.TryGetValue(ind, out v))

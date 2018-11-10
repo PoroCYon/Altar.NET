@@ -194,6 +194,19 @@ namespace Altar
             set;
         }
 
+        [Option("dumptpagpng", HelpText = "Dump all separate TPAG entries as PNGs. (Note: you probably want --dumpspritepng.)")]
+        public bool DumpTPagPNGs
+        {
+            get;
+            set;
+        }
+        [Option("dumpspritepng", HelpText = "Dump all separate SPRT entries as PNGs.")]
+        public bool DumpSpritePNGs
+        {
+            get;
+            set;
+        }
+
         [HelpOption]
         public string GetUsage() => HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
     }

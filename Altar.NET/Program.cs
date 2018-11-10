@@ -6,10 +6,14 @@ using CommandLine;
 using LitJson;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
+
+using GDIRectangle = System.Drawing.Rectangle;
 
 using static Altar.SR;
 
@@ -186,7 +190,7 @@ namespace Altar
                     for (int i = 1; i < f.AudioGroups.Length; ++i)
                     {
                         WrAndGetC(DASH_ + f.AudioGroups[i] + O_PAREN + i +
-                                SLASH + (f.AudioGroups.Length - 1) + C_PAREN + SPACE_S,
+                                SLASH + f.AudioGroups.Length + C_PAREN + SPACE_S,
                                 out cl, out ct);
 
                         var agrpfn = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar
@@ -228,8 +232,12 @@ namespace Altar
                 #endregion
 
                 #region TXTR
+                MemoryStream[] txtrStreams = null;
+                Bitmap      [] txtrBitmaps = null;
                 if (eo.Texture && f.Textures != null)
                 {
+                    txtrStreams = new MemoryStream[f.Textures.Length];
+                    txtrBitmaps = new Bitmap      [f.Textures.Length];
                     WrAndGetC("Exporting texture sheets... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_TEX))
@@ -239,6 +247,11 @@ namespace Altar
                     {
                         if (f.Textures[i].PngData == null)
                             continue;
+
+                        using (var ms = new MemoryStream(f.Textures[i].PngData))
+                        {
+                            txtrBitmaps[i] = new Bitmap(txtrStreams[i] = ms);
+                        }
 
                         SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Textures.Length + C_PAREN);
 
@@ -350,8 +363,10 @@ namespace Altar
                 }
                 #endregion
                 #region TPAG
+                Bitmap[] tpagBitmaps = null;
                 if (eo.TPag && f.TexturePages != null)
                 {
+                    tpagBitmaps = new Bitmap[f.TexturePages.Length];
                     WrAndGetC("Exporting texture maps... ", out cl, out ct);
 
                     if (!Directory.Exists(od + DIR_TXP))
@@ -361,7 +376,17 @@ namespace Altar
                     {
                         SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.TexturePages.Length + C_PAREN);
 
-                        File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeTPag(f.TexturePages[i])));
+                        var tpag = f.TexturePages[i];
+                        File.WriteAllText(od + DIR_TXP + i + EXT_JSON,
+                                JsonMapper.ToJson(Serialize.SerializeTPag(tpag)));
+
+                        var bc = txtrBitmaps[tpag.SpritesheetId]
+                                .Clone(new GDIRectangle(tpag.Source.X, tpag.Source.Y,
+                                        tpag.Source.Width, tpag.Source.Height),
+                                    PixelFormat.DontCare);
+                        tpagBitmaps[i] = bc;
+
+                        if (eo.DumpTPagPNGs) bc.Save(od + DIR_TXP + i + EXT_PNG);
                     }
                     Console.WriteLine();
                     f.TexturePages.Clear();
@@ -380,6 +405,13 @@ namespace Altar
                         SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Sprites.Length + C_PAREN);
 
                         File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSprite(f.Sprites[i])));
+
+                        if (eo.DumpSpritePNGs)
+                        for (int j = 0; j < f.Sprites[i].TextureIndices.Length; ++j)
+                        {
+                            uint id = f.Sprites[i].TextureIndices[j];
+                            tpagBitmaps[id].Save(od + DIR_SPR + f.Sprites[i].Name + UNDERSCORE + j + EXT_PNG);
+                        }
                     }
                     Console.WriteLine();
                     f.Sprites.Clear();
@@ -536,6 +568,16 @@ namespace Altar
 
                     File.WriteAllText(od + f.General.Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeProject(f, eo, chunks)));
                 }
+
+                if (tpagBitmaps != null)
+                    for (int i = 0; i < tpagBitmaps.Length; ++i)
+                        tpagBitmaps[i].Dispose();
+                if (txtrStreams != null)
+                    for (int i = 0; i < txtrStreams.Length; ++i)
+                    {
+                        txtrBitmaps[i].Dispose();
+                        txtrStreams[i].Dispose();
+                    }
             }
         }
 
