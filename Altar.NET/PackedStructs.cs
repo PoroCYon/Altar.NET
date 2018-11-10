@@ -150,6 +150,14 @@ namespace Altar
         public fixed uint _pad1[0xC];
         public CountOffsetsPair ConstMap;
     }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct SectionGlobals
+    {
+        public SectionHeaders Header;
+
+        public uint Count;
+        public uint CodeIDs;
+    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct SectionUnknown
@@ -367,7 +375,7 @@ namespace Altar
         public uint Name;
         public uint Index;
         public uint Unk1;
-        public uint Unk2;
+        public uint Depth;
         fixed uint _pad1[4];
         public uint Unk3;
         public uint InstCount;
@@ -552,4 +560,132 @@ namespace Altar
         public uint FunctionName;
         public FunctionLocalEntry Locals;
     }
+
+    public enum ExtensionType : uint
+    {
+        Unknown0    = 0,
+        SharedLib   = 1,
+        GML         = 2,
+        Unknown1    = 3,
+        DataFile    = 4, // or "generic placeholder"
+        Javascript  = 5
+    }
+    public enum ExtensionFFIType : uint
+    {
+        String = 1,
+        Double = 2
+    }
+    public enum ExtensionCC : uint
+    {
+        Cdecl = 0x0C
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ExtensionFunctionEntry
+    {
+        public uint GMLName;
+        public uint ID;
+        public ExtensionCC CallingConvention;
+        public ExtensionFFIType ReturnType;
+        public uint SymbolName;
+        public uint ArgumentCount;
+        public ExtensionFFIType ArgumentTypes;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ExtensionFileEntry
+    {
+        public uint Filename;
+        public uint KillSymbol;
+        public uint InitSymbol;
+        public ExtensionType Type;
+        public CountOffsetsPair Functions;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ExtensionEntry
+    {
+        public uint EmptyString;
+        public uint Name;
+        public uint ClassName;
+        public CountOffsetsPair Includes;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TimelineEventEntry
+    {
+        public uint EventID; // CODE ?
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TimelineKeyframeEntry
+    {
+        public uint Time;
+        public uint OffsetToEvents; // CountOffsetsPair<TimelineEventEntry>*
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct TimelineEntry
+    {
+        public uint Name;
+        public uint KeyframeCount;
+        public TimelineKeyframeEntry Keyframes;
+    }
+
+    public enum ShaderType : uint
+    {
+        GLSL_ES   = 1,
+        GLSL      = 2,
+        Unknown3  = 3,
+        HLSL      = 4,
+        Unknown5  = 5,
+        Unknown6  = 6,
+        Unknown7  = 7
+    }
+    public enum ShaderTypeEnc : uint
+    {
+        WeirdBit  = (uint)1<<31,
+        GLSL_ES   = (uint)ShaderType.GLSL_ES  | WeirdBit,
+        GLSL      = (uint)ShaderType.GLSL     | WeirdBit,
+        Unknown3  = (uint)ShaderType.Unknown3 | WeirdBit,
+        HLSL      = (uint)ShaderType.HLSL     | WeirdBit,
+        Unknown5  = (uint)ShaderType.Unknown5 | WeirdBit,
+        Unknown6  = (uint)ShaderType.Unknown6 | WeirdBit,
+        Unknown7  = (uint)ShaderType.Unknown7 | WeirdBit
+    }
+    public static class ShaderTypeExt
+    {
+        public static ShaderTypeEnc Encode(this ShaderType st) =>
+            (ShaderTypeEnc)st | ShaderTypeEnc.WeirdBit;
+    }
+    public static class ShaderTypeEncExt
+    {
+        public static ShaderType Decode(this ShaderTypeEnc ste) =>
+            (ShaderType)(ste & ~ShaderTypeEnc.WeirdBit);
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ShaderVxFxStrings
+    {
+        public uint VertexSource, FragmentSource; // strg offsets
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ShaderVxFxBlobs
+    {
+        public uint VertexData, VertexLength,     // *Data: offset to an array of length *Length
+                    FragmentData, FragmentLength;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ShaderEntry
+    {
+        public uint Name;
+        public ShaderTypeEnc Type;
+
+        public ShaderVxFxStrings GLSL_ES, GLSL, HLSL9;
+        public ShaderVxFxBlobs HLSL11;
+        public uint AttributeCount;
+        public uint Attributes; // inline array, all strg offsets
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ShaderEntry2
+    {
+        public uint Unknown; // always 2
+        public ShaderVxFxBlobs PSSL, Cg, Cg_PS3;
+        // actual shader blobs are somewhere down here
+    }
 }
+

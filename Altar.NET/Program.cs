@@ -131,7 +131,7 @@ namespace Altar
 
                 // ---
                 #region GEN8
-                if (eo.General)
+                if (eo.General && f.Content.General != null)
                 {
                     WriteLine("Exporting manifest file...");
 
@@ -139,7 +139,7 @@ namespace Altar
                 }
                 #endregion
                 #region OPTN
-                if (eo.Options)
+                if (eo.Options && f.Content.Options != null)
                 {
                     WriteLine("Exporting options...");
 
@@ -171,6 +171,7 @@ namespace Altar
                     File.WriteAllText(od + "functions.json", JsonMapper.ToJson(Serialize.SerializeFuncs(f)));
                 }
                 #endregion
+                int cl = 0, ct = 0;
                 #region AGRP
                 if (eo.AudioGroups && f.AudioGroups != null)
                 {
@@ -178,9 +179,54 @@ namespace Altar
 
                     File.WriteAllText(od+"audiogroups.json", JsonMapper.ToJson(Serialize.SerializeAudioGroups(f)));
                 }
+                if (eo.DetachedAgrp && f.AudioGroups != null)
+                {
+                    WriteLine("Dumping audio from detached audio groups...");
+
+                    for (int i = 1; i < f.AudioGroups.Length; ++i)
+                    {
+                        WrAndGetC(DASH_ + f.AudioGroups[i] + O_PAREN + i +
+                                SLASH + (f.AudioGroups.Length - 1) + C_PAREN + SPACE_S,
+                                out cl, out ct);
+
+                        var agrpfn = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar
+                            + AGRPF + i + D_DAT;
+                        if (!File.Exists(agrpfn))
+                        {
+                            Console.Error.WriteLine("Eep: file '" + agrpfn + "' doesn't exist, skipping...");
+                            continue;
+                        }
+
+                        var infoTable = new Dictionary<int, SoundInfo>();
+
+                        for (uint iii = 0; iii < f.Sound.Length; ++iii)
+                        {
+                            var s = f.Sound[iii];
+                            if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1
+                                    && s.GroupID == i)
+                                infoTable[s.AudioID] = s;
+                        }
+
+                        var odgrp = od + DIR_AGRP + f.AudioGroups[i];
+                        if (!Directory.Exists(odgrp))
+                            Directory.CreateDirectory(odgrp);
+
+                        using (var af = GMFile.GetFile(agrpfn))
+                        {
+                            for (int j = 0; j < af.Audio.Length; ++j)
+                            {
+                                SetCAndWr(cl, ct, O_PAREN + (j + 1) + SLASH +
+                                        (af.Audio.Length - 1) + C_PAREN);
+                                File.WriteAllBytes(odgrp + Path.DirectorySeparatorChar
+                                        + infoTable[j].Name + SR.EXT_WAV, af.Audio[j].Wave);
+                            }
+                        }
+                        Console.WriteLine();
+                    }
+                    f.AudioGroups.Clear();
+                }
                 #endregion
 
-                int cl = 0, ct = 0;
                 #region TXTR
                 if (eo.Texture && f.Textures != null)
                 {
@@ -193,12 +239,13 @@ namespace Altar
                     {
                         if (f.Textures[i].PngData == null)
                             continue;
-                        
+
                         SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Textures.Length + C_PAREN);
 
                         File.WriteAllBytes(od + DIR_TEX + i + EXT_PNG, f.Textures[i].PngData);
                     }
                     Console.WriteLine();
+                    f.Textures.Clear();
                 }
                 #endregion
                 #region AUDO
@@ -209,7 +256,8 @@ namespace Altar
                     var infoTable = new Dictionary<int, SoundInfo>();
 
                     foreach (var s in f.Sound)
-                        if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1 && (s.Group == null || s.Group == f.AudioGroups[0]))
+                        if ((s.IsEmbedded || s.IsCompressed) && s.AudioID != -1
+                                && s.GroupID == 0) // not from audiogroup$n.dat
                             infoTable[s.AudioID] = s;
 
                     if (!Directory.Exists(od + DIR_WAV))
@@ -222,6 +270,7 @@ namespace Altar
                         File.WriteAllBytes(od + DIR_WAV + infoTable[i].Name + SR.EXT_WAV, f.Audio[i].Wave);
                     }
                     Console.WriteLine();
+                    f.Audio.Clear();
                 }
                 #endregion
                 #region CODE
@@ -279,6 +328,7 @@ namespace Altar
                     }
                     Console.WriteLine();
                 }
+                if (f.Code != null) f.Code.Clear();
                 #endregion
 
                 #region SCPT
@@ -296,6 +346,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SCR + f.Scripts[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeScript(f.Scripts[i], f.Code)));
                     }
                     Console.WriteLine();
+                    f.Scripts.Clear();
                 }
                 #endregion
                 #region TPAG
@@ -313,6 +364,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_TXP + i + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeTPag(f.TexturePages[i])));
                     }
                     Console.WriteLine();
+                    f.TexturePages.Clear();
                 }
                 #endregion
                 #region SPRT
@@ -330,6 +382,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SPR + f.Sprites[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSprite(f.Sprites[i])));
                     }
                     Console.WriteLine();
+                    f.Sprites.Clear();
                 }
                 #endregion
                 #region SOND
@@ -347,6 +400,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_SND + f.Sound[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeSound(f.Sound[i])));
                     }
                     Console.WriteLine();
+                    f.Sound.Clear();
                 }
                 #endregion
 
@@ -400,6 +454,9 @@ namespace Altar
                     }
                     Console.WriteLine();
                 }
+                if (f.Backgrounds != null)f.Backgrounds.Clear();
+                if (f.Objects != null) f.Objects.Clear();
+                if (f.Rooms != null) f.Rooms.Clear();
                 #endregion
 
                 #region FONT
@@ -417,6 +474,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_FNT + f.Fonts[i].CodeName + EXT_JSON, JsonMapper.ToJson(Serialize.SerializeFont(f.Fonts[i])));
                     }
                     Console.WriteLine();
+                    f.Fonts.Clear();
                 }
                 #endregion
                 #region PATH
@@ -434,6 +492,7 @@ namespace Altar
                         File.WriteAllText(od + DIR_PATH + f.Paths[i].Name + EXT_JSON, JsonMapper.ToJson(Serialize.SerializePath(f.Paths[i])));
                     }
                     Console.WriteLine();
+                    f.Paths.Clear();
                 }
                 #endregion
                 #region SHDR
@@ -470,7 +529,7 @@ namespace Altar
                         var len = unk->Header.Size;
                         byte[] buf = new byte[len];
                         uint* src = &unk->Unknown;
-                        
+
                         if (len != 0)
                             ILHacks.Cpblk<byte>((void*)src, buf, 0, (int)len);
 
@@ -480,30 +539,9 @@ namespace Altar
                     var c = f.Content;
 
                     if (eo.DumpAllChunks)
-                    {
-                        chunks.Add((IntPtr)c.General     );
-                        chunks.Add((IntPtr)c.Options     );
-                        chunks.Add((IntPtr)c.Sounds      );
-                        chunks.Add((IntPtr)c.AudioGroup  );
-                        chunks.Add((IntPtr)c.Sprites     );
-                        chunks.Add((IntPtr)c.Backgrounds );
-                        chunks.Add((IntPtr)c.Paths       );
-                        chunks.Add((IntPtr)c.Scripts     );
-                        chunks.Add((IntPtr)c.Fonts       );
-                        chunks.Add((IntPtr)c.Objects     );
-                        chunks.Add((IntPtr)c.Rooms       );
-                        chunks.Add((IntPtr)c.Shaders     );
-                    
-                        chunks.Add((IntPtr)c.TexturePages);
-                        chunks.Add((IntPtr)c.Code        );
-                        chunks.Add((IntPtr)c.Variables   );
-                        chunks.Add((IntPtr)c.Functions   );
-                        chunks.Add((IntPtr)c.Strings     );
-                        chunks.Add((IntPtr)c.Textures    );
-                        chunks.Add((IntPtr)c.Audio       );
-                    }
+                        chunks.AddRange(c.Chunks.Values);
 
-                    chunks.AddRange(c.UnknownChunks.Values);
+                    // TODO: how to filter out unknowns?
 
                     for (int i = 0; i < chunks.Count; i++)
                         DumpUnk(chunks[i]);
@@ -777,25 +815,6 @@ namespace Altar
             return writer.Buffer.ReadBytes(writer.Buffer.Size);
         }
 
-        static void ExportAgrp(ExportAgrpOptions opt) {
-            var file=Path.GetFullPath(opt.File);
-            var outd=Path.GetFullPath(opt.OutputDirectory);
-
-            if (!Directory.Exists(outd))Directory.CreateDirectory(outd);
-            if (!File.Exists(file))throw new ParserException("File \"" + file + "\" doesn't exist.");
-
-            nopp=quiet=false;
-            using (var f=AGRPFile.GetFile(file)){
-                int cl = 0, ct = 0;
-                WrAndGetC("Exporting AGRP audio... ", out cl, out ct);
-                for (int i =0; i<f.Waves.Length;++i){
-                    SetCAndWr(cl, ct, O_PAREN + (i + 1) + SLASH + f.Waves.Length + C_PAREN);
-                    File.WriteAllBytes("audo" + i.ToString("D3") + ".wav", f.Waves[i]);
-                }
-            }
-            Console.WriteLine();
-        }
-
         [STAThread]
         static void Main(string[] args)
         {
@@ -817,9 +836,6 @@ namespace Altar
                             break;
                         case "import":
                             Import((ImportOptions)vo);
-                            break;
-                        case "export-agrp":
-                            ExportAgrp((ExportAgrpOptions)vo);
                             break;
                     }
                 }
