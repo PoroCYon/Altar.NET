@@ -190,7 +190,9 @@ namespace Altar.Decomp
                         }
                         else if (inst->OpCode.General(bcv) == GeneralOpCode.Dup)
                         {
-                            stack.Push(stack.Peek());
+                            var dup = PopMany(inst->SingleType.DupExtra+1);
+                            stack.PushRange(dup);
+                            stack.PushRange(dup);
                         }
                         else
                         {
