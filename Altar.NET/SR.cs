@@ -33,6 +33,7 @@
             LEFTSH    = "<<",
             XOR       = "^" ,
             QMARK     = "?" ,
+            UNDERSCORE= "_" ,
 
             INDENT4 = "    ",
 
