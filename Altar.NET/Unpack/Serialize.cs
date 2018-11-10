@@ -455,12 +455,33 @@ namespace Altar.Unpack
 
             return r;
         }
+        public static JsonData SerializeShaderProgramSource(ShaderProgramSource src)
+        {
+            var r = CreateObj();
+
+            r["vertex"  ] = src.VertexShader;
+            r["fragment"] = src.FragmentShader;
+
+            return r;
+        }
+        public static JsonData SerializeShaderCode(ShaderCode shaderCode)
+        {
+            var r = CreateObj();
+
+            r["glsles"] = SerializeShaderProgramSource(shaderCode.GLSL_ES);
+            r["glsl"  ] = SerializeShaderProgramSource(shaderCode.GLSL   );
+            r["hlsl9" ] = SerializeShaderProgramSource(shaderCode.HLSL9  );
+            // TODO: HLSL11, PSSL, Cg, Cg_PS3
+
+            return r;
+        }
         public static JsonData SerializeShader(ShaderInfo shdr)
         {
             var r = CreateObj();
 
-            r["sources"   ] = SerializeArray(shdr.Sources         , Utils.Identity);
-            r["attributes"] = SerializeArray(shdr.VertexAttributes, Utils.Identity);
+            r["type"      ] = shdr.Type.ToString();
+            r["code"      ] = SerializeShaderCode(shdr.Code);
+            r["attributes"] = SerializeArray(shdr.Attributes, Utils.Identity);
 
             return r;
         }
