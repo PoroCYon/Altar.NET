@@ -250,7 +250,7 @@ namespace Altar
     public struct RoomObject
     {
         public Point Position;
-        public uint DefIndex;
+        public uint? DefIndex;
         public uint InstanceID;
         public uint CreateCodeID; // gml_RoomCC_<name>_<CreateCodeID>_Create
         public PointF Scale;
@@ -261,7 +261,7 @@ namespace Altar
     public struct RoomTile
     {
         public Point Position;
-        public uint DefIndex;
+        public uint? DefIndex;
         public Point SourcePosition;
         public Point Size;
         public uint Depth;

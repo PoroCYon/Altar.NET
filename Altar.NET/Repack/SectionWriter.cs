@@ -891,7 +891,7 @@ namespace Altar.Repack
         {
             data.Buffer.Write(new RoomObjEntry
             {
-                DefIndex = ro.DefIndex,
+                DefIndex = ro.DefIndex ?? 0xFFFFFFFF,
                 Position = ro.Position,
                 Scale = ro.Scale,
                 Colour = ro.Colour,
@@ -907,7 +907,7 @@ namespace Altar.Repack
         {
             data.Buffer.Write(new RoomTileEntry
             {
-                DefIndex = rt.DefIndex,
+                DefIndex = rt.DefIndex ?? 0xFFFFFFFF,
                 Position = rt.Position,
                 SourcePos = rt.SourcePosition,
                 Size = rt.Size,
