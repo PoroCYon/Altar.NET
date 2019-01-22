@@ -117,7 +117,6 @@ namespace Altar.Unpack
 
             var o = new RoomObject();
 
-            o.DefIndex = entry->DefIndex;
             o.Position = entry->Position;
             o.Scale    = entry->Scale   ;
             o.Colour   = entry->Colour  ;
@@ -125,6 +124,8 @@ namespace Altar.Unpack
 
             o.InstanceID   = entry->InstanceID  ;
             o.CreateCodeID = entry->CreateCodeID;
+
+            o.DefIndex = entry->DefIndex == 0xFFFFFFFF ? null : (uint?)entry->DefIndex;
 
             return o;
         }
@@ -134,7 +135,6 @@ namespace Altar.Unpack
 
             var t = new RoomTile();
 
-            t.DefIndex       = entry->DefIndex;
             t.Position       = entry->Position;
             t.SourcePosition = entry->SourcePos;
             t.Size           = entry->Size;
@@ -143,6 +143,8 @@ namespace Altar.Unpack
 
             t.Depth      = entry->TileDepth ;
             t.InstanceID = entry->InstanceID;
+
+            t.DefIndex = entry->DefIndex == 0xFFFFFFFF ? null : (uint?)entry->DefIndex;
 
             return t;
         }

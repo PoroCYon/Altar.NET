@@ -199,13 +199,15 @@ namespace Altar.Unpack
             var r = CreateObj();
 
             r["pos"     ] = SerializePoint(obj.Position);
-            r["obj"     ] = objs[obj.DefIndex].Name;
             r["scale"   ] = SerializePoint(obj.Scale);
             r["colour"  ] = obj.Colour.ToHexString();
             r["rotation"] = obj.Rotation;
 
             r["instanceid"  ] = obj.InstanceID  ;
             r["createcodeid"] = obj.CreateCodeID;
+
+            if (obj.DefIndex.HasValue)
+                r["obj"] = objs[obj.DefIndex.Value].Name;
 
             return r;
         }
@@ -214,7 +216,6 @@ namespace Altar.Unpack
             var r = CreateObj();
 
             r["pos"      ] = SerializePoint(tile.Position);
-            r["bg"       ] = bgs[tile.DefIndex].Name;
             r["sourcepos"] = SerializePoint(tile.SourcePosition);
             r["size"     ] = SerializeSize (tile.Size);
             r["scale"    ] = SerializePoint(tile.Scale);
@@ -222,6 +223,9 @@ namespace Altar.Unpack
 
             r["tiledepth" ] = tile.Depth     ;
             r["instanceid"] = tile.InstanceID;
+
+            if (tile.DefIndex.HasValue)
+                r["bg"] = bgs[tile.DefIndex.Value].Name;
 
             return r;
         }
