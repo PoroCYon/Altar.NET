@@ -343,7 +343,7 @@ namespace Altar.Unpack
 
                 for (uint i = 0; i < amt; i++)
                 {
-                    bool[,] stuff = new bool[wPad*8, h];
+                    bool[,] stuff = new bool[h, wPad*8];
 
                     for (uint y = 0; y < h; y++)
                     {
@@ -356,9 +356,9 @@ namespace Altar.Unpack
 
                             byte* curptr = maskData + rown + byten;
                             byte curbyte = *curptr;
-                            byte curbit = (byte)(curbyte & (byte)(1 << bitn));
+                            byte curbit = (byte)(curbyte & (byte)(1 << (7-bitn)));
 
-                            stuff[x, y] = curbit != 0;
+                            stuff[y, x] = curbit != 0;
                         }
                     }
 
