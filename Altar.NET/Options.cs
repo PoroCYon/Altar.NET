@@ -141,7 +141,7 @@ namespace Altar
             set;
         }
 
-        [Option("project", HelpText = "Export everything (except -dwhk) to a project-like structure and emit a project file that can be rebuilt (in a later version).", MutuallyExclusiveSet = "PROJ")]
+        [Option("project", HelpText = "Export everything (except -dwhk) to a project-like structure and emit a project file that can be rebuilt.", MutuallyExclusiveSet = "PROJ")]
         public bool ExportToProject
         {
             get;
@@ -240,7 +240,7 @@ namespace Altar
             set;
         }
 
-        [VerbOption("import", HelpText = "")]
+        [VerbOption("import", HelpText = "Recompile an Altar.NET project file to a new data.win file.")]
         public ImportOptions Import
         {
             get;
