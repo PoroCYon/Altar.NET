@@ -174,11 +174,10 @@ namespace Altar.Decomp
         {
             var a = (OwnerName == null ? OwnerType.ToPrettyString() : O_BRACKET + OwnerName + C_BRACKET)
                 + DOT + Variable.Name;
-
-            if (ArrayIndices != null && Type == VariableType.Array)
-                return a + O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET;
-
-            return a + Type.ToPrettyString();
+            
+            return a + (Type == VariableType.Array && ArrayIndices != null
+                    ? O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET
+                    : Type.ToPrettyString());
         }
     }
     public class MemberExpression : VariableExpression
@@ -187,12 +186,11 @@ namespace Altar.Decomp
 
         public override string ToString()
         {
-            var a = Owner + COLON + Variable.Name;
-
-            if (ArrayIndices != null && Type == VariableType.Array)
-                return a + O_BRACKET + ArrayIndices + C_BRACKET;
-
-            return a;
+            var a = (OwnerType >= InstanceType.StackTopOrGlobal ? Owner.ToString() : OwnerType.ToPrettyString()) + COLON + Variable.Name;
+            
+            return a + (Type == VariableType.Array && ArrayIndices != null
+                    ? O_BRACKET + String.Join(COMMA_S, ArrayIndices.Select(e => e.ToString())) + C_BRACKET
+                    : Type.ToPrettyString());
         }
     }
     public class UnaryOperatorExpression : Expression
