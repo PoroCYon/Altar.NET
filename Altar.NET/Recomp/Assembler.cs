@@ -627,7 +627,7 @@ namespace Altar.Recomp
                 }
                 if (targetRef.InstanceType == InstanceType.Local && targetRef.Name == "arguments")
                 {
-                    //localCount = 0;
+                    localCount = 0;
                 }
                 if (start != 0xFFFFFFFF)
                 {
@@ -671,8 +671,7 @@ namespace Altar.Recomp
                     Name = targetRef.Name,
                     Occurrences = count,
                     unknown2 = targetRef.InstanceType == InstanceType.Local ?
-                        localCount : targetRef.VariableType == VariableType.StackTop ?
-                            nonLocalCount : -6,
+                        localCount : nonLocalCount, // -6 for builtins - how to detect?
                     VariableType = targetRef.VariableType
                 };
                 if (targetRef.VariableIndex == -1)
@@ -689,7 +688,7 @@ namespace Altar.Recomp
                 {
                     localCount++;
                 }
-                else if (targetRef.VariableType == VariableType.StackTop)
+                else
                 {
                     nonLocalCount++;
                 }
