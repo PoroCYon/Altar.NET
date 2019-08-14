@@ -602,7 +602,7 @@ namespace Altar.Repack
             {
                 Console.WriteLine("Loading textures...");
                 var textures = projFile["textures"].ToArray();
-                f.Textures = new TextureInfo[textures.Length];
+                var ts = new TextureInfo[textures.Length];
                 for (int i = 0; i < textures.Length; i++)
                 {
                     try
@@ -622,7 +622,7 @@ namespace Altar.Repack
                             texinfo.Height = Utils.SwapEnd32(png->IHDR.Height);
                         }
 
-                        f.Textures[i] = texinfo;
+                        ts[i] = texinfo;
                     }
                     catch (Exception e)
                     {
@@ -630,6 +630,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Textures = ts;
             }
             if (projFile.Has("tpags"))
             {
@@ -638,14 +639,14 @@ namespace Altar.Repack
                 var ct = Console.CursorTop;
                 
                 var tpags = projFile["tpags"].ToArray();
-                f.TexturePages = new TexturePageInfo[tpags.Length];
+                var tps = new TexturePageInfo[tpags.Length];
                 for (int i = 0; i < tpags.Length; i++)
                 {
                     Console.SetCursorPosition(cl, ct);
                     Console.WriteLine(O_PAREN + (i + 1) + SLASH + tpags.Length + C_PAREN);
                     try
                     {
-                        f.TexturePages[i] = DeserializeTPag(LoadJson(baseDir, (string)(tpags[i])));
+                        tps[i] = DeserializeTPag(LoadJson(baseDir, (string)(tpags[i])));
                     }
                     catch (Exception e)
                     {
@@ -653,12 +654,13 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.TexturePages = tps;
             }
             if (projFile.Has("audio"))
             {
                 Console.WriteLine("Loading audio...");
                 var audio = projFile["audio"].ToArray();
-                f.Audio = new AudioInfo[audio.Length];
+                var ais = new AudioInfo[audio.Length];
                 for (int i = 0; i < audio.Length; i++)
                 {
                     try
@@ -667,7 +669,7 @@ namespace Altar.Repack
                         {
                             Wave = File.ReadAllBytes(Path.Combine(baseDir, (string)(audio[i])))
                         };
-                        f.Audio[i] = audioinfo;
+                        ais[i] = audioinfo;
                     }
                     catch (Exception e)
                     {
@@ -675,6 +677,7 @@ namespace Altar.Repack
                         Console.Error.WriteLine(e);
                     }
                 }
+                f.Audio = ais;
             }
             if (projFile.Has("sprites"))
             {
@@ -755,7 +758,7 @@ namespace Altar.Repack
                             for (int j = 0; j < f.FunctionLocals.Length; j++)
                             {
                                 int fastIndex = (j + i) % f.FunctionLocals.Length;
-                                if (f.FunctionLocals[fastIndex].FunctionName == f.Code[i].Name)
+                                if (f.FunctionLocals[fastIndex].FunctionName == cs[i].Name)
                                 {
                                     cs[i].ArgumentCount = f.FunctionLocals[fastIndex].LocalNames.Length;
                                     break;
