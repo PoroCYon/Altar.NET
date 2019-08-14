@@ -258,8 +258,8 @@ namespace Altar.Unpack
             ret.PitchMod  = se->Pitch ;
 
             ret.Group =
-                ~se->GroupID < 0
-                    ? String.Empty
+                se->GroupID < 0
+                    ? null
                     : GetAudioGroupInfo(content, (uint)se->GroupID);
 
             ret.GroupID      =  se->GroupID;
@@ -490,7 +490,7 @@ namespace Altar.Unpack
             ret.IsSensor       = oe->IsSensor.IsTrue();
             ret.CollisionShape = oe->CollisionShape;
 
-            var hasMore  = oe->Rest.ShapePoints.Count > 0x00FFFFFF; // good enough for now
+            var hasMore  = oe->Rest.ShapePoints_IfMoreFloats.Count < 0x00000FFF; // good enough for now
             var shapeCop = hasMore ? &oe->Rest.ShapePoints_IfMoreFloats : &oe->Rest.ShapePoints;
 
             if (nameonly)

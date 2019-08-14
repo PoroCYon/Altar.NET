@@ -459,6 +459,36 @@ namespace Altar.Unpack
 
             return r;
         }
+        public static JsonData SerializeShaderProgramSource(ShaderProgramSource src)
+        {
+            var r = CreateObj();
+
+            r["vertex"  ] = src.VertexShader;
+            r["fragment"] = src.FragmentShader;
+
+            return r;
+        }
+        public static JsonData SerializeShaderCode(ShaderCode shaderCode)
+        {
+            var r = CreateObj();
+
+            r["glsles"] = SerializeShaderProgramSource(shaderCode.GLSL_ES);
+            r["glsl"  ] = SerializeShaderProgramSource(shaderCode.GLSL   );
+            r["hlsl9" ] = SerializeShaderProgramSource(shaderCode.HLSL9  );
+            // TODO: HLSL11, PSSL, Cg, Cg_PS3
+
+            return r;
+        }
+        public static JsonData SerializeShader(ShaderInfo shdr)
+        {
+            var r = CreateObj();
+
+            r["type"      ] = shdr.Type.ToString();
+            r["code"      ] = SerializeShaderCode(shdr.Code);
+            r["attributes"] = SerializeArray(shdr.Attributes, Utils.Identity);
+
+            return r;
+        }
 
         public static JsonData SerializeStrings(GMFile f) => SerializeArray(f.Strings, Utils.Identity);
         public static JsonData SerializeAudioGroups(GMFile f) => SerializeArray(f.AudioGroups, Utils.Identity);
@@ -580,6 +610,7 @@ namespace Altar.Unpack
             if (f.Fonts       != null && eo.Font      ) r["fonts"  ] = SerializeArray(f.Fonts      , s => SR.DIR_FNT  + s.CodeName + SR.EXT_JSON);
             if (f.Objects     != null && eo.Object    ) r["objs"   ] = SerializeArray(f.Objects    , s => SR.DIR_OBJ  + s.Name     + SR.EXT_JSON);
             if (f.Rooms       != null && eo.Room      ) r["rooms"  ] = SerializeArray(f.Rooms      , s => SR.DIR_ROOM + s.Name     + SR.EXT_JSON);
+            if (f.Shaders     != null && eo.Shader    ) r["shaders"] = SerializeArray(f.Shaders    , s => SR.DIR_SHDR + s.Name     + SR.EXT_JSON);
 
             if (f.AudioGroups != null && eo.AudioGroups) r["audiogroups"] = "audiogroups.json";
 

@@ -121,6 +121,12 @@ namespace Altar
             get;
             set;
         }
+        [Option("shaders", HelpText = "Export shader definitions.", MutuallyExclusiveSet = "EXPORT")]
+        public bool Shader
+        {
+            get;
+            set;
+        }
         [Option('*', "any", HelpText = "Export everything (except -d, --dumpempty, --dumpall).", MutuallyExclusiveSet = "EXPORT")]
         public bool Any
         {
