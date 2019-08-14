@@ -720,7 +720,7 @@ namespace Altar.Repack
                 }
                 else
                 {
-                    data.Buffer.Write(si.SeparateColMasks ? (uint)si.CollisionMasks.Length : 1);
+                    data.Buffer.Write((uint)si.CollisionMasks.Length);
                     foreach (var mask in si.CollisionMasks)
                     {
                         int w = mask.GetLength(0);
@@ -1033,6 +1033,56 @@ namespace Altar.Repack
                         int off = data.Buffer.ReadInt32();
                         stringOffsetOffsets.Add(off + (int)Marshal.OffsetOf(typeof(RoomObjInstEntry), "Name") + 8);
                     }
+                }
+            }
+            return stringOffsetOffsets.ToArray();
+        }
+
+        private static void WriteShader(BBData data, ShaderInfo si, StringsChunkBuilder strings)
+        {
+            var se = new ShaderEntry
+            {
+                Name = strings.GetOffset(si.Name),
+                Type = si.Type.Encode(),
+                AttributeCount = (uint)si.Attributes.Length
+            };
+            unsafe
+            {
+                se.GLSL_ES.VertexSource   = strings.GetOffset(si.Code.GLSL_ES.VertexShader);
+                se.GLSL_ES.FragmentSource = strings.GetOffset(si.Code.GLSL_ES.FragmentShader);
+                se.GLSL.VertexSource      = strings.GetOffset(si.Code.GLSL   .VertexShader);
+                se.GLSL.FragmentSource    = strings.GetOffset(si.Code.GLSL   .FragmentShader);
+                se.HLSL9.VertexSource     = strings.GetOffset(si.Code.HLSL9  .VertexShader);
+                se.HLSL9.FragmentSource   = strings.GetOffset(si.Code.HLSL9  .FragmentShader);
+            }
+            var tmp = new BinBuffer();
+            tmp.Write(se);
+            data.Buffer.Write(tmp, 0, tmp.Size - 4, 0); // TODO
+            foreach (var attr in si.Attributes)
+            {
+                data.Buffer.Write(strings.GetOffset(attr));
+            }
+            data.Buffer.Write(2); // TODO: ShaderEntry2
+            for (int i = 0; i < 12; i++)
+            {
+                data.Buffer.Write(0);
+            }
+        }
+
+        public static int[] WriteShaders(BBData data, ShaderInfo[] shaders, StringsChunkBuilder strings)
+        {
+            int[] offsets = WriteList(data, shaders, WriteShader, strings);
+            var stringOffsetOffsets = new List<int>(shaders.Length);
+            for (int i = 0; i < shaders.Length; i++)
+            {
+                stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Name") + 8);
+                for (int j = 0; j < 6; j++)
+                {
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "GLSL_ES") + 8 + j * sizeof(uint));
+                }
+                for (int j = 0; j < shaders[i].Attributes.Length; j++)
+                {
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Attributes") + 8 + j * sizeof(uint));
                 }
             }
             return stringOffsetOffsets.ToArray();

@@ -99,7 +99,7 @@ namespace Altar.Repack
             AngularDamping = (float)j["angulardamp"],
             Friction       = (float)j["friction"],
             Kinematic      = (float)j["kinematic"],
-            Unknown0       = (float)j["unk0"],
+            Unknown0       = (int)j["unk0"],
             Unknown1       = (int)j["unk1"]
         };
         #endregion
@@ -383,6 +383,29 @@ namespace Altar.Repack
             Destination   = DeserializeRect16 (j["dest"]),
             Size          = DeserializeSize16 (j["size"]),
             SpritesheetId = (uint)j["sheetid"]
+        };
+        #endregion
+
+        public static ShaderProgramSource DeserializeShaderProgramSource(JsonData j) => new ShaderProgramSource
+        {
+            VertexShader = (string)j["vertex"],
+            FragmentShader = (string)j["fragment"]
+        };
+
+        public static ShaderCode DeserializeShaderCode(JsonData j) => new ShaderCode
+        {
+            GLSL_ES = DeserializeShaderProgramSource(j["glsles"]),
+            GLSL    = DeserializeShaderProgramSource(j["glsl"  ]),
+            HLSL9   = DeserializeShaderProgramSource(j["hlsl9" ])
+                // TODO: HLSL11, PSSL, Cg, Cg_PS3
+        };
+
+        #region public static ShaderInfo DeserializeShader(JsonData j)
+        public static ShaderInfo DeserializeShader(JsonData j) => new ShaderInfo
+        {
+            Type       = (ShaderType)Enum.Parse(typeof(ShaderType), (string)j["type"]),
+            Code       = DeserializeShaderCode(j["code"]),
+            Attributes = DeserializeArray(j["attributes"], d => (string)d)
         };
         #endregion
 
@@ -887,6 +910,26 @@ namespace Altar.Repack
                     Console.Error.WriteLine("Error loading audio groups:");
                     Console.Error.WriteLine(e);
                 }
+            }
+            if (projFile.Has("shaders"))
+            {
+                Console.WriteLine("Loading shaders...");
+                var shaders = projFile["shaders"].ToArray();
+                var ss = new ShaderInfo[shaders.Length];
+                for (int i = 0; i < shaders.Length; i++)
+                {
+                    try
+                    {
+                        ss[i] = DeserializeShader(LoadJson(baseDir, (string)(shaders[i])));
+                        ss[i].Name = Path.GetFileNameWithoutExtension((string)(shaders[i]));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.WriteLine($"Error loading {shaders[i]}:");
+                        Console.Error.WriteLine(e);
+                    }
+                }
+                f.Shaders = ss;
             }
             return f;
         }
