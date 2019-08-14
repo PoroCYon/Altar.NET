@@ -44,8 +44,9 @@ Verbs:
   * `noprecprog`: Don't report any exact details on the progress, but do output something. Makes things not break completely when cursor position isn't settable.
   * `detachedagrp`: Also dump the contents of an `audiogroup<n>.dat` file residing in the same directory as the `data.win` file.
   * `help`: ...
-* `import`: Recompile an Altar.NET project file to a `data.win`. (Currently kinda broken...)
-  * see `altar.exe import --help` for the exact flags.
+* `import`: Recompile an Altar.NET project file to a `data.win`.
+  * `file`: Path to the to project file.
+  * `out`: The output `data.win` file.
 
 ## API
 
