@@ -682,7 +682,7 @@ namespace Altar.Unpack
         public static string GetAudioGroupInfo(GMFileContent content, uint id)
         {
             if (id >= content.AudioGroup->Count)
-                throw new ArgumentOutOfRangeException(nameof(id));
+                return null;
 
             var ag = GMFile.PtrFromOffset(content, (&content.AudioGroup->Offsets)[id]);
 
