@@ -891,7 +891,7 @@ namespace Altar.Repack
         {
             data.Buffer.Write(new RoomObjEntry
             {
-                DefIndex = ro.DefIndex,
+                DefIndex = ro.DefIndex ?? 0xFFFFFFFF,
                 Position = ro.Position,
                 Scale = ro.Scale,
                 Colour = ro.Colour,
@@ -907,7 +907,7 @@ namespace Altar.Repack
         {
             data.Buffer.Write(new RoomTileEntry
             {
-                DefIndex = rt.DefIndex,
+                DefIndex = rt.DefIndex ?? 0xFFFFFFFF,
                 Position = rt.Position,
                 SourcePos = rt.SourcePosition,
                 Size = rt.Size,
@@ -924,9 +924,9 @@ namespace Altar.Repack
             data.Buffer.Write(new RoomObjInstEntry
             {
                 Index = roi.Index,
-                Unk1 = roi.Unk1,
-                Unk2 = roi.Unk2,
-                Unk3 = roi.Unk3,
+                Unk1  = roi.Unk1 ,
+                Depth = roi.Depth,
+                Unk3  = roi.Unk3 ,
                 InstCount = (uint)roi.Instances.Length,
                 Name = strings.GetOffset(roi.Name)
             });
@@ -1043,24 +1043,26 @@ namespace Altar.Repack
             var se = new ShaderEntry
             {
                 Name = strings.GetOffset(si.Name),
-                VertexAttributeCount = (uint)si.VertexAttributes.Length,
-                UnknownFlags = 0x80000001
+                Type = si.Type.Encode(),
+                AttributeCount = (uint)si.Attributes.Length
             };
             unsafe
             {
-                for (int i = 0; i < si.Sources.Length; i++)
-                {
-                    se.Sources[i] = strings.GetOffset(si.Sources[i]);
-                }
+                se.GLSL_ES.VertexSource   = strings.GetOffset(si.Code.GLSL_ES.VertexShader);
+                se.GLSL_ES.FragmentSource = strings.GetOffset(si.Code.GLSL_ES.FragmentShader);
+                se.GLSL.VertexSource      = strings.GetOffset(si.Code.GLSL   .VertexShader);
+                se.GLSL.FragmentSource    = strings.GetOffset(si.Code.GLSL   .FragmentShader);
+                se.HLSL9.VertexSource     = strings.GetOffset(si.Code.HLSL9  .VertexShader);
+                se.HLSL9.FragmentSource   = strings.GetOffset(si.Code.HLSL9  .FragmentShader);
             }
             var tmp = new BinBuffer();
             tmp.Write(se);
-            data.Buffer.Write(tmp, 0, tmp.Size - 4, 0);
-            foreach (var attr in si.VertexAttributes)
+            data.Buffer.Write(tmp, 0, tmp.Size - 4, 0); // TODO
+            foreach (var attr in si.Attributes)
             {
                 data.Buffer.Write(strings.GetOffset(attr));
             }
-            data.Buffer.Write(2); // Unknown
+            data.Buffer.Write(2); // TODO: ShaderEntry2
             for (int i = 0; i < 12; i++)
             {
                 data.Buffer.Write(0);
@@ -1074,13 +1076,13 @@ namespace Altar.Repack
             for (int i = 0; i < shaders.Length; i++)
             {
                 stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Name") + 8);
-                for (int j = 0; j < shaders[i].Sources.Length; j++)
+                for (int j = 0; j < 6; j++)
                 {
-                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Sources") + 8 + j * sizeof(uint));
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "GLSL_ES") + 8 + j * sizeof(uint));
                 }
-                for (int j = 0; j < shaders[i].VertexAttributes.Length; j++)
+                for (int j = 0; j < shaders[i].Attributes.Length; j++)
                 {
-                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "VertexAttribute") + 8 + j * sizeof(uint));
+                    stringOffsetOffsets.Add(offsets[i] + (int)Marshal.OffsetOf(typeof(ShaderEntry), "Attributes") + 8 + j * sizeof(uint));
                 }
             }
             return stringOffsetOffsets.ToArray();

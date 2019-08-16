@@ -1,7 +1,7 @@
 Altar.NET
 ======================
 
-GameMaker: Studio `data.win` unpacker and decompiler (non-YYC, specifically made for Undertale), based on [libaltar](https://github.com/kvanberendonck/libaltar) and [Mirrawrs' data site](http://undertale.rawr.ws/) (followed by my corrections/completions [here](https://gitlab.com/snippets/14944) and [here](https://gitlab.com/snippets/14943)).
+GameMaker: Studio `data.win` unpacker and decompiler (non-YYC, specifically made for Undertale), based on [libaltar](https://github.com/kvanberendonck/libaltar) and [Mirrawrs' data site](https://pcy.ulyssis.be/undertale/) (followed by my corrections/completions [here](https://gitlab.com/snippets/14944) and [here](https://gitlab.com/snippets/14943)).
 
 Contains a lot of pointer-littered spaghetti code, because it's basically a continuation of libaltar, but in C#.
 
@@ -31,12 +31,22 @@ altar <verb> <options...>
 (NOTE: use `mono altar.exe <args...>` on mono (should be obvious).)
 
 Verbs:
-* `export`: export parts from a `data.win` file. Options: `-[gonsbpiformtacduwh]* --absolute --project --file --out`
-  * `file`: Path to the `data.win` file to export.
+* `export`: export parts from a `data.win` file. Options: `-[gonsbpifjrmtacduvhekq]* --any --absolute --project --file --out --dumpunk --dumpempty --dumpall --quiet --noprecprog --detachedagrp --help`
+  * `file`: Path to the `data.win` or `audiogroup<n>.dat` file to export.
   * `out`: The output directory.
-  * `project`: Emit a project file that can be recompiled by Altar.NET (*In a later version, this is currently not implemented or anything.*).
-  * `gonsbpiformtacduwh`: Select which parts of the `data.win` should be exported. Run `altar export --help` for more info.
+  * `project`: Emit a project file that can be recompiled by Altar.NET
+  * `gonsbpifjrmtacduvhekq`: Select which parts of the `data.win` should be exported. Run `altar export --help` for more info.
   * `absolute`: Display absolute instruction offsets in decompiled/disassembled code, instead of relative to the first instruction.
+  * `dumpunk`: Dump the raw contents of all chunks with unknown function.
+  * `dumpempty`: Dump empty unknown chunks, too.
+  * `dumpall`: Dump *all* (nonempty) raw chunks.
+  * `quiet`: be completely silent (unless an error happens).
+  * `noprecprog`: Don't report any exact details on the progress, but do output something. Makes things not break completely when cursor position isn't settable.
+  * `detachedagrp`: Also dump the contents of an `audiogroup<n>.dat` file residing in the same directory as the `data.win` file.
+  * `help`: ...
+* `import`: Recompile an Altar.NET project file to a `data.win`.
+  * `file`: Path to the to project file.
+  * `out`: The output `data.win` file.
 
 ## API
 

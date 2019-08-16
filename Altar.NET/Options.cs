@@ -141,7 +141,7 @@ namespace Altar
             set;
         }
 
-        [Option("project", HelpText = "Export everything (except -dwhk) to a project-like structure and emit a project file that can be rebuilt (in a later version).", MutuallyExclusiveSet = "PROJ")]
+        [Option("project", HelpText = "Export everything (except -dwhk) to a project-like structure and emit a project file that can be rebuilt.", MutuallyExclusiveSet = "PROJ")]
         public bool ExportToProject
         {
             get;
@@ -193,6 +193,26 @@ namespace Altar
             set;
         }
 
+        [Option("detachedagrp", HelpText = "Export data from detached audio group files, too. These files must reside in the same directory as the input file, and must be called 'audiogroup${n}.dat'.")]
+        public bool DetachedAgrp
+        {
+            get;
+            set;
+        }
+
+        [Option("dumptpagpng", HelpText = "Dump all separate TPAG entries as PNGs. (Note: you probably want --dumpspritepng.)")]
+        public bool DumpTPagPNGs
+        {
+            get;
+            set;
+        }
+        [Option("dumpspritepng", HelpText = "Dump all separate SPRT entries as PNGs.")]
+        public bool DumpSpritePNGs
+        {
+            get;
+            set;
+        }
+
         [HelpOption]
         public string GetUsage() => HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
     }
@@ -220,7 +240,7 @@ namespace Altar
             set;
         }
 
-        [VerbOption("import", HelpText = "")]
+        [VerbOption("import", HelpText = "Recompile an Altar.NET project file to a new data.win file.")]
         public ImportOptions Import
         {
             get;

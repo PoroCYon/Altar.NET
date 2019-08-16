@@ -64,6 +64,11 @@ namespace Altar
         public uint[] _pad0;
         public uint[] _pad1;
     }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GlobalInfo
+    {
+        public uint[] GlobalCodeIDs;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct SoundInfo
@@ -76,10 +81,11 @@ namespace Altar
         public float  VolumeMod   ;
         public float  PitchMod    ;
         public string Group       ;
+        public int    GroupID     ;
         /// <summary>
         /// -1 if unused? Only makes sense when embedded or compressed?
         /// </summary>
-        public int    AudioID;
+        public int    AudioID     ;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteInfo
@@ -201,7 +207,7 @@ namespace Altar
         public int Size;
         internal int ArgumentCount;
         internal AnyInstruction[] InstructionsCopy; // I ain't dealin' with no pointers
-        // (TODO: don't use pointers)
+        // (TODO: don't use pointers) // nah it's fine :D
         internal IList<Tuple<ReferenceSignature, uint>> functionReferences;
         internal IList<Tuple<ReferenceSignature, uint>> variableReferences;
     }
@@ -216,13 +222,6 @@ namespace Altar
     public struct AudioInfo
     {
         public byte[] Wave;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ShaderInfo
-    {
-        public string Name;
-        public string[] Sources;
-        public string[] VertexAttributes;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -251,7 +250,7 @@ namespace Altar
     public struct RoomObject
     {
         public Point Position;
-        public uint DefIndex;
+        public uint? DefIndex;
         public uint InstanceID;
         public uint CreateCodeID; // gml_RoomCC_<name>_<CreateCodeID>_Create
         public PointF Scale;
@@ -262,7 +261,7 @@ namespace Altar
     public struct RoomTile
     {
         public Point Position;
-        public uint DefIndex;
+        public uint? DefIndex;
         public Point SourcePosition;
         public Point Size;
         public uint Depth;
@@ -276,7 +275,7 @@ namespace Altar
         public string Name;
         public uint Index;
         public uint Unk1;
-        public uint Unk2;
+        public uint Depth;
         public uint Unk3;
         public uint[] Instances;
     }
@@ -301,4 +300,71 @@ namespace Altar
         public string FunctionName;
         public string[] LocalNames;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ExtensionFunctionInfo
+    {
+        public string GMLName;
+        public uint ID;
+        public ExtensionCC CallingConvention;
+        public ExtensionFFIType ReturnType;
+        public string SymbolName;
+        public ExtensionFFIType[] Arguments;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ExtensionFileInfo
+    {
+        public string Filename;
+        public string KillSymbol;
+        public string InitSymbol;
+        public ExtensionType Type;
+        public ExtensionFunctionInfo[] Functions;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ExtensionInfo
+    {
+        public string Name;
+        public string ClassName;
+
+        public ExtensionFileInfo[] Includes;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TimelineKeyframe
+    {
+        public uint Time;
+        public uint[] EventIDs;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TimelineInfo
+    {
+        public string Name;
+        public TimelineKeyframe[] Keyframes;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderProgramSource
+    {
+        public string VertexShader, FragmentShader;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderProgramBlob
+    {
+        public byte[] VertexShader, FragmentShader;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderCode
+    {
+        public ShaderProgramSource GLSL_ES, GLSL, HLSL9;
+        public ShaderProgramBlob HLSL11, PSSL, Cg, Cg_PS3;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderInfo
+    {
+        public string Name;
+        public ShaderType Type;
+        public ShaderCode Code;
+        public string[] Attributes;
+    }
 }
+

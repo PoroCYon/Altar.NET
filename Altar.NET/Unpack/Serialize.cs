@@ -162,7 +162,7 @@ namespace Altar.Unpack
             return r;
         }
 
-        static JsonData SerializeRoomBg  (RoomBackground bg  , BackgroundInfo[] bgs )
+        static JsonData SerializeRoomBg  (RoomBackground bg  , LazyArray<BackgroundInfo> bgs )
         {
             var r = CreateObj();
 
@@ -179,7 +179,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        static JsonData SerializeRoomView(RoomView       view, ObjectInfo    [] objs)
+        static JsonData SerializeRoomView(RoomView       view, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -194,12 +194,11 @@ namespace Altar.Unpack
 
             return r;
         }
-        static JsonData SerializeRoomObj (RoomObject     obj , ObjectInfo    [] objs)
+        static JsonData SerializeRoomObj (RoomObject     obj , LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
             r["pos"     ] = SerializePoint(obj.Position);
-            r["obj"     ] = objs[obj.DefIndex].Name;
             r["scale"   ] = SerializePoint(obj.Scale);
             r["colour"  ] = obj.Colour.ToHexString();
             r["rotation"] = obj.Rotation;
@@ -207,14 +206,16 @@ namespace Altar.Unpack
             r["instanceid"  ] = obj.InstanceID  ;
             r["createcodeid"] = obj.CreateCodeID;
 
+            if (obj.DefIndex.HasValue)
+                r["obj"] = objs[obj.DefIndex.Value].Name;
+
             return r;
         }
-        static JsonData SerializeRoomTile(RoomTile       tile, BackgroundInfo[] bgs )
+        static JsonData SerializeRoomTile(RoomTile       tile, LazyArray<BackgroundInfo> bgs )
         {
             var r = CreateObj();
 
             r["pos"      ] = SerializePoint(tile.Position);
-            r["bg"       ] = bgs[tile.DefIndex].Name;
             r["sourcepos"] = SerializePoint(tile.SourcePosition);
             r["size"     ] = SerializeSize (tile.Size);
             r["scale"    ] = SerializePoint(tile.Scale);
@@ -222,6 +223,9 @@ namespace Altar.Unpack
 
             r["tiledepth" ] = tile.Depth     ;
             r["instanceid"] = tile.InstanceID;
+
+            if (tile.DefIndex.HasValue)
+                r["bg"] = bgs[tile.DefIndex.Value].Name;
 
             return r;
         }
@@ -231,9 +235,9 @@ namespace Altar.Unpack
             var r = CreateObj();
             r["name"     ] = oi.Name;
             r["index"    ] = oi.Index;
-            r["unk1"     ] = oi.Unk1;
-            r["unk2"     ] = oi.Unk2;
-            r["unk3"     ] = oi.Unk3;
+            r["unk1"     ] = oi.Unk1 ;
+            r["depth"    ] = oi.Depth;
+            r["unk3"     ] = oi.Unk3 ;
             r["instances"] = SerializeArray(oi.Instances, Utils.Identity);
             return r;
         }
@@ -361,7 +365,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        public static JsonData SerializeScript(ScriptInfo     scpt, CodeInfo[] code)
+        public static JsonData SerializeScript(ScriptInfo     scpt, LazyArray<CodeInfo> code)
         {
             var r = CreateObj();
 
@@ -372,7 +376,7 @@ namespace Altar.Unpack
         public static JsonData SerializeFont  (FontInfo       font)
         {
             var r = CreateObj();
-            
+
             r["sysname"  ] = font.SystemName;
             r["emsize"   ] = font.EmSize;
             r["bold"     ] = font.IsBold;
@@ -387,7 +391,7 @@ namespace Altar.Unpack
             return r;
         }
 
-        public static JsonData SerializeObj   (ObjectInfo objt, SpriteInfo[] sprites, ObjectInfo[] objs)
+        public static JsonData SerializeObj   (ObjectInfo objt, LazyArray<SpriteInfo> sprites, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -415,7 +419,7 @@ namespace Altar.Unpack
 
             return r;
         }
-        public static JsonData SerializeRoom  (RoomInfo room, BackgroundInfo[] bgs, ObjectInfo[] objs)
+        public static JsonData SerializeRoom  (RoomInfo room, LazyArray<BackgroundInfo> bgs, LazyArray<ObjectInfo> objs)
         {
             var r = CreateObj();
 
@@ -455,12 +459,33 @@ namespace Altar.Unpack
 
             return r;
         }
+        public static JsonData SerializeShaderProgramSource(ShaderProgramSource src)
+        {
+            var r = CreateObj();
+
+            r["vertex"  ] = src.VertexShader;
+            r["fragment"] = src.FragmentShader;
+
+            return r;
+        }
+        public static JsonData SerializeShaderCode(ShaderCode shaderCode)
+        {
+            var r = CreateObj();
+
+            r["glsles"] = SerializeShaderProgramSource(shaderCode.GLSL_ES);
+            r["glsl"  ] = SerializeShaderProgramSource(shaderCode.GLSL   );
+            r["hlsl9" ] = SerializeShaderProgramSource(shaderCode.HLSL9  );
+            // TODO: HLSL11, PSSL, Cg, Cg_PS3
+
+            return r;
+        }
         public static JsonData SerializeShader(ShaderInfo shdr)
         {
             var r = CreateObj();
 
-            r["sources"   ] = SerializeArray(shdr.Sources         , Utils.Identity);
-            r["attributes"] = SerializeArray(shdr.VertexAttributes, Utils.Identity);
+            r["type"      ] = shdr.Type.ToString();
+            r["code"      ] = SerializeShaderCode(shdr.Code);
+            r["attributes"] = SerializeArray(shdr.Attributes, Utils.Identity);
 
             return r;
         }
