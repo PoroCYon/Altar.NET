@@ -15,14 +15,14 @@ namespace Altar.Recomp
             StringsListBuilder strings, IDictionary<string, uint> objectIndices)
         {
             IEnumerable<Instruction> instructions;
-            if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_ASM))
+            if (filename.EndsWith(SR.EXT_GML_ASM, StringComparison.InvariantCultureIgnoreCase))
             {
                 instructions = Parser.Parse(Tokenizer.Tokenize(File.ReadAllText(filename)));
             }
-            else if (filename.ToLowerInvariant().EndsWith(SR.EXT_GML_LSP))
+            else if (filename.EndsWith(SR.EXT_GML_LSP, StringComparison.InvariantCultureIgnoreCase))
             {
                 // TODO
-                throw new NotImplementedException();
+                throw new NotImplementedException("Compiling LSP not supported; export ASM with --project or -d");
             }
             else
             {
