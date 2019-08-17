@@ -525,10 +525,10 @@ namespace Altar.Repack
                 {
                     f.General = DeserializeGeneral(LoadJson(baseDir, (string)(projFile["general"])));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading general:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading general");
+                    throw;
                 }
             }
             if (projFile.Has("options"))
@@ -538,10 +538,10 @@ namespace Altar.Repack
                 {
                     f.Options = DeserializeOptions(LoadJson(baseDir, (string)(projFile["options"])));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading options:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading options");
+                    throw;
                 }
             }
             if (projFile.Has("strings"))
@@ -551,10 +551,10 @@ namespace Altar.Repack
                 {
                     f.Strings = DeserializeArray(LoadJson(baseDir, (string)(projFile["strings"])), jd => (string)jd);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading strings:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading strings");
+                    throw;
                 }
             }
 
@@ -572,10 +572,10 @@ namespace Altar.Repack
                         f.VariableExtra = DeserializeArray(vardata["extra"], jd => (uint)jd);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading variables:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading variables");
+                    throw;
                 }
             }
             if (projFile.Has("functions"))
@@ -590,10 +590,10 @@ namespace Altar.Repack
                         f.FunctionLocals = DeserializeArray(funcdata["locals"], DeserializeFuncLocals);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading functions:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading functions");
+                    throw;
                 }
             }
             f.RefData = new RefData { Variables = variables, Functions = functions };
@@ -624,10 +624,10 @@ namespace Altar.Repack
 
                         ts[i] = texinfo;
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {textures[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {textures[i]}");
+                        throw;
                     }
                 }
                 f.Textures = ts;
@@ -648,10 +648,10 @@ namespace Altar.Repack
                     {
                         tps[i] = DeserializeTPag(LoadJson(baseDir, (string)(tpags[i])));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {tpags[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {tpags[i]}");
+                        throw;
                     }
                 }
                 f.TexturePages = tps;
@@ -671,10 +671,10 @@ namespace Altar.Repack
                         };
                         ais[i] = audioinfo;
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {audio[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {audio[i]}");
+                        throw;
                     }
                 }
                 f.Audio = ais;
@@ -696,10 +696,10 @@ namespace Altar.Repack
                         ss[i] = DeserializeSprite(LoadJson(baseDir, (string)(sprites[i])));
                         ss[i].Name = Path.GetFileNameWithoutExtension((string)(sprites[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {sprites[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {sprites[i]}");
+                        throw;
                     }
                 }
                 f.Sprites = ss;
@@ -725,10 +725,10 @@ namespace Altar.Repack
                                         s => (uint)Array.IndexOf(objNames, s));
                         os[i].Name = objNames[i];
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {objs[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {objs[i]}");
+                        throw;
                     }
                 }
                 f.Objects = os;
@@ -766,10 +766,10 @@ namespace Altar.Repack
                             }
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {code[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {code[i]}");
+                        throw;
                     }
                 }
                 f.Code = cs;
@@ -788,10 +788,10 @@ namespace Altar.Repack
                         ss[i] = DeserializeSound(LoadJson(baseDir, (string)(sounds[i])));
                         ss[i].Name = Path.GetFileNameWithoutExtension((string)(sounds[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {sounds[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {sounds[i]}");
+                        throw;
                     }
                 }
                 f.Sound = ss;
@@ -808,10 +808,10 @@ namespace Altar.Repack
                         bs[i] = DeserializeBg(LoadJson(baseDir, (string)(bg[i])));
                         bs[i].Name = Path.GetFileNameWithoutExtension((string)(bg[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {bg[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {bg[i]}");
+                        throw;
                     }
                 }
                 f.Backgrounds = bs;
@@ -828,10 +828,10 @@ namespace Altar.Repack
                         ps[i] = DeserializePath(LoadJson(baseDir, (string)(paths[i])));
                         ps[i].Name = Path.GetFileNameWithoutExtension((string)(paths[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {paths[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {paths[i]}");
+                        throw;
                     }
                 }
                 f.Paths = ps;
@@ -848,10 +848,10 @@ namespace Altar.Repack
                         ss[i] = DeserializeScript(LoadJson(baseDir, (string)(scripts[i])), f.Code);
                         ss[i].Name = Path.GetFileNameWithoutExtension((string)(scripts[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {scripts[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {scripts[i]}");
+                        throw;
                     }
                 }
                 f.Scripts = ss;
@@ -868,10 +868,10 @@ namespace Altar.Repack
                         fs[i] = DeserializeFont(LoadJson(baseDir, (string)(fonts[i])));
                         fs[i].CodeName = Path.GetFileNameWithoutExtension((string)(fonts[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {fonts[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {fonts[i]}");
+                        throw;
                     }
                 }
                 f.Fonts = fs;
@@ -893,10 +893,10 @@ namespace Altar.Repack
                         rs[i] = DeserializeRoom(LoadJson(baseDir, (string)(rooms[i])), f.Backgrounds, f.Objects);
                         rs[i].Name = Path.GetFileNameWithoutExtension((string)(rooms[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {rooms[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {rooms[i]}");
+                        throw;
                     }
                 }
                 f.Rooms = rs;
@@ -908,10 +908,10 @@ namespace Altar.Repack
                 {
                     f.AudioGroups = DeserializeArray(LoadJson(baseDir, (string)(projFile["audiogroups"])), jd => (string)jd);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.Error.WriteLine("Error loading audio groups:");
-                    Console.Error.WriteLine(e);
+                    Console.Error.WriteLine("Error loading audio groups");
+                    throw;
                 }
             }
             if (projFile.Has("shaders"))
@@ -926,10 +926,10 @@ namespace Altar.Repack
                         ss[i] = DeserializeShader(LoadJson(baseDir, (string)(shaders[i])));
                         ss[i].Name = Path.GetFileNameWithoutExtension((string)(shaders[i]));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Console.Error.WriteLine($"Error loading {shaders[i]}:");
-                        Console.Error.WriteLine(e);
+                        Console.Error.WriteLine($"Error loading {shaders[i]}");
+                        throw;
                     }
                 }
                 f.Shaders = ss;
