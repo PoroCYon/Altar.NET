@@ -881,10 +881,10 @@ namespace Altar
                             break;
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Console.Error.WriteLine($"An error occured during {verb}");
-                    throw;
+                    Console.Error.WriteLine(e);
                 }
                 Console.WriteLine("Done");
             });
