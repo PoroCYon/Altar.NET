@@ -524,6 +524,10 @@ namespace Altar.Repack
                 try
                 {
                     f.General = DeserializeGeneral(LoadJson(baseDir, (string)(projFile["general"])));
+                    if (f.General.Version >= new Version(2, 0))
+                    {
+                        Console.Error.WriteLine("Warning: GM:S 2.0 support is incomplete!");
+                    }
                 }
                 catch (Exception)
                 {

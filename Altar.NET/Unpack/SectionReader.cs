@@ -184,6 +184,10 @@ namespace Altar.Unpack
             ret.WindowSize      = ge->WindowSize;
             ret.BytecodeVersion = ge->BytecodeVersion;
             ret.Version         = new Version(ge->Major, ge->Minor, ge->Release, ge->Build);
+            if (ret.Version >= new Version(2, 0))
+            {
+                Console.Error.WriteLine("Warning: GM:S 2.0 support is incomplete!");
+            }
 
             ret.InfoFlags     = ge->Info         ;
             ret.ActiveTargets = ge->ActiveTargets;
