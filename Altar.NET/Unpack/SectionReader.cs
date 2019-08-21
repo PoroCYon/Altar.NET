@@ -782,6 +782,8 @@ namespace Altar.Unpack
         }
         static byte[] ReadByteArray(GMFileContent c, uint off, uint len)
         {
+            if (len == 0 || off == 0) return new byte[0];
+
             byte[] r = new byte[len];
             Marshal.Copy((IntPtr)GMFile.PtrFromOffset(c, off), r, 0, unchecked((int)len));
             return r;
@@ -808,15 +810,37 @@ namespace Altar.Unpack
             si.Code.GLSL_ES = GetVxFxStrings(c, sh->GLSL_ES);
             si.Code.GLSL    = GetVxFxStrings(c, sh->GLSL   );
             si.Code.HLSL9   = GetVxFxStrings(c, sh->HLSL9  );
-          //si.Code.HLSL11  = GetVxFxBlobs  (c, sh->HLSL11 , length=???); // TODO
 
-            var ats = new string[sh->AttributeCount];
-            for (uint i = 0; i < ats.Length; ++i)
-                ats[i] = StringFromOffset(c, (&sh->Attributes)[i]);
+            ShaderEntry2* sh2;
 
-            si.Attributes = ats;
+            // hack for a special case w. pre-DX11 stuff?
+            if ((uint)c.General->BytecodeVersion == 0xE
+                    && sh->HLSL11.VertexData   == 0
+                    && sh->HLSL11.VertexLength == 0) {
 
-            var sh2 = (ShaderEntry2*)&((&sh->Attributes)[sh->AttributeCount]);
+                var sho = (ShaderEntryOld*)sh;
+
+                var ats = new string[sho->AttributeCount];
+                for (uint i = 0; i < ats.Length; ++i) {
+                    ats[i] = StringFromOffset(c, (&sho->Attributes)[i]);
+                }
+
+                si.Attributes = ats;
+
+                sh2 = (ShaderEntry2*)&((&sho->Attributes)[sho->AttributeCount]);
+            } else {
+                //si.Code.HLSL11  = GetVxFxBlobs  (c, sh->HLSL11 , length=???); // TODO
+
+                var ats = new string[sh->AttributeCount];
+                for (uint i = 0; i < ats.Length; ++i) {
+                    ats[i] = StringFromOffset(c, (&sh->Attributes)[i]);
+                }
+
+                si.Attributes = ats;
+
+                sh2 = (ShaderEntry2*)&((&sh->Attributes)[sh->AttributeCount]);
+
+            }
 
             si.Code.PSSL   = GetVxFxBlobs(c, sh2->PSSL  );
             si.Code.Cg     = GetVxFxBlobs(c, sh2->Cg    );

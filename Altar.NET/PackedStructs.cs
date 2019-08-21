@@ -670,6 +670,17 @@ namespace Altar
         public uint Attributes; // inline array, all strg offsets
     }
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct ShaderEntryOld
+    {
+        public uint Name;
+        public ShaderTypeEnc Type;
+
+        public ShaderVxFxStrings GLSL_ES, GLSL, HLSL9;
+        public uint Unknown1, Unknown2; // zero?
+        public uint AttributeCount;
+        public uint Attributes; // inline array, all strg offsets
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct ShaderEntry2
     {
         public uint Unknown; // always 2

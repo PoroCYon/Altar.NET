@@ -28,7 +28,7 @@ bin/%/$(OUTPUT): bin/%/ $(INPUTS)
 	$(MONO) $(ILREPACK) $(ILRFLAGS) "/out:$@" $(INPUTS)
 
 utils/lsiff: utils/
-	$(MAKE) -C lsiff
+	$(MAKE) -C "$<"
 
 all: bin/$(TARGET)/ bin/$(TARGET)/$(OUTPUT) utils/lsiff
 
